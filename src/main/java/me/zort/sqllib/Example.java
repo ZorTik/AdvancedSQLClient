@@ -7,7 +7,12 @@ import me.zort.sqllib.api.provider.Select;
 public class Example {
 
     public void example() {
-        SQLDatabaseConnectionImpl connection = SQLConnectionBuilder.of("", "", "")
+        SQLDatabaseConnectionImpl connection = SQLConnectionBuilder.of(
+                "localhost",
+                        3306,
+                        "database",
+                        "user",
+                        "password")
                 .withDriver("com.mysql.jdbc.Driver")
                 .withParam("useSSL", "false")
                 .build();
