@@ -17,7 +17,7 @@ public class SelectQuery extends QueryPartQuery<QueryPart<?>> implements Executi
     private String table;
 
     @Getter
-    private final SQLDatabaseConnection connection;
+    private SQLDatabaseConnection connection;
 
     public SelectQuery(SQLDatabaseConnection connection, String... cols) {
         this(connection, null, Arrays.asList(cols));

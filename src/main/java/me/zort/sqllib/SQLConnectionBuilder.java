@@ -83,12 +83,12 @@ public class SQLConnectionBuilder {
         if(driver == null) {
             driver = Constants.DEFAULT_DRIVER;
         }
-        SQLConnectionFactory connectionFactory = new BuilderSQlConnectionFactory(this, driver);
+        SQLConnectionFactory connectionFactory = new BuilderSQLConnectionFactory(this, driver);
         return new SQLDatabaseConnectionImpl(connectionFactory);
     }
 
     @RequiredArgsConstructor
-    public static class BuilderSQlConnectionFactory implements SQLConnectionFactory {
+    public static class BuilderSQLConnectionFactory implements SQLConnectionFactory {
 
         private final SQLConnectionBuilder builder;
         private final String driver;

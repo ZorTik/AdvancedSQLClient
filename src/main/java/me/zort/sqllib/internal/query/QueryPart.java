@@ -4,6 +4,7 @@ import lombok.Getter;
 import me.zort.sqllib.api.Executive;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.SQLDatabaseConnection;
+import me.zort.sqllib.internal.exception.NoLinkedConnectionException;
 import me.zort.sqllib.internal.query.part.WhereStatement;
 import org.jetbrains.annotations.Nullable;
 
@@ -59,15 +60,17 @@ public abstract class QueryPart<P extends QueryPart<?>> implements Query {
     }
 
     @Nullable
-    protected <T> T invokeToConnection(Function<SQLDatabaseConnection, T> func) {
+    protected <T> T invokeToConnection(Function<SQLDatabaseConnection, T> func) throws NoLinkedConnectionException {
         QueryPart<?> current = this;
         while(current.getParent() != null && !(current instanceof Executive)) {
             current = current.getParent();
         }
-        T result = null;
+        T result;
         if(current instanceof Executive) {
             SQLDatabaseConnection connection = ((Executive) current).getConnection();
             result = func.apply(connection);
+        } else {
+            throw new NoLinkedConnectionException(this);
         }
         return result;
     }
