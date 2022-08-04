@@ -3,6 +3,9 @@ package me.zort.sqllib;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.provider.Select;
+import me.zort.sqllib.internal.annotation.JsonField;
+
+import java.util.List;
 
 public class Example {
 
@@ -31,6 +34,18 @@ public class Example {
     public static class Player {
         private String nickname;
         private int coins;
+
+        @JsonField // Library can use Gson to convert the highest fields from columns
+        private Inventory inventory;
+    }
+
+    public static class Inventory {
+        private List<Item> items;
+    }
+
+    public static class Item {
+        private String name;
+        private String type;
     }
 
 }
