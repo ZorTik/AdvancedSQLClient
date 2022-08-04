@@ -1,0 +1,55 @@
+plugins {
+    id 'java'
+    id 'maven-publish'
+}
+
+compileJava.options.encoding = 'UTF-8'
+
+group = 'com.github.ZorTik'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation group: 'org.jetbrains', name: 'annotations', version: '20.1.0'
+    implementation 'com.google.code.gson:gson:2.9.0'
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+}
+
+jar {
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'com.github.ZorTik'
+            artifactId = 'SQLLib'
+            version = '1.0'
+
+            from components.java
+            pom {
+                name = 'SQLLib'
+                description = 'Simple SQL connection library.'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://raw.githubusercontent.com/ZorTik/ContainrGUI/master/LICENSE'
+                    }
+                }
+                developers {
+                    developer {
+                        id = 'zort'
+                        name = 'ZorTik'
+                        email = 'zortlegit@gmail.com'
+                    }
+                }
+            }
+        }
+    }
+}
