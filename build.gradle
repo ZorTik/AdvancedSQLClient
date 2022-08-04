@@ -34,8 +34,8 @@ publishing {
 
             from components.java
             pom {
-                name = 'SQLLib'
-                description = 'Simple SQL connection library.'
+                name = 'AdvancedSQlClient'
+                description = 'An Ultimate SQL client for Java!'
                 licenses {
                     license {
                         name = 'MIT License'
