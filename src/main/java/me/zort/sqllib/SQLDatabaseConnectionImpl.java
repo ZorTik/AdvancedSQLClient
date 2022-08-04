@@ -75,12 +75,14 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
             for(Field field : typeClass.getDeclaredFields()) {
                 try {
                     field.setAccessible(true);
+                    field.set(instance, buildElementValue(field, row));
                 } catch(SecurityException ignored) {
                     debug(String.format("Field %s on class %s cannot be set accessible!",
                             field.getName(),
                             typeClass.getName()));
+                } catch(Exception ignored) {
+                    continue;
                 }
-                field.set(instance, buildElementValue(field, row));
             }
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
             debug("Cannot instantinate " + typeClass.getName() + " for assigning attributes from row!");
