@@ -5,6 +5,7 @@ import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.provider.Select;
 import me.zort.sqllib.internal.annotation.JsonField;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Example {
@@ -23,6 +24,7 @@ public class Example {
             QueryRowsResult<Row> result = connection.select("nickname, coins")
                     .from("players")
                     .where().isEqual("nickname", "ZorTik")
+                    .or().in("nickname", "Player1", "Player2", "Player3")
                     .obtainAll();
             if(!result.isSuccessful()) {
                 // No rows found

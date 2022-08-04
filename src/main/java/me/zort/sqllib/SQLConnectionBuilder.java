@@ -74,17 +74,21 @@ public class SQLConnectionBuilder {
     }
 
     public SQLDatabaseConnectionImpl build() {
-        return build(driver);
+        return build(new SQLDatabaseOptions());
     }
 
-    public SQLDatabaseConnectionImpl build(@Nullable String driver) {
+    public SQLDatabaseConnectionImpl build(SQLDatabaseOptions options) {
+        return build(driver, options);
+    }
+
+    public SQLDatabaseConnectionImpl build(@Nullable String driver, SQLDatabaseOptions options) {
         Objects.requireNonNull(endpoint, "Endpoint must be set!");
         Objects.requireNonNull(jdbc);
         if(driver == null) {
             driver = Constants.DEFAULT_DRIVER;
         }
         SQLConnectionFactory connectionFactory = new BuilderSQLConnectionFactory(this, driver);
-        return new SQLDatabaseConnectionImpl(connectionFactory);
+        return new SQLDatabaseConnectionImpl(connectionFactory, options);
     }
 
     @RequiredArgsConstructor

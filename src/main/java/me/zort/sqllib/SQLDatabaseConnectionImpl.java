@@ -48,6 +48,34 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         return result;
     }
 
+    @Override
+    public QueryRowsResult<Row> query(Query query) {
+        if(options.isAutoReconnect() && !isConnected()) {
+            debug("Trying to make a new connection with the database!");
+            if(!connect()) {
+                debug("Cannot make new connection!");
+                return new QueryRowsResult<>(false);
+            }
+        }
+        String queryString = query.buildQuery();
+        try(PreparedStatement stmt = connection.prepareStatement(queryString);
+            ResultSet resultSet = stmt.executeQuery()) {
+            QueryRowsResult<Row> result = new QueryRowsResult<>(true);
+            while(resultSet.next()) {
+                ResultSetMetaData meta = resultSet.getMetaData();
+                Row row = new Row();
+                for(int i = 1; i <= meta.getColumnCount(); i++) {
+                    row.put(meta.getColumnName(i), resultSet.getObject(i));
+                }
+                result.add(row);
+            }
+            return result;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return new QueryRowsResult<>(false);
+        }
+    }
+
     @Nullable
     private <T> T assignValues(Row row, Class<T> typeClass) {
         T instance = null;
@@ -107,8 +135,9 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         }
         Object obj = row.get(name);
         if(obj == null) {
-            if((obj = row.get(options.getNamingStrategy().convert(name))) == null) {
-                debug(String.format("Cannot find column for target %s", name));
+            String converted;
+            if((obj = row.get(converted = options.getNamingStrategy().convert(name))) == null) {
+                debug(String.format("Cannot find column for target %s (%s)", name, converted));
                 return null;
             }
         }
@@ -118,34 +147,6 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
             return gson.fromJson(jsonString, type);
         } else {
             return obj;
-        }
-    }
-
-    @Override
-    public QueryRowsResult<Row> query(Query query) {
-        if(options.isAutoReconnect() && !isConnected()) {
-            debug("Trying to make a new connection with the database!");
-            if(!connect()) {
-                debug("Cannot make new connection!");
-                return new QueryRowsResult<>(false);
-            }
-        }
-        String queryString = query.buildQuery();
-        try(PreparedStatement stmt = connection.prepareStatement(queryString);
-            ResultSet resultSet = stmt.executeQuery()) {
-            QueryRowsResult<Row> result = new QueryRowsResult<>(true);
-            while(resultSet.next()) {
-                ResultSetMetaData meta = resultSet.getMetaData();
-                Row row = new Row();
-                for(int i = 1; i <= meta.getColumnCount(); i++) {
-                    row.put(meta.getColumnName(i), resultSet.getObject(i));
-                }
-                result.add(row);
-            }
-            return result;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return new QueryRowsResult<>(false);
         }
     }
 
