@@ -3,6 +3,7 @@ package me.zort.sqllib;
 import com.google.gson.Gson;
 import lombok.Getter;
 import me.zort.sqllib.api.Query;
+import me.zort.sqllib.api.SQLConnection;
 import me.zort.sqllib.api.SQLDatabaseConnection;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
@@ -17,6 +18,13 @@ import java.lang.reflect.*;
 import java.sql.*;
 import java.util.Optional;
 
+/**
+ * Main database client object implementation.
+ * This class is responsible for handling requests from query
+ * objects of this library.
+ *
+ * @author ZorTik
+ */
 public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
 
     private final SQLConnectionFactory connectionFactory;
@@ -26,16 +34,48 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
     @Getter(onMethod_ = {@Nullable})
     private Connection connection;
 
+    /**
+     * Constructs new instance of this implementation with default
+     * options.
+     *
+     * @see SQLDatabaseConnectionImpl#SQLDatabaseConnectionImpl(SQLConnectionFactory, SQLDatabaseOptions)
+     */
     public SQLDatabaseConnectionImpl(SQLConnectionFactory connectionFactory) {
         this(connectionFactory, new SQLDatabaseOptions());
     }
 
+    /**
+     * Constructs new instance of this implementation.
+     *
+     * @param connectionFactory Factory to use while opening connection.
+     * @param options Client options to use.
+     */
     public SQLDatabaseConnectionImpl(SQLConnectionFactory connectionFactory, SQLDatabaseOptions options) {
         this.connectionFactory = connectionFactory;
         this.options = options;
         this.connection = null;
     }
 
+    /**
+     * Performs new query and returns the result. This result is never null.
+     * See: {@link QueryRowsResult#isSuccessful()}
+     *
+     * Examples:
+     * <p>
+     * query(Select.of().from("players"), Player.class)
+     *  .stream()
+     *  .map(Player::getNickname)
+     *  .forEach(System.out::println);
+     * <p>
+     * query(() -> "SELECT * FROM players;");
+     *
+     * @param query The query to use while constructing query string.
+     * @param typeClass Type class of object which will be instantinated and
+     *                  populated with column values.
+     * @param <T> Type of objects in result.
+     *
+     * @return Collection of row objects.
+     */
     public <T> QueryRowsResult<T> query(Query query, Class<T> typeClass) {
         QueryRowsResult<Row> resultRows = query(query);
         QueryRowsResult<T> result = new QueryRowsResult<>(resultRows.isSuccessful());
@@ -46,6 +86,9 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         return result;
     }
 
+    /**
+     * @see SQLDatabaseConnectionImpl#query(Query, Class)
+     */
     @Override
     public QueryRowsResult<Row> query(Query query) {
         if(!handleAutoReconnect()) {
@@ -70,6 +113,9 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         }
     }
 
+    /**
+     * @see SQLDatabaseConnection#exec(Query)
+     */
     public QueryResult exec(Query query) {
         if(!handleAutoReconnect()) {
             return new QueryResultImpl(false);
@@ -169,6 +215,9 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         return true;
     }
 
+    /**
+     * @see SQLConnection#connect()
+     */
     @Override
     public boolean connect() {
         if(isConnected()) {
@@ -183,6 +232,9 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         return isConnected();
     }
 
+    /**
+     * @see SQLConnection#disconnect()
+     */
     @Override
     public void disconnect() {
         if(isConnected()) {
