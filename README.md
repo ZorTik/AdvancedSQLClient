@@ -1,5 +1,5 @@
 <p align="center">
-<img src="https://user-images.githubusercontent.com/67344817/183104129-8a2d2cfe-b56f-4899-8bdb-cd0257f683bc.png" width="100%"></img>
+<img src="https://user-images.githubusercontent.com/67344817/183105393-af39026f-b059-4096-a880-1fe0e93eeeee.png" width="100%"></img>
 </p>
 
 # AdvancedSQLClient [![](https://jitpack.io/v/ZorTik/AdvancedSQLClient.svg)](https://jitpack.io/#ZorTik/AdvancedSQLClient)
