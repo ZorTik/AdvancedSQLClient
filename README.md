@@ -1,3 +1,7 @@
+<p align="center">
+<img src="https://user-images.githubusercontent.com/67344817/183104129-8a2d2cfe-b56f-4899-8bdb-cd0257f683bc.png" width="100%"></img>
+</p>
+
 # AdvancedSQLClient [![](https://jitpack.io/v/ZorTik/AdvancedSQLClient.svg)](https://jitpack.io/#ZorTik/AdvancedSQLClient)
 Ultimate SQL client with intuitive query builders, Json support and more!
 
