@@ -4,8 +4,8 @@ import lombok.Getter;
 import me.zort.sqllib.api.Executive;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.SQLDatabaseConnection;
+import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.internal.exception.NoLinkedConnectionException;
-import me.zort.sqllib.internal.query.part.WhereStatement;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -37,10 +37,6 @@ public abstract class QueryPart<P extends QueryPart<?>> implements Query {
         this.priority = priority;
     }
 
-    protected <T extends QueryPart<?>> WhereStatement<T> where(T parent) {
-        return new WhereStatement<>(parent, new ArrayList<>());
-    }
-
     public <T extends QueryPart<?>> QueryPart<T> then(QueryPart<T> part) {
         this.children.add(part);
         return part;
@@ -57,6 +53,10 @@ public abstract class QueryPart<P extends QueryPart<?>> implements Query {
                 .stream()
                 .map(QueryPart::buildQuery)
                 .collect(Collectors.toList())) : "";
+    }
+
+    public QueryResult execute() {
+        return invokeToConnection(connection -> connection.exec(getAncestor()));
     }
 
     @Nullable

@@ -4,6 +4,7 @@ import me.zort.sqllib.internal.exception.IllegalStatementOperationException;
 import me.zort.sqllib.internal.query.QueryPart;
 import me.zort.sqllib.internal.query.QueryPartQuery;
 import me.zort.sqllib.internal.query.QueryPriority;
+import me.zort.sqllib.util.Util;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -16,11 +17,15 @@ public class WhereStatement<P extends QueryPart<?>> extends QueryPartQuery<P> {
     private final List<String> conditions = new ArrayList<>();
 
     public WhereStatement(@Nullable P parent, List<QueryPart<?>> initial) {
-        super(parent, initial, QueryPriority.CONDITION);
+        super(parent, initial, QueryPriority.CONDITION.getPrior());
+    }
+
+    public WhereStatement(@Nullable P parent, List<QueryPart<?>> initial, int priority) {
+        super(parent, initial, priority);
     }
 
     public WhereStatement<P> isEqual(String column, Object value) {
-        conditions.add(column + " = " + buildQuoted(value));
+        conditions.add(column + " = " + Util.buildQuoted(value));
         return this;
     }
 
@@ -31,7 +36,7 @@ public class WhereStatement<P extends QueryPart<?>> extends QueryPartQuery<P> {
     public WhereStatement<P> in(String column, List<?> objs) {
         if(objs.isEmpty()) return this;
         conditions.add(column + " IN (" + objs.stream()
-                .map(WhereStatement::buildQuoted)
+                .map(Util::buildQuoted)
                 .collect(Collectors.joining(", ")) + ")");
         return this;
     }
@@ -64,13 +69,6 @@ public class WhereStatement<P extends QueryPart<?>> extends QueryPartQuery<P> {
             stmt.append(condition);
         }
         return stmt.toString();
-    }
-
-    private static String buildQuoted(Object obj) {
-        obj = obj instanceof String
-                ? String.format("'%s'", obj)
-                : String.valueOf(obj);
-        return (String) obj;
     }
 
 }

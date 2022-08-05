@@ -5,7 +5,6 @@ import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.provider.Select;
 import me.zort.sqllib.internal.annotation.JsonField;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class Example {
@@ -29,7 +28,19 @@ public class Example {
             if(!result.isSuccessful()) {
                 // No rows found
             }
+
             QueryRowsResult<Player> players = connection.query(Select.of().from("players"), Player.class);
+            // Library can parse from JSON!
+
+            connection.update("players")
+                    .set("nickname", "ZorTicek")
+                    .where().isEqual("nickname", "ZorTik")
+                    .execute();
+            connection.upsert()
+                    .into("players", "nickname", "coins")
+                    .values("ZorTik", "0")
+                    .onDuplicateKey("coins", "500")
+                    .execute();
         }
     }
 

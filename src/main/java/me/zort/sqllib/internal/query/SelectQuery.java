@@ -3,7 +3,6 @@ package me.zort.sqllib.internal.query;
 import lombok.Getter;
 import me.zort.sqllib.api.Executive;
 import me.zort.sqllib.api.SQLDatabaseConnection;
-import me.zort.sqllib.internal.query.part.WhereStatement;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -11,7 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class SelectQuery extends QueryPartQuery<QueryPart<?>> implements Executive {
+public class SelectQuery extends QueryPartQuery<QueryPart<?>> implements Executive, Conditional<SelectQuery> {
 
     private final List<String> cols;
     private String table;
@@ -33,10 +32,6 @@ public class SelectQuery extends QueryPartQuery<QueryPart<?>> implements Executi
     public SelectQuery from(String table) {
         this.table = table;
         return this;
-    }
-
-    public WhereStatement<SelectQuery> where() {
-        return where(this);
     }
 
     @Override

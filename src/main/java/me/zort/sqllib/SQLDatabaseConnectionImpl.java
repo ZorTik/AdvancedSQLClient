@@ -4,11 +4,13 @@ import com.google.gson.Gson;
 import lombok.Getter;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.SQLDatabaseConnection;
+import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
-import me.zort.sqllib.internal.query.SelectQuery;
+import me.zort.sqllib.internal.impl.QueryResultImpl;
+import me.zort.sqllib.internal.query.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.*;
@@ -34,10 +36,6 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         this.connection = null;
     }
 
-    public SelectQuery select(String... cols) {
-        return new SelectQuery(this, cols);
-    }
-
     public <T> QueryRowsResult<T> query(Query query, Class<T> typeClass) {
         QueryRowsResult<Row> resultRows = query(query);
         QueryRowsResult<T> result = new QueryRowsResult<>(resultRows.isSuccessful());
@@ -50,12 +48,8 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
 
     @Override
     public QueryRowsResult<Row> query(Query query) {
-        if(options.isAutoReconnect() && !isConnected()) {
-            debug("Trying to make a new connection with the database!");
-            if(!connect()) {
-                debug("Cannot make new connection!");
-                return new QueryRowsResult<>(false);
-            }
+        if(!handleAutoReconnect()) {
+            return new QueryRowsResult<>(false);
         }
         String queryString = query.buildQuery();
         try(PreparedStatement stmt = connection.prepareStatement(queryString);
@@ -73,6 +67,20 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         } catch (SQLException e) {
             e.printStackTrace();
             return new QueryRowsResult<>(false);
+        }
+    }
+
+    public QueryResult exec(Query query) {
+        if(!handleAutoReconnect()) {
+            return new QueryResultImpl(false);
+        }
+        String queryString = query.buildQuery();
+        try(PreparedStatement stmt = connection.prepareStatement(queryString)) {
+            stmt.execute();
+            return new QueryResultImpl(true);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return new QueryResultImpl(false);
         }
     }
 
@@ -150,6 +158,17 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         }
     }
 
+    private boolean handleAutoReconnect() {
+        if(options.isAutoReconnect() && !isConnected()) {
+            debug("Trying to make a new connection with the database!");
+            if(!connect()) {
+                debug("Cannot make new connection!");
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Override
     public boolean connect() {
         if(isConnected()) {
@@ -173,6 +192,38 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
                 e.printStackTrace();
             }
         }
+    }
+
+    public SelectQuery select(String... cols) {
+        return new SelectQuery(this, cols);
+    }
+
+    public UpdateQuery update() {
+        return update(null);
+    }
+
+    public UpdateQuery update(@Nullable String table) {
+        return new UpdateQuery(this, table);
+    }
+
+    public InsertQuery insert() {
+        return insert(null);
+    }
+
+    public InsertQuery insert(@Nullable String table) {
+        return new InsertQuery(this, table);
+    }
+
+    public UpsertQuery upsert() {
+        return upsert(null);
+    }
+
+    public UpsertQuery upsert(@Nullable String table) {
+        return new UpsertQuery(this, table);
+    }
+
+    public DeleteQuery delete() {
+        return new DeleteQuery(this);
     }
 
     private void debug(String message) {
