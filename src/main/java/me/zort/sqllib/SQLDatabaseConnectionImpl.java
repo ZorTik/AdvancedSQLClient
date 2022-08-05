@@ -57,25 +57,9 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
     }
 
     /**
-     * Performs new query and returns the result. This result is never null.
-     * See: {@link QueryRowsResult#isSuccessful()}
-     *
-     * Examples:
-     * <p>
-     * query(Select.of().from("players"), Player.class)
-     *  .stream()
-     *  .map(Player::getNickname)
-     *  .forEach(System.out::println);
-     * <p>
-     * query(() -> "SELECT * FROM players;");
-     *
-     * @param query The query to use while constructing query string.
-     * @param typeClass Type class of object which will be instantinated and
-     *                  populated with column values.
-     * @param <T> Type of objects in result.
-     *
-     * @return Collection of row objects.
+     * @see SQLDatabaseConnection#query(Query, Class)
      */
+    @Override
     public <T> QueryRowsResult<T> query(Query query, Class<T> typeClass) {
         QueryRowsResult<Row> resultRows = query(query);
         QueryRowsResult<T> result = new QueryRowsResult<>(resultRows.isSuccessful());
