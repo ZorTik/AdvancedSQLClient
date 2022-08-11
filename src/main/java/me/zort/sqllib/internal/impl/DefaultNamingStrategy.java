@@ -21,7 +21,7 @@ public class DefaultNamingStrategy implements NamingStrategy {
             } else {
                 sb.append(Character.toLowerCase(c));
             }
-            index--;
+            index++;
         }
         return sb.toString();
     }
