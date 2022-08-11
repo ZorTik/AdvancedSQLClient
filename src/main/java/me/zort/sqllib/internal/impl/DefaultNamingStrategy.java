@@ -18,9 +18,9 @@ public class DefaultNamingStrategy implements NamingStrategy {
                     && (index == chars.length - 1 || !Character.isUpperCase(chars[index + 1]))
             ) {
                 sb.append('_');
-            } else {
-                sb.append(Character.toLowerCase(c));
             }
+
+            sb.append(Character.toLowerCase(c));
             index++;
         }
         return sb.toString();
