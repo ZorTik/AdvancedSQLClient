@@ -7,18 +7,23 @@ public class DefaultNamingStrategy implements NamingStrategy {
     @Override
     public String convert(String str) {
         if(str.isEmpty()) return "";
-        str = str.toLowerCase();
-        String[] words = str.split(" ");
-        if(words.length > 1) {
-            for(int i = 1; i < words.length; i++) {
-                String w = words[i];
-                if(w.length() > 1) {
-                    w = w.substring(0, 1).toUpperCase() + w.substring(1);
-                } else w = w.toUpperCase();
-                words[i] = w;
+
+        char[] chars = str.toCharArray();
+        StringBuilder sb = new StringBuilder();
+        int index = 0;
+        for(char c : chars) {
+            if(Character.isUpperCase(c)
+                    && index > 0
+                    && !Character.isUpperCase(chars[index - 1])
+                    && (index == chars.length - 1 || !Character.isUpperCase(chars[index + 1]))
+            ) {
+                sb.append('_');
+            } else {
+                sb.append(Character.toLowerCase(c));
             }
+            index--;
         }
-        return String.join("", words);
+        return sb.toString();
     }
 
 }
