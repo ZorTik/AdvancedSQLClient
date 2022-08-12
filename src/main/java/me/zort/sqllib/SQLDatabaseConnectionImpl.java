@@ -108,8 +108,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         if(!handleAutoReconnect()) {
             return new QueryResultImpl(false);
         }
-        String queryString = query.buildQuery()
-                .replaceAll("'", "''");
+        String queryString = query.buildQuery();
         try(PreparedStatement stmt = connection.prepareStatement(queryString)) {
             stmt.execute();
             return new QueryResultImpl(true);

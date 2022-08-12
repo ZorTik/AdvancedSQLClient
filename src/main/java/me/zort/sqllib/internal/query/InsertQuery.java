@@ -5,6 +5,7 @@ import lombok.Getter;
 import me.zort.sqllib.api.Executive;
 import me.zort.sqllib.api.SQLDatabaseConnection;
 import me.zort.sqllib.internal.exception.IllegalStatementOperationException;
+import me.zort.sqllib.util.Encoding;
 import me.zort.sqllib.util.Util;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,7 +61,7 @@ public class InsertQuery extends QueryPart<QueryPart<?>> implements Executive, C
     private String joinArr(String[] arr) {
         StringJoiner joiner = new StringJoiner(", ", "(", ")");
         for(String str : arr) {
-            joiner.add(str);
+            joiner.add(Encoding.handleTo(str));
         }
         return joiner.toString();
     }

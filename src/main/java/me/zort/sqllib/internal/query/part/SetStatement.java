@@ -3,6 +3,7 @@ package me.zort.sqllib.internal.query.part;
 import me.zort.sqllib.internal.exception.IllegalStatementOperationException;
 import me.zort.sqllib.internal.query.Conditional;
 import me.zort.sqllib.internal.query.QueryPart;
+import me.zort.sqllib.util.Encoding;
 import me.zort.sqllib.util.Pair;
 import me.zort.sqllib.util.Pairs;
 import me.zort.sqllib.util.Util;
@@ -54,7 +55,13 @@ public class SetStatement<P extends QueryPart<?> & Conditional<P>> extends Query
         }
         return " SET " + update
                 .stream()
-                .map(pair -> pair.getFirst() + " = " + Util.buildQuoted(pair.getSecond()))
+                .map(pair -> {
+                    Object obj = pair.getSecond();
+                    if(obj instanceof String) {
+                        obj = Encoding.handleTo((String) obj);
+                    }
+                    return pair.getFirst() + " = " + Util.buildQuoted(obj);
+                })
                 .collect(Collectors.joining(", "));
     }
 
