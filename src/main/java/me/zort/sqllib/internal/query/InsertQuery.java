@@ -43,7 +43,11 @@ public class InsertQuery extends QueryPart<QueryPart<?>> implements Executive, C
     public InsertQuery values(Object... values) {
         String[] vals = new String[values.length];
         for(int i = 0; i < values.length; i++) {
-            vals[i] = Util.buildQuoted(values[i]);
+            Object obj = values[i];
+            if(obj instanceof String) {
+                obj = Encoding.handleTo((String) obj);
+            }
+            vals[i] = Util.buildQuoted(obj);
         }
         this.values = vals;
         return this;
@@ -61,7 +65,7 @@ public class InsertQuery extends QueryPart<QueryPart<?>> implements Executive, C
     private String joinArr(String[] arr) {
         StringJoiner joiner = new StringJoiner(", ", "(", ")");
         for(String str : arr) {
-            joiner.add(Encoding.handleTo(str));
+            joiner.add(str);
         }
         return joiner.toString();
     }
