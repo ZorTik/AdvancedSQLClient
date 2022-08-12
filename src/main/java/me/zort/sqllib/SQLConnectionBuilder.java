@@ -61,7 +61,6 @@ public class SQLConnectionBuilder {
     public SQLConnectionBuilder withParam(String key, String value) {
         Optional.ofNullable(endpoint)
                 .ifPresent(endpoint -> {
-                    withEndpoint(endpoint);
                     jdbc += (jdbc.contains("?") ? "&" : "?");
                     jdbc += key + "=" + value;
                 });
