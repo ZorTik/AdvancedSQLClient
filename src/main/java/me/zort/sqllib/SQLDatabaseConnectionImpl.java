@@ -86,7 +86,11 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
                 ResultSetMetaData meta = resultSet.getMetaData();
                 Row row = new Row();
                 for(int i = 1; i <= meta.getColumnCount(); i++) {
-                    row.put(meta.getColumnName(i), resultSet.getObject(i));
+                    Object obj = resultSet.getObject(i);
+                    if(obj instanceof String) {
+                        obj = ((String) obj).replaceAll("''", "'");
+                    }
+                    row.put(meta.getColumnName(i), obj);
                 }
                 result.add(row);
             }
@@ -104,7 +108,8 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         if(!handleAutoReconnect()) {
             return new QueryResultImpl(false);
         }
-        String queryString = query.buildQuery();
+        String queryString = query.buildQuery()
+                .replaceAll("'", "''");
         try(PreparedStatement stmt = connection.prepareStatement(queryString)) {
             stmt.execute();
             return new QueryResultImpl(true);
