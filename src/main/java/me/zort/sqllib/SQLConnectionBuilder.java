@@ -87,7 +87,11 @@ public class SQLConnectionBuilder {
             driver = Constants.DEFAULT_DRIVER;
         }
         SQLConnectionFactory connectionFactory = new BuilderSQLConnectionFactory(this, driver);
-        return new SQLDatabaseConnectionImpl(connectionFactory, options);
+        if(jdbc.contains("jdbc:sqlite")) {
+            return new SQLiteDatabaseConnectionImpl(connectionFactory, options);
+        } else {
+            return new SQLDatabaseConnectionImpl(connectionFactory, options);
+        }
     }
 
     @RequiredArgsConstructor

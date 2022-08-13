@@ -15,7 +15,7 @@ import java.util.StringJoiner;
 
 public class InsertQuery extends QueryPart<QueryPart<?>> implements Executive, Conditional<InsertQuery> {
 
-    @Getter(AccessLevel.PROTECTED)
+    @Getter
     private String table;
     private String[] defs;
     private String[] values;

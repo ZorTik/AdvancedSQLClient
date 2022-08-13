@@ -9,7 +9,8 @@ public enum QueryPriority {
 
     GENERAL(0),
     CONDITION(1),
-    OTHER(2);
+    OTHER(2),
+    LAST(3);
 
     @Getter
     private final int prior;

@@ -3,6 +3,7 @@ package me.zort.sqllib.internal.query;
 import lombok.Getter;
 import me.zort.sqllib.api.Executive;
 import me.zort.sqllib.api.SQLDatabaseConnection;
+import me.zort.sqllib.internal.query.part.LimitStatement;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -31,6 +32,11 @@ public class SelectQuery extends QueryPartQuery<QueryPart<?>> implements Executi
 
     public SelectQuery from(String table) {
         this.table = table;
+        return this;
+    }
+
+    public SelectQuery limit(int limit) {
+        then(new LimitStatement<>(this, new ArrayList<>(), limit));
         return this;
     }
 
