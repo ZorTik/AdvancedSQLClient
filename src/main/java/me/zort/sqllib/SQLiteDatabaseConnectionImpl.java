@@ -34,9 +34,9 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
         }
         if(slct.isEmpty()) {
             // No results, we'll insert.
-            return query(insert);
+            return exec(insert);
         } else {
-            return query(update);
+            return exec(update);
         }
     }
 
