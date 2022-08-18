@@ -59,7 +59,7 @@ public class InsertQuery extends QueryPart<QueryPart<?>> implements Executive, C
         if(defs.length != values.length) {
             throw new IllegalStatementOperationException("Definition count must be same as values count!");
         }
-        return String.format("INSERT INTO %s %s VALUES %s", table, joinArr(defs), joinArr(values));
+        return String.format("INSERT INTO %s %s VALUES %s%s;", table, joinArr(defs), joinArr(values), buildInnerQuery());
     }
 
     private String joinArr(String[] arr) {
