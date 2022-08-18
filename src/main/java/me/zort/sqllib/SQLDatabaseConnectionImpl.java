@@ -79,6 +79,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
             return new QueryRowsResult<>(false);
         }
         String queryString = query.buildQuery();
+        debug("Query string: " + queryString);
         try(PreparedStatement stmt = connection.prepareStatement(queryString);
             ResultSet resultSet = stmt.executeQuery()) {
             QueryRowsResult<Row> result = new QueryRowsResult<>(true);
@@ -109,6 +110,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
             return new QueryResultImpl(false);
         }
         String queryString = query.buildQuery();
+        debug("Query string: " + queryString);
         try(PreparedStatement stmt = connection.prepareStatement(queryString)) {
             stmt.execute();
             return new QueryResultImpl(true);
