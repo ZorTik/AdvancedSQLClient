@@ -106,7 +106,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
             }
         }
         // I make entry array for indexing safety.
-        Map.Entry<String, Object>[] entryArray = fields.entrySet().toArray(new Map.Entry<>[0]);
+        Map.Entry<String, Object>[] entryArray = fields.entrySet().toArray(new Map.Entry[0]);
         String[] defs = new String[entryArray.length];
         Object[] vals = new String[entryArray.length];
         for(int i = 0; i < entryArray.length; i++) {
