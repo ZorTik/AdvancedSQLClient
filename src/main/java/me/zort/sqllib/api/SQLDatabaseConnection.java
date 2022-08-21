@@ -15,6 +15,18 @@ import org.jetbrains.annotations.Nullable;
 public interface SQLDatabaseConnection extends SQLConnection {
 
     /**
+     * Saves this mapping object into database using upsert query.
+     * <p>
+     * All mapping strategies are described in:
+     * {@link SQLDatabaseConnection#query(Query, Class)}.
+     *
+     * @param table Table to save into.
+     * @param obj The object to save.
+     * @return Result of the query.
+     */
+    QueryResult save(String table, Object obj);
+
+    /**
      * Performs new query and returns the result. This result is never null.
      * See: {@link QueryRowsResult#isSuccessful()}
      *

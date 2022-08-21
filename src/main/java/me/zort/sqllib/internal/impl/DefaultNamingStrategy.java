@@ -5,7 +5,7 @@ import me.zort.sqllib.api.options.NamingStrategy;
 public class DefaultNamingStrategy implements NamingStrategy {
 
     @Override
-    public String convert(String str) {
+    public String fieldNameToColumn(String str) {
         if(str.isEmpty()) return "";
 
         char[] chars = str.toCharArray();

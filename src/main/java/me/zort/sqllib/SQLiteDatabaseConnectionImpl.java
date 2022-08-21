@@ -9,8 +9,14 @@ import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.internal.query.InsertQuery;
 import me.zort.sqllib.internal.query.UpdateQuery;
 import me.zort.sqllib.internal.query.UpsertQuery;
+import me.zort.sqllib.internal.query.part.SetStatement;
+import me.zort.sqllib.util.Pair;
 import me.zort.sqllib.util.PrimaryKey;
 import org.jetbrains.annotations.Nullable;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 
 public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
 
@@ -20,6 +26,56 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
 
     public SQLiteDatabaseConnectionImpl(SQLConnectionFactory connectionFactory, SQLDatabaseOptions options) {
         super(connectionFactory, options);
+    }
+
+    /**
+     * Performs an upsert query for defined object
+     * as stated in {@link me.zort.sqllib.api.SQLDatabaseConnection#save(String, Object)}.
+     * <p>
+     * Object needs to have {@link me.zort.sqllib.internal.annotation.PrimaryKey} annotation
+     * set to determine which column is a primary key.
+     *
+     * @param table Table to save into.
+     * @param obj The object to save.
+     * @return Result of the query.
+     */
+    @Override
+    public QueryResult save(String table, Object obj) {
+        Pair<String[], Object[]> defsValsPair = buildDefsVals(obj);
+        if(defsValsPair == null) {
+            return new QueryResultImpl(false);
+        }
+        String[] defs = defsValsPair.getFirst();
+        Object[] vals = defsValsPair.getSecond();
+
+        PrimaryKey primaryKey = null;
+        for(Field field : obj.getClass().getDeclaredFields()) {
+            if(Modifier.isTransient(field.getModifiers())) {
+                continue;
+            }
+            if(field.isAnnotationPresent(me.zort.sqllib.internal.annotation.PrimaryKey.class)) {
+                String colName = getOptions().getNamingStrategy().fieldNameToColumn(field.getName());
+                int index = Arrays.binarySearch(defs, colName);
+                if(index >= 0) {
+                    primaryKey = new PrimaryKey(colName, vals[index] instanceof String
+                            ? (String)vals[index] : String.valueOf(vals[index]));
+                    break;
+                }
+            }
+        }
+        if(primaryKey == null) {
+            debug("No primary key found for object: " + obj.getClass().getName());
+            return new QueryResultImpl(false);
+        }
+        InsertQuery insert = insert().into(table, defs).values(vals);
+        SetStatement<UpdateQuery> setStmt = update().table(table).set();
+        for(int i = 0; i < defs.length; i++) {
+            setStmt.and(defs[i], vals[i]);
+        }
+        UpdateQuery update = setStmt.also()
+                .where().isEqual(primaryKey.getColumn(), primaryKey.getValue())
+                .also();
+        return upsert(table, primaryKey, insert, update);
     }
 
     public QueryResult upsert(String table, PrimaryKey primaryKey, InsertQuery insert, UpdateQuery update) {

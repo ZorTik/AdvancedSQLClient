@@ -12,10 +12,14 @@ import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.internal.query.*;
+import me.zort.sqllib.internal.query.part.SetStatement;
+import me.zort.sqllib.util.Pair;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.*;
 import java.sql.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -54,6 +58,62 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         this.connectionFactory = connectionFactory;
         this.options = options;
         this.connection = null;
+    }
+
+    /**
+     * @see SQLDatabaseConnection#save(String, Object)
+     */
+    @Override
+    public QueryResult save(String table, Object obj) {
+        Pair<String[], Object[]> defsValsPair = buildDefsVals(obj);
+        if(defsValsPair == null) {
+            return new QueryResultImpl(false);
+        }
+        String[] defs = defsValsPair.getFirst();
+        Object[] vals = defsValsPair.getSecond();
+
+        UpsertQuery upsert = upsert().into(table, defs);
+        upsert.values(vals);
+        SetStatement<InsertQuery> setStmt = upsert.onDuplicateKey();
+        for(int i = 0; i < defs.length; i++) {
+            setStmt.and(defs[i], vals[i]);
+        }
+        return setStmt.execute();
+    }
+
+    @Nullable
+    protected Pair<String[], Object[]> buildDefsVals(Object obj) {
+        Class<?> aClass = obj.getClass();
+
+        Map<String, Object> fields = new HashMap<>();
+        for(Field field : aClass.getDeclaredFields()) {
+
+            if(Modifier.isTransient(field.getModifiers())) {
+                // Transient fields are ignored.
+                continue;
+            }
+
+            try {
+                field.setAccessible(true);
+                Object o = field.get(obj);
+                if(field.isAnnotationPresent(JsonField.class)) {
+                    o = options.getGson().toJson(o);
+                }
+                fields.put(options.getNamingStrategy().fieldNameToColumn(field.getName()), o);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+        // I make entry array for indexing safety.
+        Map.Entry<String, Object>[] entryArray = fields.entrySet().toArray(new Map.Entry<>[0]);
+        String[] defs = new String[entryArray.length];
+        Object[] vals = new String[entryArray.length];
+        for(int i = 0; i < entryArray.length; i++) {
+            defs[i] = entryArray[i].getKey();
+            vals[i] = entryArray[i].getValue();
+        }
+        return new Pair<>(defs, vals);
     }
 
     /**
@@ -180,7 +240,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         Object obj = row.get(name);
         if(obj == null) {
             String converted;
-            if((obj = row.get(converted = options.getNamingStrategy().convert(name))) == null) {
+            if((obj = row.get(converted = options.getNamingStrategy().fieldNameToColumn(name))) == null) {
                 debug(String.format("Cannot find column for target %s (%s)", name, converted));
                 return null;
             }
@@ -268,7 +328,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         return new DeleteQuery(this);
     }
 
-    private void debug(String message) {
+    protected void debug(String message) {
         if(options.isDebug()) {
             System.out.println(message);
         }
