@@ -138,7 +138,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         if(!handleAutoReconnect()) {
             return new QueryRowsResult<>(false);
         }
-        String queryString = query.buildQuery();
+        String queryString = query.getAncestor().buildQuery();
         debug("Query string: " + queryString);
         try(PreparedStatement stmt = connection.prepareStatement(queryString);
             ResultSet resultSet = stmt.executeQuery()) {
@@ -169,7 +169,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         if(!handleAutoReconnect()) {
             return new QueryResultImpl(false);
         }
-        String queryString = query.buildQuery();
+        String queryString = query.getAncestor().buildQuery();
         debug("Query string: " + queryString);
         try(PreparedStatement stmt = connection.prepareStatement(queryString)) {
             stmt.execute();

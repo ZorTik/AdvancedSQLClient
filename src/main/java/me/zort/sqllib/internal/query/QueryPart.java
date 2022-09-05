@@ -75,7 +75,7 @@ public abstract class QueryPart<P extends QueryPart<?>> implements Query {
         return result;
     }
 
-    protected QueryPart<?> getAncestor() {
+    public QueryPart<?> getAncestor() {
         QueryPart<?> current = this;
         while(current.getParent() != null) {
             current = current.getParent();
