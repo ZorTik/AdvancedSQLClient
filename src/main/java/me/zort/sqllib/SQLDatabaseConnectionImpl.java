@@ -157,7 +157,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
             }
             return result;
         } catch (SQLException e) {
-            e.printStackTrace();
+            logSqlError(e);
             return new QueryRowsResult<>(false);
         }
     }
@@ -175,7 +175,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
             stmt.execute();
             return new QueryResultImpl(true);
         } catch (SQLException e) {
-            e.printStackTrace();
+            logSqlError(e);
             return new QueryResultImpl(false);
         }
     }
@@ -276,7 +276,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         try {
             connection = connectionFactory.connect();
         } catch (SQLException e) {
-            e.printStackTrace();
+            logSqlError(e);
             connection = null;
         }
         return isConnected();
@@ -291,7 +291,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
             try {
                 connection.close();
             } catch (SQLException e) {
-                e.printStackTrace();
+                logSqlError(e);
             }
         }
     }
@@ -331,6 +331,12 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
     protected void debug(String message) {
         if(options.isDebug()) {
             System.out.println(message);
+        }
+    }
+
+    protected void logSqlError(Exception e) {
+        if(options.isLogSqlErrors()) {
+            e.printStackTrace();
         }
     }
 

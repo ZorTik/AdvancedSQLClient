@@ -11,12 +11,14 @@ public class SQLDatabaseOptions {
 
     private boolean autoReconnect;
     private boolean debug;
+    private boolean logSqlErrors;
     private NamingStrategy namingStrategy;
     private Gson gson;
 
     public SQLDatabaseOptions() {
         this.autoReconnect = true;
         this.debug = false;
+        this.logSqlErrors = true;
         this.namingStrategy = new DefaultNamingStrategy();
         this.gson = Defaults.DEFAULT_GSON;
     }
