@@ -73,7 +73,7 @@ public class WhereStatement<P extends QueryPart<?>> extends QueryPartQuery<P> {
             return stmt + "TRUE";
         }
         for(String condition : conditions) {
-            if(!stmt.toString().equals(" WHERE ") && !condition.equals(" OR ")) {
+            if(!stmt.toString().equals(" WHERE ") && !condition.equals(" OR ") && !stmt.toString().endsWith(" OR ")) {
                 stmt.append(" AND ");
             }
             stmt.append(condition);
