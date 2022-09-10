@@ -10,6 +10,7 @@ import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
+import me.zort.sqllib.internal.fieldResolver.LinkedOneFieldResolver;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.internal.query.*;
 import me.zort.sqllib.internal.query.part.SetStatement;
@@ -18,9 +19,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.*;
 import java.sql.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Main database client object implementation.
@@ -34,6 +33,9 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
     private final SQLConnectionFactory connectionFactory;
     @Getter
     private final SQLDatabaseOptions options;
+    // Resolvers used after no value is found for the field
+    // in mapped object as backup.
+    private final List<FieldValueResolver> backupValueResolvers;
 
     @Getter(onMethod_ = {@Nullable})
     private Connection connection;
@@ -57,7 +59,15 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
     public SQLDatabaseConnectionImpl(SQLConnectionFactory connectionFactory, SQLDatabaseOptions options) {
         this.connectionFactory = connectionFactory;
         this.options = options;
+        this.backupValueResolvers = Collections.synchronizedList(new ArrayList<>());
         this.connection = null;
+
+        // Default backup value resolvers.
+        registerBackupValueResolver(new LinkedOneFieldResolver());
+    }
+
+    public void registerBackupValueResolver(FieldValueResolver resolver) {
+        backupValueResolvers.add(resolver);
     }
 
     /**
@@ -241,6 +251,15 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         if(obj == null) {
             String converted;
             if((obj = row.get(converted = options.getNamingStrategy().fieldNameToColumn(name))) == null) {
+
+                // Now backup resolvers come.
+                for(FieldValueResolver resolver : backupValueResolvers) {
+                    Object backupValue = resolver.obtainValue(this, element, row, name, converted, type);
+                    if(backupValue != null) {
+                        return backupValue;
+                    }
+                }
+
                 debug(String.format("Cannot find column for target %s (%s)", name, converted));
                 return null;
             }
@@ -328,7 +347,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         return new DeleteQuery(this);
     }
 
-    protected void debug(String message) {
+    public void debug(String message) {
         if(options.isDebug()) {
             System.out.println(message);
         }
@@ -338,6 +357,15 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         if(options.isLogSqlErrors()) {
             e.printStackTrace();
         }
+    }
+
+    public interface FieldValueResolver {
+        Object obtainValue(SQLDatabaseConnectionImpl connection,
+                           AnnotatedElement element,
+                           Row row,
+                           String fieldName,
+                           String convertedName,
+                           Type type);
     }
 
 }
