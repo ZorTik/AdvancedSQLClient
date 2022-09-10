@@ -90,7 +90,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         }
         SetStatement<InsertQuery> setStmt = upsert.onDuplicateKey();
         for(int i = 0; i < defs.length; i++) {
-            setStmt.and(defs[i], vals[i]);
+            setStmt.and(defs[i], vals[i].getObject());
         }
         return setStmt.execute();
     }
