@@ -29,6 +29,16 @@ public class WhereStatement<P extends QueryPart<?>> extends QueryPartQuery<P> {
         return this;
     }
 
+    public WhereStatement<P> bt(String column, long value) {
+        conditions.add(column + " > " + value);
+        return this;
+    }
+
+    public WhereStatement<P> lt(String column, long value) {
+        conditions.add(column + " < " + value);
+        return this;
+    }
+
     public WhereStatement<P> in(String column, Object... objs) {
         return in(column, Arrays.asList(objs));
     }
