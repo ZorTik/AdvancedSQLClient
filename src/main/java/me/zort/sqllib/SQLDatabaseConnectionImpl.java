@@ -118,12 +118,12 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         // I make entry array for indexing safety.
         Map.Entry<String, Object>[] entryArray = fields.entrySet().toArray(new Map.Entry[0]);
         String[] defs = new String[entryArray.length];
-        Object[] vals = new String[entryArray.length];
+        List<Object> vals = new ArrayList<>();
         for(int i = 0; i < entryArray.length; i++) {
             defs[i] = entryArray[i].getKey();
-            vals[i] = entryArray[i].getValue();
+            vals.add(entryArray[i].getValue()); // TODO: Test
         }
-        return new Pair<>(defs, vals);
+        return new Pair<>(defs, vals.toArray());
     }
 
     /**
