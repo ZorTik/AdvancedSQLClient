@@ -1,6 +1,8 @@
 package me.zort.sqllib;
 
 import com.google.gson.Gson;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.SQLConnection;
@@ -75,15 +77,17 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
      */
     @Override
     public QueryResult save(String table, Object obj) {
-        Pair<String[], Object[]> defsValsPair = buildDefsVals(obj);
+        Pair<String[], UnknownValueWrapper[]> defsValsPair = buildDefsVals(obj);
         if(defsValsPair == null) {
             return new QueryResultImpl(false);
         }
         String[] defs = defsValsPair.getFirst();
-        Object[] vals = defsValsPair.getSecond();
+        UnknownValueWrapper[] vals = defsValsPair.getSecond();
 
         UpsertQuery upsert = upsert().into(table, defs);
-        upsert.values(vals);
+        for(UnknownValueWrapper wrapper : vals) {
+            upsert.appendVal(wrapper.getObject());
+        }
         SetStatement<InsertQuery> setStmt = upsert.onDuplicateKey();
         for(int i = 0; i < defs.length; i++) {
             setStmt.and(defs[i], vals[i]);
@@ -92,7 +96,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
     }
 
     @Nullable
-    protected Pair<String[], Object[]> buildDefsVals(Object obj) {
+    protected Pair<String[], UnknownValueWrapper[]> buildDefsVals(Object obj) {
         Class<?> aClass = obj.getClass();
 
         Map<String, Object> fields = new HashMap<>();
@@ -118,12 +122,12 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         // I make entry array for indexing safety.
         Map.Entry<String, Object>[] entryArray = fields.entrySet().toArray(new Map.Entry[0]);
         String[] defs = new String[entryArray.length];
-        List<Object> vals = new ArrayList<>();
+        UnknownValueWrapper[] vals = new UnknownValueWrapper[entryArray.length];
         for(int i = 0; i < entryArray.length; i++) {
             defs[i] = entryArray[i].getKey();
-            vals.add(entryArray[i].getValue()); // TODO: Test
+            vals[i] = new UnknownValueWrapper(entryArray[i].getValue());
         }
-        return new Pair<>(defs, vals.toArray());
+        return new Pair<>(defs, vals);
     }
 
     /**
@@ -366,6 +370,12 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
                            String fieldName,
                            String convertedName,
                            Type type);
+    }
+
+    @AllArgsConstructor
+    @Data
+    public static class UnknownValueWrapper {
+        private Object object;
     }
 
 }

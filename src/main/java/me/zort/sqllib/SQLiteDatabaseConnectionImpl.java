@@ -41,12 +41,12 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
      */
     @Override
     public QueryResult save(String table, Object obj) {
-        Pair<String[], Object[]> defsValsPair = buildDefsVals(obj);
+        Pair<String[], UnknownValueWrapper[]> defsValsPair = buildDefsVals(obj);
         if(defsValsPair == null) {
             return new QueryResultImpl(false);
         }
         String[] defs = defsValsPair.getFirst();
-        Object[] vals = defsValsPair.getSecond();
+        UnknownValueWrapper[] vals = defsValsPair.getSecond();
 
         PrimaryKey primaryKey = null;
         for(Field field : obj.getClass().getDeclaredFields()) {
@@ -57,8 +57,8 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
                 String colName = getOptions().getNamingStrategy().fieldNameToColumn(field.getName());
                 int index = Arrays.binarySearch(defs, colName);
                 if(index >= 0) {
-                    primaryKey = new PrimaryKey(colName, vals[index] instanceof String
-                            ? (String)vals[index] : String.valueOf(vals[index]));
+                    primaryKey = new PrimaryKey(colName, vals[index].getObject() instanceof String
+                            ? (String)vals[index].getObject() : String.valueOf(vals[index].getObject()));
                     break;
                 }
             }
@@ -67,10 +67,13 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
             debug("No primary key found for object: " + obj.getClass().getName());
             return new QueryResultImpl(false);
         }
-        InsertQuery insert = insert().into(table, defs).values(vals);
+        InsertQuery insert = insert().into(table, defs);
+        for(UnknownValueWrapper val : vals) {
+            insert.appendVal(val);
+        }
         SetStatement<UpdateQuery> setStmt = update().table(table).set();
         for(int i = 0; i < defs.length; i++) {
-            setStmt.and(defs[i], vals[i]);
+            setStmt.and(defs[i], vals[i].getObject());
         }
         UpdateQuery update = setStmt.also()
                 .where().isEqual(primaryKey.getColumn(), primaryKey.getValue())

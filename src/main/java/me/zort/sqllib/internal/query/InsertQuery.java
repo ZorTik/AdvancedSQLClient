@@ -1,6 +1,5 @@
 package me.zort.sqllib.internal.query;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import me.zort.sqllib.api.Executive;
 import me.zort.sqllib.api.SQLDatabaseConnection;
@@ -32,6 +31,7 @@ public class InsertQuery extends QueryPart<QueryPart<?>> implements Executive, C
         this.table = table;
         this.connection = connection;
         this.defs = new String[0];
+        this.values = new String[0];
     }
 
     public InsertQuery into(String table, String... defs) {
@@ -40,17 +40,32 @@ public class InsertQuery extends QueryPart<QueryPart<?>> implements Executive, C
         return this;
     }
 
+    // Used internally
+    public InsertQuery appendVal(Object val) {
+        String[] newValues = new String[values.length + 1];
+        for(int i = 0; i < values.length; i++) {
+            newValues[i] = values[i];
+        }
+        newValues[values.length] = handleVal(val);
+        this.values = newValues;
+        return this;
+    }
+
     public InsertQuery values(Object... values) {
         String[] vals = new String[values.length];
         for(int i = 0; i < values.length; i++) {
             Object obj = values[i];
-            if(obj instanceof String) {
-                obj = Encoding.handleTo((String) obj);
-            }
-            vals[i] = Util.buildQuoted(obj);
+            vals[i] = handleVal(obj);
         }
         this.values = vals;
         return this;
+    }
+
+    private String handleVal(Object obj) {
+        if(obj instanceof String) {
+            obj = Encoding.handleTo((String) obj);
+        }
+        return Util.buildQuoted(obj);
     }
 
     @Override
