@@ -51,6 +51,11 @@ public class WhereStatement<P extends QueryPart<?>> extends QueryPartQuery<P> {
         return this;
     }
 
+    public WhereStatement<P> like(String column, String placeholder) {
+        conditions.add(column + " LIKE " + Util.buildQuoted(placeholder));
+        return this;
+    }
+
     @Override
     public <T extends QueryPart<?>> QueryPart<T> then(QueryPart<T> part) {
         throw new IllegalStatementOperationException("Where statement can't have inner parts!");
