@@ -12,7 +12,7 @@ Before documentation is done, here is a <a href="https://github.com/ZorTik/Advan
 You can add Containr to your build path using Maven or Gradle. ContainrGUI is **not a Minecraft plugin**! This means that you can use it's code directly in your project by shading it into your build path.
 
 ### Gradle:
-Add this project to your build path using Gradle with JitPack as represented below.
+Add this project to your build path using Gradle with JitPack as represented below.<br>Download the sources from jitpack.
 ```
 repositories {
 	maven { url = 'https://jitpack.io' }
@@ -25,7 +25,7 @@ dependencies {
 ```
 
 ### Maven:
-You can also use Maven with JitPack as seen below.
+You can also use Maven with JitPack as seen below.<br>Download the sources from jitpack.
 ```
 <repositories>
 	<repository>
