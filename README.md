@@ -1,6 +1,10 @@
-<p align="center">
+<p align="center"><img src="https://user-images.githubusercontent.com/67344817/201498814-84314078-3f88-4930-aec1-d3f437e5c9e8.png" width="150px"></p>
+
+
+
+<!--<p align="center">
 <img src="https://user-images.githubusercontent.com/67344817/183105393-af39026f-b059-4096-a880-1fe0e93eeeee.png" width="100%"></img>
-</p>
+</p>-->
 
 # AdvancedSQLClient
 Ultimate SQL client with intuitive query builders, Json support and more!<br>
