@@ -64,7 +64,6 @@ public class SQLTableRepository<T, ID> {
         return null;
     }
 
-    @SneakyThrows(NoSuchFieldException.class)
     private void checkValidTypeClass(Class<T> typeClass, Class<ID> idClass) {
         Objects.requireNonNull(typeClass, "Type class cannot be null!");
 
