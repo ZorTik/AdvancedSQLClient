@@ -10,6 +10,7 @@ import me.zort.sqllib.internal.impl.DefaultSQLEndpoint;
 import me.zort.sqllib.internal.impl.SQLEndpointImpl;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -28,6 +29,12 @@ public class SQLConnectionBuilder {
 
     public static SQLConnectionBuilder of(String jdbc, String username, String password) {
         return of(new SQLEndpointImpl(jdbc, username, password));
+    }
+
+    public static SQLConnectionBuilder ofSQLite(String path) {
+        SQLConnectionBuilder builder = of(new SQLEndpointImpl("jdbc:sqlite:" + path, null, null));
+        builder.withDriver("org.sqlite.JDBC");
+        return builder;
     }
 
     public static SQLConnectionBuilder of(SQLEndpoint endpoint) {
