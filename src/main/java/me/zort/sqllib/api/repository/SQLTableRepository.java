@@ -3,9 +3,11 @@ package me.zort.sqllib.api.repository;
 import lombok.*;
 import me.zort.sqllib.api.SQLDatabaseConnection;
 import me.zort.sqllib.api.provider.Select;
+import me.zort.sqllib.internal.annotation.Id;
 import me.zort.sqllib.internal.annotation.PrimaryKey;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.Optional;
 
@@ -44,8 +46,17 @@ public class SQLTableRepository<T, ID> {
 
     @Nullable
     private String findIdFieldName(Class<T> typeClass) {
+        String idFieldName = findIdFieldName(typeClass, Id.class);
+        if(idFieldName == null)
+            idFieldName = findIdFieldName(typeClass, PrimaryKey.class);
+
+        return idFieldName;
+    }
+
+    @Nullable
+    private String findIdFieldName(Class<T> typeClass, Class<? extends Annotation> annot) {
         for(Field field : typeClass.getDeclaredFields()) {
-            if(field.isAnnotationPresent(PrimaryKey.class)) {
+            if(field.isAnnotationPresent(annot)) {
                 return field.getName();
             }
         }
@@ -63,7 +74,7 @@ public class SQLTableRepository<T, ID> {
     }
 
     @AllArgsConstructor
-    @NoArgsConstructor
+    @NoArgsConstructor(force = true)
     @Data
     public static class RepositoryInfo<T, ID> {
 
