@@ -3,10 +3,13 @@ package me.zort.sqllib.api.repository;
 import lombok.*;
 import me.zort.sqllib.api.SQLDatabaseConnection;
 import me.zort.sqllib.api.provider.Select;
+import me.zort.sqllib.internal.annotation.Id;
 import me.zort.sqllib.internal.annotation.PrimaryKey;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.Objects;
 import java.util.Optional;
 
 @Getter
@@ -44,8 +47,17 @@ public class SQLTableRepository<T, ID> {
 
     @Nullable
     private String findIdFieldName(Class<T> typeClass) {
+        String idFieldName = findIdFieldName(typeClass, Id.class);
+        if(idFieldName == null)
+            idFieldName = findIdFieldName(typeClass, PrimaryKey.class);
+
+        return idFieldName;
+    }
+
+    @Nullable
+    private String findIdFieldName(Class<T> typeClass, Class<? extends Annotation> annot) {
         for(Field field : typeClass.getDeclaredFields()) {
-            if(field.isAnnotationPresent(PrimaryKey.class)) {
+            if(field.isAnnotationPresent(annot)) {
                 return field.getName();
             }
         }
@@ -54,16 +66,16 @@ public class SQLTableRepository<T, ID> {
 
     @SneakyThrows(NoSuchFieldException.class)
     private void checkValidTypeClass(Class<T> typeClass, Class<ID> idClass) {
+        Objects.requireNonNull(typeClass, "Type class cannot be null!");
+
         String idName = findIdFieldName(typeClass);
         if(idName == null) {
             throw new IllegalArgumentException("The given type class does not have any primary key!");
-        } else if(!typeClass.getDeclaredField(idName).getType().equals(idClass)) {
-            throw new IllegalArgumentException("Primary key field type does not match ID type");
         }
     }
 
     @AllArgsConstructor
-    @NoArgsConstructor
+    @NoArgsConstructor(force = true)
     @Data
     public static class RepositoryInfo<T, ID> {
 
