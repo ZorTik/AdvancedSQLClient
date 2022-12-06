@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.Objects;
 import java.util.Optional;
 
 @Getter
@@ -65,11 +66,11 @@ public class SQLTableRepository<T, ID> {
 
     @SneakyThrows(NoSuchFieldException.class)
     private void checkValidTypeClass(Class<T> typeClass, Class<ID> idClass) {
+        Objects.requireNonNull(typeClass, "Type class cannot be null!");
+
         String idName = findIdFieldName(typeClass);
         if(idName == null) {
             throw new IllegalArgumentException("The given type class does not have any primary key!");
-        } else if(!typeClass.getDeclaredField(idName).getType().equals(idClass)) {
-            throw new IllegalArgumentException("Primary key field type does not match ID type");
         }
     }
 
