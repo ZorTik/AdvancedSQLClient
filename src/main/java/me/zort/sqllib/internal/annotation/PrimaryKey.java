@@ -12,4 +12,13 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface PrimaryKey {}
+public @interface PrimaryKey {
+
+    /**
+     * Tells SQLLib that this primary key is auto-incremented.
+     * !!! This ONLY works for {@link Integer} type, ans also not for
+     * primitive int. !!!
+     * @return If this field should be auto-incremented.
+     */
+    boolean autoIncrement() default false;
+}

@@ -4,7 +4,9 @@ import com.google.gson.internal.Primitives;
 import me.zort.sqllib.api.SQLDatabaseConnection;
 import me.zort.sqllib.api.repository.CachingSQLTableRepository;
 import me.zort.sqllib.api.repository.SQLTableRepository;
+import me.zort.sqllib.internal.annotation.PrimaryKey;
 import me.zort.sqllib.util.Arrays;
+import me.zort.sqllib.util.Validator;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.lang.reflect.Field;
@@ -92,30 +94,34 @@ public class SQLTableRepositoryBuilder<T, ID> {
                 Double.class,
                 String.class
         };
-        Class<?> type = field.getType();
+        Class<?> fieldType = field.getType();
 
         boolean isSupported = false;
         for (Class<?> aClass : supportedTypes) {
-            if(aClass.equals(type)) {
+            if(aClass.equals(fieldType)) {
                 isSupported = true;
                 break;
             }
         }
 
         if(!isSupported)
-            throw new RuntimeException(String.format("We don't support %s types in SQLTableRepositoryBuilder yet.", type.getSimpleName()));
+            throw new RuntimeException(String.format("We don't support %s types in SQLTableRepositoryBuilder yet.", fieldType.getSimpleName()));
 
-        if(type.equals(String.class)) {
-            return "VARCHAR(255)";
-        } else if(Primitives.wrap(type).equals(Integer.class)) {
-            return "INT";
-        } else if(Primitives.wrap(type).equals(Long.class)) {
-            return "BIGINT";
-        } else if(Primitives.wrap(type).equals(Double.class)) {
-            return "DOUBLE";
-        } else if(Primitives.wrap(type).equals(Float.class)) {
-            return "FLOAT";
+        String dbType = null;
+        if(fieldType.equals(String.class)) {
+            dbType = "VARCHAR(255)";
+        } else if(Primitives.wrap(fieldType).equals(Integer.class)) {
+            dbType = "INT";
+        } else if(Primitives.wrap(fieldType).equals(Long.class)) {
+            dbType = "BIGINT";
+        } else if(Primitives.wrap(fieldType).equals(Double.class)) {
+            dbType = "DOUBLE";
+        } else if(Primitives.wrap(fieldType).equals(Float.class)) {
+            dbType = "FLOAT";
         }
+
+        if(Validator.validateAutoIncrement(field))
+            dbType += " PRIMARY KEY AUTO_INCREMENT";
 
         // Practically, it should not come here.
         return null;

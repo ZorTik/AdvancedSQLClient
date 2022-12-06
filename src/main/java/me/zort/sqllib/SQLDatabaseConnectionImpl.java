@@ -11,12 +11,14 @@ import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.internal.annotation.JsonField;
+import me.zort.sqllib.internal.annotation.PrimaryKey;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.fieldResolver.LinkedOneFieldResolver;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.internal.query.*;
 import me.zort.sqllib.internal.query.part.SetStatement;
 import me.zort.sqllib.util.Pair;
+import me.zort.sqllib.util.Validator;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.*;
@@ -112,6 +114,10 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
                 Object o = field.get(obj);
                 if(field.isAnnotationPresent(JsonField.class)) {
                     o = options.getGson().toJson(o);
+                } else if(Validator.validateAutoIncrement(field) && field.get(obj) == null) {
+                    // If field is PrimaryKey and autoIncrement true and is null,
+                    // We will skip this to use auto increment strategy on SQL server.
+                    continue;
                 }
                 fields.put(options.getNamingStrategy().fieldNameToColumn(field.getName()), o);
             } catch (IllegalAccessException e) {
