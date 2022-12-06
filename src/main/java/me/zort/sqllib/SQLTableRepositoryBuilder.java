@@ -13,7 +13,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Objects;
 
-@ApiStatus.Experimental // Still in development.
+@ApiStatus.Experimental // Still in development. So it can change in the future.
 public class SQLTableRepositoryBuilder<T, ID> {
 
     private final SQLTableRepository.RepositoryInfo<T, ID> info;
