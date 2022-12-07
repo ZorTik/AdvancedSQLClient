@@ -65,4 +65,8 @@ public class SetStatement<P extends QueryPart<?> & Conditional<P>> extends Query
                 .collect(Collectors.joining(", "));
     }
 
+    @Override
+    public SetStatement<P> then(String part) {
+        return (SetStatement<P>) super.then(part);
+    }
 }

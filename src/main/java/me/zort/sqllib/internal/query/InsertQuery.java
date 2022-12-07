@@ -85,4 +85,9 @@ public class InsertQuery extends QueryPart<QueryPart<?>> implements Executive, C
         return joiner.toString();
     }
 
+    @Override
+    public InsertQuery then(String part) {
+        return (InsertQuery) super.then(part);
+    }
+
 }

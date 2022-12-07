@@ -86,4 +86,8 @@ public class WhereStatement<P extends QueryPart<?>> extends QueryPartQuery<P> {
         return stmt.toString();
     }
 
+    @Override
+    public WhereStatement<P> then(String part) {
+        return (WhereStatement<P>) super.then(part);
+    }
 }

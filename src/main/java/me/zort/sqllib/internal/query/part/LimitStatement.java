@@ -21,4 +21,8 @@ public class LimitStatement<P extends QueryPart<?>> extends QueryPartQuery<P> {
         return " LIMIT " + Math.max(limit, 0);
     }
 
+    @Override
+    public LimitStatement<P> then(String part) {
+        return (LimitStatement<P>) super.then(part);
+    }
 }
