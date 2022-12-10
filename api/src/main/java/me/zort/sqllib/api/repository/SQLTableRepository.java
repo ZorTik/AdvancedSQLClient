@@ -1,6 +1,9 @@
 package me.zort.sqllib.api.repository;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import me.zort.sqllib.api.SQLDatabaseConnection;
 import me.zort.sqllib.api.provider.Select;
 import me.zort.sqllib.internal.annotation.Id;

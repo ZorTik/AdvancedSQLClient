@@ -59,4 +59,9 @@ public class UpdateQuery extends QueryPart<QueryPart<?>> implements Executive, C
         return String.format("UPDATE %s%s;", table, buildInnerQuery());
     }
 
+    @Override
+    public UpdateQuery then(String part) {
+        return (UpdateQuery) super.then(part);
+    }
+
 }

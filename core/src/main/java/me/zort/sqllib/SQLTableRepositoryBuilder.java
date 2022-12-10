@@ -4,7 +4,6 @@ import com.google.gson.internal.Primitives;
 import me.zort.sqllib.api.SQLDatabaseConnection;
 import me.zort.sqllib.api.repository.CachingSQLTableRepository;
 import me.zort.sqllib.api.repository.SQLTableRepository;
-import me.zort.sqllib.internal.annotation.PrimaryKey;
 import me.zort.sqllib.util.Arrays;
 import me.zort.sqllib.util.Validator;
 import org.jetbrains.annotations.ApiStatus;

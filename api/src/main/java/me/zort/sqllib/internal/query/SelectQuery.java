@@ -47,4 +47,8 @@ public class SelectQuery extends QueryPartQuery<QueryPart<?>> implements Executi
         return String.format("SELECT %s FROM %s%s;", cols, table, buildInnerQuery());
     }
 
+    @Override
+    public SelectQuery then(String part) {
+        return (SelectQuery) super.then(part);
+    }
 }

@@ -42,6 +42,15 @@ public abstract class QueryPart<P extends QueryPart<?>> implements Query {
         return part;
     }
 
+    public QueryPart<?> then(String part) {
+        int maxPriority = children.stream()
+                .map(QueryPart::getPriority)
+                .max(Comparator.naturalOrder())
+                .orElse(0);
+        then(new LocalQueryPart(this, maxPriority + 1, part));
+        return this;
+    }
+
     public P also() {
         return parent;
     }
@@ -81,6 +90,22 @@ public abstract class QueryPart<P extends QueryPart<?>> implements Query {
             current = current.getParent();
         }
         return current;
+    }
+
+    private static class LocalQueryPart extends QueryPart {
+
+        private final String queryPartString;
+
+        public LocalQueryPart(@Nullable QueryPart parent, int priority, String queryPartString) {
+            super(parent, Collections.emptyList(), priority);
+            this.queryPartString = queryPartString;
+        }
+
+        @Override
+        public String buildQuery() {
+            return queryPartString;
+        }
+
     }
 
 }

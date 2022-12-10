@@ -46,4 +46,9 @@ public class UpsertQuery extends InsertQuery {
         return super.buildQuery();
     }
 
+    @Override
+    public UpsertQuery then(String part) {
+        return (UpsertQuery) super.then(part);
+    }
+
 }
