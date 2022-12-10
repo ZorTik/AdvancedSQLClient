@@ -11,7 +11,6 @@ import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.internal.annotation.JsonField;
-import me.zort.sqllib.internal.annotation.PrimaryKey;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.fieldResolver.LinkedOneFieldResolver;
 import me.zort.sqllib.internal.impl.QueryResultImpl;

@@ -1,2 +1,3 @@
 rootProject.name = 'SQLLib'
-
+include 'api'
+include 'core'

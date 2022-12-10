@@ -10,7 +10,6 @@ import me.zort.sqllib.internal.impl.DefaultSQLEndpoint;
 import me.zort.sqllib.internal.impl.SQLEndpointImpl;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
