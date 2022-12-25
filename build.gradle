@@ -35,7 +35,7 @@ subprojects {
         publications {
             mavenJava(MavenPublication) {
                 groupId = 'com.github.ZorTik'
-                artifactId = 'AdvancedSQLClient'
+                artifactId = project.name
                 version = '1.0'
 
                 from components.java
