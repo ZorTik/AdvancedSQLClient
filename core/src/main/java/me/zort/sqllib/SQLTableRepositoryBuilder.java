@@ -69,20 +69,32 @@ public class SQLTableRepositoryBuilder<T, ID> {
         if(!(connection instanceof SQLDatabaseConnectionImpl)) {
             throw new IllegalStateException("We can build defs only from SQLDatabaseConnectionImpl child-classes.");
         }
+        debug("Building defs from type class: " + info.getTypeClass().getName());
 
         SQLDatabaseOptions options = ((SQLDatabaseConnectionImpl) connection).getOptions();
         String[] defs = new String[0];
 
         for (Field field : info.getTypeClass().getFields()) {
-            if(Modifier.isTransient(field.getModifiers()))
+            debug("Building def for field: " + field.getName() + " (" + field.getType().getName() + ")");
+            if(Modifier.isTransient(field.getModifiers())) {
+                debug(String.format("Field %s is transient, skipping.", field.getName()));
                 continue;
+            }
 
             String colName = options.getNamingStrategy().fieldNameToColumn(field.getName());
             String colType = recognizeFieldTypeToDbType(field);
             defs = Arrays.add(defs, colName + " " + colType);
+
+            debug("Added def: " + colName + " " + colType);
         }
 
         info.setDefs(defs);
+        debug("Built defs: " + java.util.Arrays.toString(defs));
+    }
+
+    private void debug(String message) {
+        if(connection instanceof SQLDatabaseConnectionImpl && ((SQLDatabaseConnectionImpl) connection).getOptions().isDebug())
+            ((SQLDatabaseConnectionImpl) connection).debug(message);
     }
 
     private static String recognizeFieldTypeToDbType(Field field) {
@@ -93,7 +105,7 @@ public class SQLTableRepositoryBuilder<T, ID> {
                 Double.class,
                 String.class
         };
-        Class<?> fieldType = field.getType();
+        Class<?> fieldType = Primitives.wrap(field.getType());
 
         boolean isSupported = false;
         for (Class<?> aClass : supportedTypes) {
