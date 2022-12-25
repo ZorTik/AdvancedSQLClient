@@ -4,6 +4,9 @@ import com.google.gson.internal.Primitives;
 import me.zort.sqllib.api.SQLDatabaseConnection;
 import me.zort.sqllib.api.repository.CachingSQLTableRepository;
 import me.zort.sqllib.api.repository.SQLTableRepository;
+import me.zort.sqllib.internal.annotation.JsonField;
+import me.zort.sqllib.internal.annotation.NullableField;
+import me.zort.sqllib.internal.annotation.PrimaryKey;
 import me.zort.sqllib.util.Arrays;
 import me.zort.sqllib.util.Validator;
 import org.jetbrains.annotations.ApiStatus;
@@ -83,6 +86,13 @@ public class SQLTableRepositoryBuilder<T, ID> {
 
             String colName = options.getNamingStrategy().fieldNameToColumn(field.getName());
             String colType = recognizeFieldTypeToDbType(field);
+
+            if(colType != null && !colType.contains("NOT NULL") && field.isAnnotationPresent(NullableField.class)) {
+                if(!field.getAnnotation(NullableField.class).nullable()) {
+                    colType += " NOT NULL";
+                }
+            }
+
             defs = Arrays.add(defs, colName + " " + colType);
 
             debug("Added def: " + colName + " " + colType);
@@ -113,6 +123,16 @@ public class SQLTableRepositoryBuilder<T, ID> {
                 isSupported = true;
                 break;
             }
+        }
+
+        if(field.isAnnotationPresent(JsonField.class) && !isSupported) {
+            return "TEXT";
+        } else if(field.isAnnotationPresent(PrimaryKey.class) && fieldType.equals(Integer.class)) {
+            PrimaryKey primaryKey = field.getAnnotation(PrimaryKey.class);
+            String s = "INTEGER PRIMARY KEY";
+            if(primaryKey.autoIncrement())
+                s += " AUTO_INCREMENT";
+            return s;
         }
 
         if(!isSupported)
