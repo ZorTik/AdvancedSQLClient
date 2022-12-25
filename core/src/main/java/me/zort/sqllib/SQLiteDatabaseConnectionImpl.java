@@ -48,6 +48,8 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
         String[] defs = defsValsPair.getFirst();
         UnknownValueWrapper[] vals = defsValsPair.getSecond();
 
+        debug("Saving object into table " + table + " with definitions " + Arrays.toString(defs) + " and values " + Arrays.toString(vals));
+
         PrimaryKey primaryKey = null;
         for(Field field : obj.getClass().getDeclaredFields()) {
             if(Modifier.isTransient(field.getModifiers())) {
