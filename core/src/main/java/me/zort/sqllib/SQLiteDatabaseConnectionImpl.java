@@ -67,7 +67,7 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
         }
         InsertQuery insert = insert().into(table, defs);
         for(UnknownValueWrapper val : vals) {
-            insert.appendVal(val);
+            insert.appendVal(val.getObject());
         }
 
         if(primaryKey == null) {
