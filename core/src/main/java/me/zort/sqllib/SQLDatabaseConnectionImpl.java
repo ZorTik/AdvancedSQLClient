@@ -224,6 +224,11 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
                 }
             }
             for(Field field : typeClass.getDeclaredFields()) {
+
+                if(Modifier.isTransient(field.getModifiers()) || Modifier.isStatic(field.getModifiers())) {
+                    continue;
+                }
+
                 try {
                     field.setAccessible(true);
                     field.set(instance, buildElementValue(field, row));
