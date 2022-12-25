@@ -27,6 +27,11 @@ jar {
     }
 }
 
+compileJava {
+    dependsOn(":api:build")
+    dependsOn(":core:build")
+}
+
 allprojects {
     publishing {
         publications {
