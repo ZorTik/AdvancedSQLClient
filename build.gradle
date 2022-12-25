@@ -27,28 +27,35 @@ jar {
     }
 }
 
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            groupId = 'com.github.ZorTik'
-            artifactId = 'SQLLib'
-            version = '1.0'
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'maven-publish'
 
-            from components.java
-            pom {
-                name = 'AdvancedSQlClient'
-                description = 'An Ultimate SQL client for Java!'
-                licenses {
-                    license {
-                        name = 'MIT License'
-                        url = 'https://raw.githubusercontent.com/ZorTik/ContainrGUI/master/LICENSE'
+    compileJava.options.encoding = 'UTF-8'
+
+    publishing {
+        publications {
+            mavenJava(MavenPublication) {
+                groupId = 'com.github.ZorTik'
+                artifactId = project.name
+                version = '1.0'
+
+                from components.java
+                pom {
+                    name = 'AdvancedSQLClient'
+                    description = 'An Ultimate SQL client for Java!'
+                    licenses {
+                        license {
+                            name = 'MIT License'
+                            url = 'https://raw.githubusercontent.com/ZorTik/ContainrGUI/master/LICENSE'
+                        }
                     }
-                }
-                developers {
-                    developer {
-                        id = 'zort'
-                        name = 'ZorTik'
-                        email = 'zortlegit@gmail.com'
+                    developers {
+                        developer {
+                            id = 'zort'
+                            name = 'ZorTik'
+                            email = 'zortlegit@gmail.com'
+                        }
                     }
                 }
             }

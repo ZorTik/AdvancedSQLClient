@@ -1,3 +1,6 @@
-rootProject.name = 'SQLLib'
-include 'api'
-include 'core'
+rootProject.name = 'AdvancedSQLClient'
+include ':api'
+include ':core'
+
+project(":api").projectDir = file("api")
+project(":core").projectDir = file("core")
