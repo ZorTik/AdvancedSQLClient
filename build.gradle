@@ -31,6 +31,8 @@ subprojects {
     apply plugin: 'java'
     apply plugin: 'maven-publish'
 
+    compileJava.options.encoding = 'UTF-8'
+
     publishing {
         publications {
             mavenJava(MavenPublication) {
