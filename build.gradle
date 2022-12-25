@@ -27,12 +27,10 @@ jar {
     }
 }
 
-compileJava {
-    dependsOn(":api:build")
-    dependsOn(":core:build")
-}
-
 allprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'maven-publish'
+
     publishing {
         publications {
             mavenJava(MavenPublication) {
@@ -40,9 +38,7 @@ allprojects {
                 artifactId = 'SQLLib'
                 version = '1.0'
 
-                if (project.plugins.hasPlugin('java')) {
-                    from components.java
-                }
+                from components.java
                 pom {
                     name = 'AdvancedSQlClient'
                     description = 'An Ultimate SQL client for Java!'
