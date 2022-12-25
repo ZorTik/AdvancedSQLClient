@@ -35,12 +35,12 @@ subprojects {
         publications {
             mavenJava(MavenPublication) {
                 groupId = 'com.github.ZorTik'
-                artifactId = 'SQLLib'
+                artifactId = 'AdvancedSQLClient'
                 version = '1.0'
 
                 from components.java
                 pom {
-                    name = 'AdvancedSQlClient'
+                    name = 'AdvancedSQLClient'
                     description = 'An Ultimate SQL client for Java!'
                     licenses {
                         license {

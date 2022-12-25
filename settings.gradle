@@ -1,4 +1,4 @@
-rootProject.name = 'SQLLib'
+rootProject.name = 'AdvancedSQLClient'
 include ':api'
 include ':core'
 
