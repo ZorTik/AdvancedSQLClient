@@ -65,14 +65,17 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
                 }
             }
         }
-        if(primaryKey == null) {
-            debug("No primary key found for object: " + obj.getClass().getName());
-            return new QueryResultImpl(false);
-        }
         InsertQuery insert = insert().into(table, defs);
         for(UnknownValueWrapper val : vals) {
             insert.appendVal(val);
         }
+
+        if(primaryKey == null) {
+            debug("No primary key found for object " + obj.getClass().getName() + ", so we can't build update condition.");
+            debug("Performing insert query instead: " + insert.buildQuery());
+            return insert.execute();
+        }
+
         SetStatement<UpdateQuery> setStmt = update().table(table).set();
         for(int i = 0; i < defs.length; i++) {
             setStmt.and(defs[i], vals[i].getObject());
