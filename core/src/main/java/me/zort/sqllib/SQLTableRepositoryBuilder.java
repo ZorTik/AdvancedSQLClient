@@ -74,7 +74,7 @@ public class SQLTableRepositoryBuilder<T, ID> {
         SQLDatabaseOptions options = ((SQLDatabaseConnectionImpl) connection).getOptions();
         String[] defs = new String[0];
 
-        for (Field field : info.getTypeClass().getFields()) {
+        for (Field field : info.getTypeClass().getDeclaredFields()) {
             debug("Building def for field: " + field.getName() + " (" + field.getType().getName() + ")");
             if(Modifier.isTransient(field.getModifiers())) {
                 debug(String.format("Field %s is transient, skipping.", field.getName()));
