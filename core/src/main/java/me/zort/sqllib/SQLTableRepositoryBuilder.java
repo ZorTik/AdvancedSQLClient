@@ -127,12 +127,6 @@ public class SQLTableRepositoryBuilder<T, ID> {
 
         if(field.isAnnotationPresent(JsonField.class) && !isSupported) {
             return "TEXT";
-        } else if(field.isAnnotationPresent(PrimaryKey.class) && fieldType.equals(Integer.class)) {
-            PrimaryKey primaryKey = field.getAnnotation(PrimaryKey.class);
-            String s = "INTEGER PRIMARY KEY";
-            if(primaryKey.autoIncrement())
-                s += " " + (isSQLite() ? "AUTOINCREMENT" : "AUTO_INCREMENT");
-            return s;
         }
 
         if(!isSupported)
@@ -142,7 +136,7 @@ public class SQLTableRepositoryBuilder<T, ID> {
         if(fieldType.equals(String.class)) {
             dbType = "VARCHAR(255)";
         } else if(Primitives.wrap(fieldType).equals(Integer.class)) {
-            dbType = "INT";
+            dbType = "INTEGER";
         } else if(Primitives.wrap(fieldType).equals(Long.class)) {
             dbType = "BIGINT";
         } else if(Primitives.wrap(fieldType).equals(Double.class)) {
@@ -152,10 +146,9 @@ public class SQLTableRepositoryBuilder<T, ID> {
         }
 
         if(Validator.validateAutoIncrement(field))
-            dbType += " PRIMARY KEY AUTO_INCREMENT";
+            dbType += " PRIMARY KEY " + (isSQLite() ? "AUTOINCREMENT" : "AUTO_INCREMENT");
 
-        // Practically, it should not come here.
-        return null;
+        return dbType;
     }
 
     private boolean isSQLite() {
