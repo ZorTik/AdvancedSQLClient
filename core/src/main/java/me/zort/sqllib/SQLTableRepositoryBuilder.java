@@ -107,7 +107,7 @@ public class SQLTableRepositoryBuilder<T, ID> {
             ((SQLDatabaseConnectionImpl) connection).debug(message);
     }
 
-    private static String recognizeFieldTypeToDbType(Field field) {
+    private String recognizeFieldTypeToDbType(Field field) {
         Class<?>[] supportedTypes = new Class<?>[] {
                 Integer.class,
                 Long.class,
@@ -131,7 +131,7 @@ public class SQLTableRepositoryBuilder<T, ID> {
             PrimaryKey primaryKey = field.getAnnotation(PrimaryKey.class);
             String s = "INTEGER PRIMARY KEY";
             if(primaryKey.autoIncrement())
-                s += " AUTO_INCREMENT";
+                s += " " + (isSQLite() ? "AUTOINCREMENT" : "AUTO_INCREMENT");
             return s;
         }
 
@@ -156,6 +156,10 @@ public class SQLTableRepositoryBuilder<T, ID> {
 
         // Practically, it should not come here.
         return null;
+    }
+
+    private boolean isSQLite() {
+        return connection instanceof SQLiteDatabaseConnectionImpl;
     }
 
     public interface RepoFactory<T, ID, R extends SQLTableRepository<T, ID>> {
