@@ -57,7 +57,16 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
             }
             if(field.isAnnotationPresent(me.zort.sqllib.internal.annotation.PrimaryKey.class)) {
                 String colName = getOptions().getNamingStrategy().fieldNameToColumn(field.getName());
-                int index = Arrays.binarySearch(defs, colName);
+                //int index = Arrays.binarySearch(defs, colName);
+                int index = -1;
+                int i = 0;
+                for (String def : defs) {
+                    if(def.equals(colName)) {
+                        index = i;
+                        break;
+                    }
+                    i++;
+                }
                 if(index >= 0) {
                     primaryKey = new PrimaryKey(colName, vals[index].getObject() instanceof String
                             ? (String)vals[index].getObject() : String.valueOf(vals[index].getObject()));
