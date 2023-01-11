@@ -3,7 +3,7 @@
 
 # AdvancedSQLClient
 Ultimate SQL client with intuitive query builders, Json support and more!<br>
-Before documentation is done, here is a <a href="https://github.com/ZorTik/AdvancedSQLClient/blob/master/src/main/java/me/zort/sqllib/Example.java">small example</a>.
+Before documentation is done, here is a <a href="https://github.com/ZorTik/AdvancedSQLClient/blob/master/core/src/main/java/me/zort/sqllib/Example.java">small example</a>.
 
 ![Badge](https://img.shields.io/jitpack/version/com.github.ZorTik/AdvancedSQLClient?style=for-the-badge) ![Badge](https://img.shields.io/github/license/ZorTik/AdvancedSQLClient?style=for-the-badge)
 </div>
