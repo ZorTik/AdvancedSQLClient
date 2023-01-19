@@ -48,6 +48,8 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
         String[] defs = defsValsPair.getFirst();
         UnknownValueWrapper[] vals = defsValsPair.getSecond();
 
+        debug("Saving object into table " + table + " with definitions " + Arrays.toString(defs) + " and values " + Arrays.toString(vals));
+
         PrimaryKey primaryKey = null;
         for(Field field : obj.getClass().getDeclaredFields()) {
             if(Modifier.isTransient(field.getModifiers())) {
@@ -55,7 +57,16 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
             }
             if(field.isAnnotationPresent(me.zort.sqllib.internal.annotation.PrimaryKey.class)) {
                 String colName = getOptions().getNamingStrategy().fieldNameToColumn(field.getName());
-                int index = Arrays.binarySearch(defs, colName);
+                //int index = Arrays.binarySearch(defs, colName);
+                int index = -1;
+                int i = 0;
+                for (String def : defs) {
+                    if(def.equals(colName)) {
+                        index = i;
+                        break;
+                    }
+                    i++;
+                }
                 if(index >= 0) {
                     primaryKey = new PrimaryKey(colName, vals[index].getObject() instanceof String
                             ? (String)vals[index].getObject() : String.valueOf(vals[index].getObject()));
@@ -63,14 +74,17 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
                 }
             }
         }
-        if(primaryKey == null) {
-            debug("No primary key found for object: " + obj.getClass().getName());
-            return new QueryResultImpl(false);
-        }
         InsertQuery insert = insert().into(table, defs);
         for(UnknownValueWrapper val : vals) {
-            insert.appendVal(val);
+            insert.appendVal(val.getObject());
         }
+
+        if(primaryKey == null) {
+            debug("No primary key found for object " + obj.getClass().getName() + ", so we can't build update condition.");
+            debug("Performing insert query instead: " + insert.buildQuery());
+            return insert.execute();
+        }
+
         SetStatement<UpdateQuery> setStmt = update().table(table).set();
         for(int i = 0; i < defs.length; i++) {
             setStmt.and(defs[i], vals[i].getObject());

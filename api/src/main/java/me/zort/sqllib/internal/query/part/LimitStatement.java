@@ -12,7 +12,7 @@ public class LimitStatement<P extends QueryPart<?>> extends QueryPartQuery<P> {
     private final int limit;
 
     public LimitStatement(@Nullable P parent, List<QueryPart<?>> initial, int limit) {
-        super(parent, initial, QueryPriority.LAST);
+        super(parent, initial, Integer.MAX_VALUE);
         this.limit = limit;
     }
 

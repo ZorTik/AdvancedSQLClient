@@ -4,6 +4,9 @@ import com.google.gson.internal.Primitives;
 import me.zort.sqllib.api.SQLDatabaseConnection;
 import me.zort.sqllib.api.repository.CachingSQLTableRepository;
 import me.zort.sqllib.api.repository.SQLTableRepository;
+import me.zort.sqllib.internal.annotation.JsonField;
+import me.zort.sqllib.internal.annotation.NullableField;
+import me.zort.sqllib.internal.annotation.PrimaryKey;
 import me.zort.sqllib.util.Arrays;
 import me.zort.sqllib.util.Validator;
 import org.jetbrains.annotations.ApiStatus;
@@ -69,23 +72,42 @@ public class SQLTableRepositoryBuilder<T, ID> {
         if(!(connection instanceof SQLDatabaseConnectionImpl)) {
             throw new IllegalStateException("We can build defs only from SQLDatabaseConnectionImpl child-classes.");
         }
+        debug("Building defs from type class: " + info.getTypeClass().getName());
 
         SQLDatabaseOptions options = ((SQLDatabaseConnectionImpl) connection).getOptions();
         String[] defs = new String[0];
 
-        for (Field field : info.getTypeClass().getFields()) {
-            if(Modifier.isTransient(field.getModifiers()))
+        for (Field field : info.getTypeClass().getDeclaredFields()) {
+            debug("Building def for field: " + field.getName() + " (" + field.getType().getName() + ")");
+            if(Modifier.isTransient(field.getModifiers())) {
+                debug(String.format("Field %s is transient, skipping.", field.getName()));
                 continue;
+            }
 
             String colName = options.getNamingStrategy().fieldNameToColumn(field.getName());
             String colType = recognizeFieldTypeToDbType(field);
+
+            if(colType != null && !colType.contains("NOT NULL") && field.isAnnotationPresent(NullableField.class)) {
+                if(!field.getAnnotation(NullableField.class).nullable()) {
+                    colType += " NOT NULL";
+                }
+            }
+
             defs = Arrays.add(defs, colName + " " + colType);
+
+            debug("Added def: " + colName + " " + colType);
         }
 
         info.setDefs(defs);
+        debug("Built defs: " + java.util.Arrays.toString(defs));
     }
 
-    private static String recognizeFieldTypeToDbType(Field field) {
+    private void debug(String message) {
+        if(connection instanceof SQLDatabaseConnectionImpl && ((SQLDatabaseConnectionImpl) connection).getOptions().isDebug())
+            ((SQLDatabaseConnectionImpl) connection).debug(message);
+    }
+
+    private String recognizeFieldTypeToDbType(Field field) {
         Class<?>[] supportedTypes = new Class<?>[] {
                 Integer.class,
                 Long.class,
@@ -93,7 +115,7 @@ public class SQLTableRepositoryBuilder<T, ID> {
                 Double.class,
                 String.class
         };
-        Class<?> fieldType = field.getType();
+        Class<?> fieldType = Primitives.wrap(field.getType());
 
         boolean isSupported = false;
         for (Class<?> aClass : supportedTypes) {
@@ -103,6 +125,10 @@ public class SQLTableRepositoryBuilder<T, ID> {
             }
         }
 
+        if(field.isAnnotationPresent(JsonField.class) && !isSupported) {
+            return "TEXT";
+        }
+
         if(!isSupported)
             throw new RuntimeException(String.format("We don't support %s types in SQLTableRepositoryBuilder yet.", fieldType.getSimpleName()));
 
@@ -110,7 +136,7 @@ public class SQLTableRepositoryBuilder<T, ID> {
         if(fieldType.equals(String.class)) {
             dbType = "VARCHAR(255)";
         } else if(Primitives.wrap(fieldType).equals(Integer.class)) {
-            dbType = "INT";
+            dbType = "INTEGER";
         } else if(Primitives.wrap(fieldType).equals(Long.class)) {
             dbType = "BIGINT";
         } else if(Primitives.wrap(fieldType).equals(Double.class)) {
@@ -120,10 +146,13 @@ public class SQLTableRepositoryBuilder<T, ID> {
         }
 
         if(Validator.validateAutoIncrement(field))
-            dbType += " PRIMARY KEY AUTO_INCREMENT";
+            dbType += " PRIMARY KEY " + (isSQLite() ? "AUTOINCREMENT" : "AUTO_INCREMENT");
 
-        // Practically, it should not come here.
-        return null;
+        return dbType;
+    }
+
+    private boolean isSQLite() {
+        return connection instanceof SQLiteDatabaseConnectionImpl;
     }
 
     public interface RepoFactory<T, ID, R extends SQLTableRepository<T, ID>> {
