@@ -15,37 +15,8 @@ Before documentation is done, here is a <a href="https://github.com/ZorTik/Advan
 </p>-->
 
 ## Installation
-You can add Containr to your build path using Maven or Gradle. ContainrGUI is **not a Minecraft plugin**! This means that you can use it's code directly in your project by shading it into your build path.
+You can add AdvancedSQLClient to your build path using Maven or Gradle. You can also shade&relocate it using shade plugin to have it's unique build path.
 
-### Gradle:
-Add this project to your build path using Gradle with JitPack as represented below.<br>Download the sources from jitpack.
-```
-repositories {
-	maven { url = 'https://jitpack.io' }
-}
-```
-```
-dependencies {
-	implementation 'com.github.ZorTik:AdvancedSQLClient:Tag'
-}
-```
+<a href="https://github.com/ZorTik/AdvancedSQLClient/wiki/Installation">Installation on Wiki</a>
 
-### Maven:
-You can also use Maven with JitPack as seen below.<br>Download the sources from jitpack.
-```
-<repositories>
-	<repository>
-		<id>jitpack.io</id>
-		<url>https://jitpack.io</url>
-	</repository>
-</repositories>
-```
-```
-<dependency>
-	<groupId>com.github.ZorTik</groupId>
-		<artifactId>AdvancedSQLClient</artifactId>
-	<version>Version</version>
-</dependency>
-```
-
-> Documentation soon!
+> Wiki in progress!
