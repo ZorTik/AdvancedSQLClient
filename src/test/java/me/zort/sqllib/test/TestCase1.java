@@ -4,6 +4,7 @@ import me.zort.sqllib.SQLConnectionBuilder;
 import me.zort.sqllib.SQLDatabaseOptions;
 import me.zort.sqllib.api.SQLDatabaseConnection;
 import me.zort.sqllib.internal.impl.DefaultSQLEndpoint;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -40,6 +41,11 @@ public class TestCase1 {
         assertEquals(endpoint.buildJdbc(), String.format("jdbc:mysql://%s:3306/test", host));
         assertTrue(connection.connect());
         assertTrue(connection.isConnected());
+    }
+
+    @AfterAll
+    public void close() {
+        connection.disconnect();
     }
 
     @Test
