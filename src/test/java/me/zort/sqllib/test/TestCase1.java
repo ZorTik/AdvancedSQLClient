@@ -13,8 +13,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @EnabledOnOs(OS.LINUX)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -43,7 +42,7 @@ public class TestCase1 {
         assertEquals(endpoint.buildJdbc(), String.format("jdbc:mysql://%s:3306/test", host));
         assertTrue(connection.connect());
         assertTrue(connection.isConnected());
-        assertTrue(connection.query(() -> "CREATE TABLE IF NOT EXISTS users (nickname VARCHAR(16) PRIMARY KEY NOT NULL, points INT NOT NULL);").isSuccessful());
+        assertNull(connection.query(() -> "CREATE TABLE IF NOT EXISTS users (nickname VARCHAR(16) PRIMARY KEY NOT NULL, points INT NOT NULL);").getRejectMessage());
     }
 
     @AfterAll

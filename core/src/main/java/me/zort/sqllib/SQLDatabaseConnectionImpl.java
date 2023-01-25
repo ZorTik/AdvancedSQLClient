@@ -178,7 +178,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         Objects.requireNonNull(query);
 
         if(!handleAutoReconnect()) {
-            return new QueryRowsResult<>(false);
+            return new QueryRowsResult<>(false, "Cannot connect to database!");
         }
 
         try(PreparedStatement stmt = buildStatement(query);
@@ -201,7 +201,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
             return result;
         } catch (SQLException e) {
             logSqlError(e);
-            return new QueryRowsResult<>(false);
+            return new QueryRowsResult<>(false, e.getMessage());
         }
     }
 
@@ -210,14 +210,14 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
      */
     public QueryResult exec(Query query) {
         if(!handleAutoReconnect()) {
-            return new QueryResultImpl(false);
+            return new QueryResultImpl(false, "Cannot connect to database!");
         }
         try(PreparedStatement stmt = buildStatement(query)) {
             stmt.execute();
             return new QueryResultImpl(true);
         } catch (SQLException e) {
             logSqlError(e);
-            return new QueryResultImpl(false);
+            return new QueryResultImpl(false, e.getMessage());
         }
     }
 
