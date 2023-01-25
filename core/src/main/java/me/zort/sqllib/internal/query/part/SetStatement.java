@@ -4,15 +4,12 @@ import me.zort.sqllib.internal.exception.IllegalStatementOperationException;
 import me.zort.sqllib.internal.query.Conditional;
 import me.zort.sqllib.internal.query.QueryDetails;
 import me.zort.sqllib.internal.query.QueryNode;
-import me.zort.sqllib.util.Encoding;
 import me.zort.sqllib.util.Pair;
 import me.zort.sqllib.util.Pairs;
-import me.zort.sqllib.util.Util;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.stream.Collectors;
 
 public class SetStatement<P extends QueryNode<?> & Conditional<P>> extends QueryNode<P> implements Conditional<P> {
 

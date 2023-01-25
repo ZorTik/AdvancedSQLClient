@@ -6,7 +6,7 @@ package me.zort.sqllib.api;
  */
 public interface Query {
 
-    String buildQuery(); // TODO: 25.01.2023 Support for prepared statements.
+    String buildQuery();
 
     /**
      * Returns the highest parent of this query

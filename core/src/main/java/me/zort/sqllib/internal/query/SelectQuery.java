@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class SelectQuery extends QueryPartQuery<QueryNode<?>> implements Executive, Conditional<SelectQuery> {
+public class SelectQuery extends QueryNodeR<QueryNode<?>> implements Executive, Conditional<SelectQuery> {
 
     private final List<String> cols;
     private String table;
