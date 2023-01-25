@@ -19,4 +19,4 @@ You can add AdvancedSQLClient to your build path using Maven or Gradle. You can 
 
 <a href="https://github.com/ZorTik/AdvancedSQLClient/wiki/Installation">Installation on Wiki</a>
 
-> Documentation soon!
+> Wiki in progress!
