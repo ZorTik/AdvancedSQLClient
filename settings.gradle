@@ -1,9 +1,10 @@
 rootProject.name = 'AdvancedSQLClient'
 include ':api'
 include ':core'
-
-project(":api").projectDir = file("api")
-project(":core").projectDir = file("core")
 include 'shared'
 include 'examples'
 
+project(":api").projectDir = file("api")
+project(":core").projectDir = file("core")
+project(":shared").projectDir = file("shared")
+project(":examples").projectDir = file("examples")
