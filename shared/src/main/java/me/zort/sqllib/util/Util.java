@@ -9,4 +9,16 @@ public final class Util {
         return (String) obj;
     }
 
+    public static int count(String str, String substr) {
+        String copy = str;
+        int count = 0;
+
+        while (copy.contains(substr)) {
+            copy = copy.replaceFirst(str, substr);
+            count++;
+        }
+
+        return count;
+    }
+
 }

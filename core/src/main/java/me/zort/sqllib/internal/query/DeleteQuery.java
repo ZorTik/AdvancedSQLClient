@@ -8,7 +8,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Objects;
 
-public class DeleteQuery extends QueryPart<QueryPart<?>> implements Executive, Conditional<DeleteQuery> {
+public class DeleteQuery extends QueryNode<QueryNode<?>> implements Executive, Conditional<DeleteQuery> {
 
     private String table;
 
@@ -31,9 +31,13 @@ public class DeleteQuery extends QueryPart<QueryPart<?>> implements Executive, C
     }
 
     @Override
-    public String buildQuery() {
+    public QueryDetails buildQueryDetails() {
         Objects.requireNonNull(table, "Table cannot be null!");
-        return String.format("DELETE FROM %s%s;", table, buildInnerQuery());
+
+        return new QueryDetails.Builder("DELETE FROM {table}")
+                .placeholder("table", table)
+                .build()
+                .append(buildInnerQuery());
     }
 
     @Override

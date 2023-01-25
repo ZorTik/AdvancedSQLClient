@@ -2,6 +2,6 @@ package me.zort.sqllib.api;
 
 public interface Executive {
 
-    SQLDatabaseConnection getConnection();
+    SQLConnection getConnection();
 
 }

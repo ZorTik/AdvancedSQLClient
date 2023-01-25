@@ -7,17 +7,17 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
 
-public abstract class QueryPartQuery<P extends QueryPart<?>> extends QueryPart<P> {
+public abstract class QueryPartQuery<P extends QueryNode<?>> extends QueryNode<P> {
 
-    public QueryPartQuery(@Nullable P parent, List<QueryPart<?>> initial) {
+    public QueryPartQuery(@Nullable P parent, List<QueryNode<?>> initial) {
         super(parent, initial);
     }
 
-    public QueryPartQuery(@Nullable P parent, List<QueryPart<?>> initial, QueryPriority priority) {
+    public QueryPartQuery(@Nullable P parent, List<QueryNode<?>> initial, QueryPriority priority) {
         super(parent, initial, priority);
     }
 
-    public QueryPartQuery(@Nullable P parent, List<QueryPart<?>> initial, int priority) {
+    public QueryPartQuery(@Nullable P parent, List<QueryNode<?>> initial, int priority) {
         super(parent, initial, priority);
     }
 

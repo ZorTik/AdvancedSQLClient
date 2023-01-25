@@ -6,7 +6,7 @@ package me.zort.sqllib.api;
  */
 public interface Query {
 
-    String buildQuery();
+    String buildQuery(); // TODO: 25.01.2023 Support for prepared statements.
 
     /**
      * Returns the highest parent of this query
@@ -15,6 +15,10 @@ public interface Query {
      */
     default Query getAncestor() {
         return this;
+    }
+
+    default boolean isAncestor() {
+        return getAncestor() == this;
     }
 
 }

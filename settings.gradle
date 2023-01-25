@@ -4,3 +4,6 @@ include ':core'
 
 project(":api").projectDir = file("api")
 project(":core").projectDir = file("core")
+include 'shared'
+include 'examples'
+

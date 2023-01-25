@@ -1,11 +1,13 @@
 package me.zort.sqllib;
 
 import com.google.gson.Gson;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import me.zort.sqllib.api.options.NamingStrategy;
 import me.zort.sqllib.internal.Defaults;
 import me.zort.sqllib.internal.impl.DefaultNamingStrategy;
 
+@AllArgsConstructor
 @Data
 public class SQLDatabaseOptions {
 
@@ -14,13 +16,5 @@ public class SQLDatabaseOptions {
     private boolean logSqlErrors;
     private NamingStrategy namingStrategy;
     private Gson gson;
-
-    public SQLDatabaseOptions() {
-        this.autoReconnect = true;
-        this.debug = false;
-        this.logSqlErrors = true;
-        this.namingStrategy = new DefaultNamingStrategy();
-        this.gson = Defaults.DEFAULT_GSON;
-    }
 
 }

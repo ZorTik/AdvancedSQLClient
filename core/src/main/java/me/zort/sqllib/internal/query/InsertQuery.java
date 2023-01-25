@@ -10,9 +10,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Objects;
-import java.util.StringJoiner;
 
-public class InsertQuery extends QueryPart<QueryPart<?>> implements Executive, Conditional<InsertQuery> {
+public class InsertQuery extends QueryNode<QueryNode<?>> implements Executive, Conditional<InsertQuery> {
 
     @Getter
     private String table;
@@ -69,20 +68,18 @@ public class InsertQuery extends QueryPart<QueryPart<?>> implements Executive, C
     }
 
     @Override
-    public String buildQuery() {
+    public QueryDetails buildQueryDetails() {
         Objects.requireNonNull(table, "Table cannot be null!");
         if(defs.length != values.length) {
             throw new IllegalStatementOperationException("Definition count must be same as values count!");
         }
-        return String.format("INSERT INTO %s %s VALUES %s%s;", table, joinArr(defs), joinArr(values), buildInnerQuery());
-    }
 
-    private String joinArr(String[] arr) {
-        StringJoiner joiner = new StringJoiner(", ", "(", ")");
-        for(String str : arr) {
-            joiner.add(str);
-        }
-        return joiner.toString();
+        return new QueryDetails.Builder("INSERT INTO {table} ({defs}) VALUES ({vals})")
+                .placeholder("table", table)
+                .placeholder("defs", String.join(", ", defs))
+                .placeholder("vals", String.join(", ", values))
+                .build()
+                .append(buildInnerQuery());
     }
 
     @Override

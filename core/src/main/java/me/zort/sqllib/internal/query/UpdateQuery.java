@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Objects;
 
-public class UpdateQuery extends QueryPart<QueryPart<?>> implements Executive, Conditional<UpdateQuery> {
+public class UpdateQuery extends QueryNode<QueryNode<?>> implements Executive, Conditional<UpdateQuery> {
 
     private String table;
 
@@ -54,9 +54,12 @@ public class UpdateQuery extends QueryPart<QueryPart<?>> implements Executive, C
     }
 
     @Override
-    public String buildQuery() {
+    public QueryDetails buildQueryDetails() {
         Objects.requireNonNull(table, "Table cannot be null!");
-        return String.format("UPDATE %s%s;", table, buildInnerQuery());
+
+        return new QueryDetails.Builder("UPDATE {table}")
+                .placeholder("table", table)
+                .build().append(buildInnerQuery());
     }
 
     @Override

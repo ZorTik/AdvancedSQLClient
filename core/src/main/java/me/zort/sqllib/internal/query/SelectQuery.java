@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class SelectQuery extends QueryPartQuery<QueryPart<?>> implements Executive, Conditional<SelectQuery> {
+public class SelectQuery extends QueryPartQuery<QueryNode<?>> implements Executive, Conditional<SelectQuery> {
 
     private final List<String> cols;
     private String table;
@@ -41,10 +41,15 @@ public class SelectQuery extends QueryPartQuery<QueryPart<?>> implements Executi
     }
 
     @Override
-    public String buildQuery() {
+    public QueryDetails buildQueryDetails() {
         Objects.requireNonNull(table, "Table cannot be null!");
-        String cols = this.cols.isEmpty() ? "*" : String.join(", ", this.cols);
-        return String.format("SELECT %s FROM %s%s;", cols, table, buildInnerQuery());
+
+        QueryDetails details = new QueryDetails.Builder("SELECT {selection} FROM {table}")
+                .placeholder("selection", this.cols.isEmpty() ? "*" : String.join(", ", this.cols))
+                .placeholder("table", table)
+                .build();
+
+        return details.append(buildInnerQuery());
     }
 
     @Override

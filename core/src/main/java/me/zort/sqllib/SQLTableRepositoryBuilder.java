@@ -6,7 +6,6 @@ import me.zort.sqllib.api.repository.CachingSQLTableRepository;
 import me.zort.sqllib.api.repository.SQLTableRepository;
 import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.internal.annotation.NullableField;
-import me.zort.sqllib.internal.annotation.PrimaryKey;
 import me.zort.sqllib.util.Arrays;
 import me.zort.sqllib.util.Validator;
 import org.jetbrains.annotations.ApiStatus;
