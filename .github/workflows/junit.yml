@@ -21,7 +21,7 @@ jobs:
           mysql root password: 'test'
           mysql port: 3306
       - name: Gradle Build
-        run: ./gradlew build
+        run: ./gradlew build -x test
       - name: Gradle Test
         run: ./gradlew test
       - name: JUnit Report Action
