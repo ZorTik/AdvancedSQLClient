@@ -26,7 +26,7 @@ public class QueryDetails {
     private final Map<String, Object> values;
 
     public QueryDetails() {
-        this("", Collections.emptyMap());
+        this("", new HashMap<>());
     }
 
     public QueryDetails append(QueryDetails other) {
