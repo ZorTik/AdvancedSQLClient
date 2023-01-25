@@ -65,7 +65,7 @@ public class QueryDetails {
         for (String placeholder : this.values.keySet()) {
             Object value = this.values.get(placeholder);
 
-            placeholder = "\\{" + placeholder + "}";
+            placeholder = String.format("{%s}", placeholder);
 
             if (Util.count(queryStr, placeholder) != 1)
                 throw new RuntimeException("Placeholder " + placeholder + " is not unique in query " + queryStr);
