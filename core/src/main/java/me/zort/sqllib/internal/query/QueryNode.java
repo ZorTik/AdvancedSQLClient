@@ -80,7 +80,8 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
     }
 
     @Nullable
-    protected <T> T invokeToConnection(Function<SQLDatabaseConnection, T> func) throws NoLinkedConnectionException, InvalidConnectionInstanceException {
+    protected <T> T invokeToConnection(Function<SQLDatabaseConnection, T> func)
+            throws NoLinkedConnectionException, InvalidConnectionInstanceException {
         QueryNode<?> current = this;
         while(current.getParent() != null && !(current instanceof Executive)) {
             current = current.getParent();

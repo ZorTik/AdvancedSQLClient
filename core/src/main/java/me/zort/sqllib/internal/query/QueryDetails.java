@@ -7,7 +7,6 @@ import me.zort.sqllib.util.Util;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -25,7 +24,7 @@ public class QueryDetails {
     private String queryStr;
     private final Map<String, Object> values;
 
-    public QueryDetails() {
+    public QueryDetails() { // Equiv to empty()
         this("", new HashMap<>());
     }
 
@@ -46,6 +45,7 @@ public class QueryDetails {
         return this;
     }
 
+    // Creates prepared statement for execution in SQlDatabaseConnectionImpl class.
     protected PreparedStatement prepare(Connection connection) throws SQLException {
         Pair<String, Object[]> requirements = buildStatementDetails();
 
@@ -57,7 +57,7 @@ public class QueryDetails {
         return statement;
     }
 
-    private Pair<String, Object[]> buildStatementDetails() {
+    protected Pair<String, Object[]> buildStatementDetails() {
         String query = queryStr;
         Map<Integer, Object> valuesUnsorted = new HashMap<>();
 
@@ -65,13 +65,13 @@ public class QueryDetails {
         for (String placeholder : this.values.keySet()) {
             Object value = this.values.get(placeholder);
 
-            placeholder = "{" + placeholder + "}";
+            placeholder = "\\{" + placeholder + "}";
 
             if (Util.count(queryStr, placeholder) != 1)
                 throw new RuntimeException("Placeholder " + placeholder + " is not unique in query " + queryStr);
 
             valuesUnsorted.put(query.indexOf(placeholder), value);
-            query = query.replace(placeholder, "?");
+            query = query.replaceAll(placeholder, "?");
 
             i++;
         }
