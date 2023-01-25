@@ -34,7 +34,7 @@ public class DeleteQuery extends QueryNode<QueryNode<?>> implements Executive, C
     public QueryDetails buildQueryDetails() {
         Objects.requireNonNull(table, "Table cannot be null!");
 
-        return new QueryDetails.Builder("DELETE FROM {table}")
+        return new QueryDetails.Builder("DELETE FROM <table>")
                 .placeholder("table", table)
                 .build()
                 .append(buildInnerQuery());

@@ -24,7 +24,7 @@ public class WhereStatement<P extends QueryNode<?>> extends QueryNodeR<P> {
 
     public WhereStatement<P> isEqual(String column, Object value) {
         String placeholder = nextPlaceholder();
-        conditions.add(new QueryDetails.Builder(String.format("%s = {%s}", column, placeholder))
+        conditions.add(new QueryDetails.Builder(String.format("%s = <%s>", column, placeholder))
                 .placeholder(placeholder, value)
                 .build());
         return this;
@@ -32,7 +32,7 @@ public class WhereStatement<P extends QueryNode<?>> extends QueryNodeR<P> {
 
     public WhereStatement<P> bt(String column, long value) {
         String placeholder = nextPlaceholder();
-        conditions.add(new QueryDetails.Builder(String.format("%s > {%s}", column, placeholder))
+        conditions.add(new QueryDetails.Builder(String.format("%s > <%s>", column, placeholder))
                 .placeholder(placeholder, value)
                 .build());
         return this;
@@ -40,7 +40,7 @@ public class WhereStatement<P extends QueryNode<?>> extends QueryNodeR<P> {
 
     public WhereStatement<P> lt(String column, long value) {
         String placeholder = nextPlaceholder();
-        conditions.add(new QueryDetails.Builder(String.format("%s < {%s}", column, placeholder))
+        conditions.add(new QueryDetails.Builder(String.format("%s < <%s>", column, placeholder))
                 .placeholder(placeholder, value)
                 .build());
         return this;
@@ -60,7 +60,7 @@ public class WhereStatement<P extends QueryNode<?>> extends QueryNodeR<P> {
                 details.append(", ");
 
             String placeholder = nextPlaceholder();
-            details.append(new QueryDetails.Builder(String.format("{%s}", placeholder))
+            details.append(new QueryDetails.Builder(String.format("<%s>", placeholder))
                     .placeholder(placeholder, obj)
                     .build());
         }
@@ -73,7 +73,7 @@ public class WhereStatement<P extends QueryNode<?>> extends QueryNodeR<P> {
 
     public WhereStatement<P> like(String column, String paramPlaceholder) {
         String placeholder = nextPlaceholder();
-        conditions.add(new QueryDetails.Builder(String.format("%s LIKE {%s}", column, placeholder))
+        conditions.add(new QueryDetails.Builder(String.format("%s LIKE <%s>", column, placeholder))
                 .placeholder(placeholder, paramPlaceholder)
                 .build());
         return this;
@@ -119,6 +119,7 @@ public class WhereStatement<P extends QueryNode<?>> extends QueryNodeR<P> {
         return details;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public WhereStatement<P> then(String part) {
         return (WhereStatement<P>) super.then(part);

@@ -74,7 +74,7 @@ public class InsertQuery extends QueryNode<QueryNode<?>> implements Executive, C
             throw new IllegalStatementOperationException("Definition count must be same as values count!");
         }
 
-        return new QueryDetails.Builder("INSERT INTO {table} ({defs}) VALUES ({vals})")
+        return new QueryDetails.Builder("INSERT INTO <table> (<defs>) VALUES (<vals>)") // TODO: Transform to array of placeholders
                 .placeholder("table", table)
                 .placeholder("defs", String.join(", ", defs))
                 .placeholder("vals", String.join(", ", values))

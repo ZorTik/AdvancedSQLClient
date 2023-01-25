@@ -44,7 +44,7 @@ public class SelectQuery extends QueryNodeR<QueryNode<?>> implements Executive, 
     public QueryDetails buildQueryDetails() {
         Objects.requireNonNull(table, "Table cannot be null!");
 
-        QueryDetails details = new QueryDetails.Builder("SELECT {selection} FROM {table}")
+        QueryDetails details = new QueryDetails.Builder("SELECT <selection> FROM <table>")
                 .placeholder("selection", this.cols.isEmpty() ? "*" : String.join(", ", this.cols))
                 .placeholder("table", table)
                 .build();

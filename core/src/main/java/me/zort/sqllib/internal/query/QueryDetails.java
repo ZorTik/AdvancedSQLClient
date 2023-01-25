@@ -65,7 +65,7 @@ public class QueryDetails {
         for (String placeholder : this.values.keySet()) {
             Object value = this.values.get(placeholder);
 
-            placeholder = String.format("{%s}", placeholder);
+            placeholder = String.format("<%s>", placeholder);
 
             if (Util.count(queryStr, placeholder) != 1)
                 throw new RuntimeException("Placeholder " + placeholder + " is not unique in query " + queryStr);
@@ -104,8 +104,8 @@ public class QueryDetails {
 
         // Name without brackets
         public Builder placeholder(String name, Object value) {
-            if(!query.contains("{" + name + "}"))
-                throw new IllegalArgumentException("Placeholder {" + name + "} not found in query!");
+            if(!query.contains("<" + name + ">"))
+                throw new IllegalArgumentException("Placeholder <" + name + "> not found in query!");
 
             values.put(name, value);
             return this;

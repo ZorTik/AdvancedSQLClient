@@ -57,7 +57,7 @@ public class UpdateQuery extends QueryNode<QueryNode<?>> implements Executive, C
     public QueryDetails buildQueryDetails() {
         Objects.requireNonNull(table, "Table cannot be null!");
 
-        return new QueryDetails.Builder("UPDATE {table}")
+        return new QueryDetails.Builder("UPDATE <table>")
                 .placeholder("table", table)
                 .build().append(buildInnerQuery());
     }

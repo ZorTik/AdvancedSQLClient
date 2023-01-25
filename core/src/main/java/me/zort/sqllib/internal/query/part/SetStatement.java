@@ -65,7 +65,7 @@ public class SetStatement<P extends QueryNode<?> & Conditional<P>> extends Query
             if (!details.getQueryStr().equals(" SET "))
                 details.append(", ");
 
-            details.append(new QueryDetails.Builder(String.format("%s = {%s}", name, placeholder))
+            details.append(new QueryDetails.Builder(String.format("%s = <%s>", name, placeholder))
                     .placeholder(placeholder, value)
                     .build());
         }
