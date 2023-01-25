@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.IntConsumer;
 
 @AllArgsConstructor
@@ -34,6 +35,8 @@ public class QueryDetails {
     }
 
     public QueryDetails append(String prefix, QueryDetails other) {
+        Objects.requireNonNull(other, "QueryDetails cannot be null!");
+
         append(prefix + other.queryStr);
         other.values.forEach(values::putIfAbsent);
         return this;
@@ -42,10 +45,6 @@ public class QueryDetails {
     public QueryDetails append(String s) {
         queryStr += s;
         return this;
-    }
-
-    public int length() {
-        return queryStr.length();
     }
 
     protected PreparedStatement prepare(Connection connection) throws SQLException {
@@ -92,6 +91,10 @@ public class QueryDetails {
                 });
 
         return new Pair<>(query, values);
+    }
+
+    public int length() {
+        return queryStr.length();
     }
 
     @RequiredArgsConstructor
