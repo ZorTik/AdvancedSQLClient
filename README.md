@@ -17,4 +17,6 @@ Before documentation is done, here is a <a href="https://github.com/ZorTik/Advan
 ## Installation
 You can add Containr to your build path using Maven or Gradle. ContainrGUI is **not a Minecraft plugin**! This means that you can use it's code directly in your project by shading it into your build path.
 
+<a href="https://github.com/ZorTik/AdvancedSQLClient/wiki/Installation">Installation on Wiki</a>
+
 > Documentation soon!
