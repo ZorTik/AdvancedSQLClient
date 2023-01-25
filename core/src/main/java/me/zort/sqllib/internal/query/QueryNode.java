@@ -62,7 +62,7 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
         List<QueryNode<?>> children = new ArrayList<>(this.children);
         Collections.sort(children, Comparator.comparingInt(QueryNode::getPriority));
 
-        QueryDetails details = new QueryDetails("", Collections.emptyMap());
+        QueryDetails details = new QueryDetails("", new HashMap<>());
 
         if (children.isEmpty()) {
             return QueryDetails.empty();
@@ -149,7 +149,7 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
 
         @Override
         public QueryDetails buildQueryDetails() {
-            return new QueryDetails(queryPartString, Collections.emptyMap());
+            return new QueryDetails(queryPartString, new HashMap<>());
         }
     }
 

@@ -93,7 +93,7 @@ public class WhereStatement<P extends QueryNode<?>> extends QueryNodeR<P> {
     }
 
     public WhereStatement<P> or() {
-        conditions.add(new QueryDetails(" OR ", Collections.emptyMap()));
+        conditions.add(new QueryDetails(" OR ", new HashMap<>()));
         return this;
     }
 

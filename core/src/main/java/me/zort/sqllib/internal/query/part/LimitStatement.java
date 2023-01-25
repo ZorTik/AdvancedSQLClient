@@ -6,6 +6,7 @@ import me.zort.sqllib.internal.query.QueryNodeR;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 
 public class LimitStatement<P extends QueryNode<?>> extends QueryNodeR<P> {
@@ -19,9 +20,10 @@ public class LimitStatement<P extends QueryNode<?>> extends QueryNodeR<P> {
 
     @Override
     public QueryDetails buildQueryDetails() {
-        return new QueryDetails(" LIMIT " + Math.max(limit, 0), Collections.emptyMap());
+        return new QueryDetails(" LIMIT " + Math.max(limit, 0), new HashMap<>());
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public LimitStatement<P> then(String part) {
         return (LimitStatement<P>) super.then(part);
