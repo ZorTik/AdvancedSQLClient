@@ -4,6 +4,8 @@ import me.zort.sqllib.api.SQLDatabaseConnection;
 import me.zort.sqllib.internal.query.part.SetStatement;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
+
 public class UpsertQuery extends InsertQuery {
 
     public UpsertQuery(SQLDatabaseConnection connection) {
@@ -33,8 +35,14 @@ public class UpsertQuery extends InsertQuery {
     public SetStatement<InsertQuery> onDuplicateKey() {
         SetStatement<InsertQuery> stmt = new SetStatement<InsertQuery>(this, 3) {
             @Override
-            public String buildQuery() {
-                return " ON DUPLICATE KEY UPDATE" + super.buildQuery().replaceAll("SET ", "");
+            public QueryDetails buildQueryDetails() {
+                QueryDetails details = new QueryDetails(" ON DUPLICATE KEY UPDATE", Collections.emptyMap());
+
+                QueryDetails superDetails = super.buildQueryDetails();
+                superDetails.setQueryStr(details.getQueryStr().replaceAll("SET ", ""));
+                details.append(superDetails);
+
+                return details;
             }
         };
         then(stmt);

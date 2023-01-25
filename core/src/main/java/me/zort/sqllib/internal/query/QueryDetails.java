@@ -1,8 +1,6 @@
 package me.zort.sqllib.internal.query;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import me.zort.sqllib.util.Pair;
 import me.zort.sqllib.util.Util;
 
@@ -23,6 +21,7 @@ public class QueryDetails {
         return new QueryDetails();
     }
 
+    @Setter(AccessLevel.PROTECTED)
     private String queryStr;
     private final Map<String, Object> values;
 
