@@ -4,7 +4,8 @@ public final class Util {
 
     public static String buildQuoted(Object obj) {
         obj = obj instanceof String
-                ? String.format("'%s'", obj)
+                //? String.format("'%s'", obj) // No longer needed, because I use prepared statements.
+                ? String.format("%s", obj)
                 : String.valueOf(obj);
         return (String) obj;
     }

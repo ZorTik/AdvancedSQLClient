@@ -6,8 +6,6 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import me.zort.sqllib.api.Query;
-import me.zort.sqllib.api.SQLConnection;
-import me.zort.sqllib.api.SQLDatabaseConnection;
 import me.zort.sqllib.api.StatementFactory;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
@@ -161,7 +159,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
      */
     @Override
     public <T> QueryRowsResult<T> query(Query query, Class<T> typeClass) {
-        QueryRowsResult<Row> resultRows = query(query);
+        QueryRowsResult<Row> resultRows = query(query.getAncestor());
         QueryRowsResult<T> result = new QueryRowsResult<>(resultRows.isSuccessful());
         for(Row row : resultRows) {
             Optional.ofNullable(assignValues(row, typeClass))
@@ -227,6 +225,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         try {
             try {
                 Constructor<T> c = typeClass.getConstructor();
+                c.setAccessible(true);
                 instance = c.newInstance();
             } catch (NoSuchMethodException e) {
                 for(Constructor<?> c : typeClass.getConstructors()) {
@@ -277,7 +276,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         if(element instanceof Field) {
             name = ((Field) element).getName();
             type = ((Field) element).getGenericType();
-        } else if(element instanceof Parameter) {
+        } else if(element instanceof Parameter) { // TODO: Parameter names are arg[a-zA-Z0-9]+, use different strategy.
             name = ((Parameter) element).getName();
             type = ((Parameter) element).getType();
         } else {
@@ -361,6 +360,11 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     @Override
     public boolean isLogSqlErrors() {
         return options.isLogSqlErrors();
+    }
+
+    @Override
+    public boolean isDebug() {
+        return options.isDebug();
     }
 
     @SuppressWarnings("unchecked")

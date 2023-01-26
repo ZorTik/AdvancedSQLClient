@@ -1,12 +1,14 @@
 package me.zort.sqllib.internal.query;
 
 import lombok.*;
+import me.zort.sqllib.Logger;
 import me.zort.sqllib.util.Pair;
 import me.zort.sqllib.util.Util;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -49,10 +51,14 @@ public class QueryDetails {
     protected PreparedStatement prepare(Connection connection) throws SQLException {
         Pair<String, Object[]> requirements = buildStatementDetails();
 
+        // Shows plain query for prepared statement.
+        Logger.debug(connection, String.format("P-Query: %s", requirements.getFirst()));
+        Logger.debug(connection, String.format("P-Values: %s", Arrays.toString(requirements.getSecond())));
+
         PreparedStatement statement = connection.prepareStatement(requirements.getFirst());
         Object[] values = requirements.getSecond();
         for (int i = 0; i < values.length; i++) {
-            statement.setObject(i + 1, values[i]);
+            set(statement, i + 1, values[i]);
         }
         return statement;
     }
@@ -90,6 +96,32 @@ public class QueryDetails {
                 });
 
         return new Pair<>(query, values);
+    }
+
+    private static void set(PreparedStatement statement, int index, Object value) throws SQLException {
+        switch(value.getClass().getSimpleName().toLowerCase()) {
+            case "string":
+                statement.setString(index, (String) value);
+                break;
+            case "integer":
+            case "int":
+                statement.setInt(index, (int) value);
+                break;
+            case "long":
+                statement.setLong(index, (long) value);
+                break;
+            case "double":
+                statement.setDouble(index, (double) value);
+                break;
+            case "float":
+                statement.setFloat(index, (float) value);
+                break;
+            case "boolean":
+                statement.setBoolean(index, (boolean) value);
+                break;
+            default:
+                statement.setObject(index, value);
+        }
     }
 
     public int length() {

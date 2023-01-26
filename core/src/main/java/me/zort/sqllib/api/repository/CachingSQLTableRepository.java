@@ -2,7 +2,7 @@ package me.zort.sqllib.api.repository;
 
 import lombok.Getter;
 import lombok.Setter;
-import me.zort.sqllib.api.SQLDatabaseConnection;
+import me.zort.sqllib.SQLDatabaseConnection;
 
 import java.util.Map;
 import java.util.Optional;

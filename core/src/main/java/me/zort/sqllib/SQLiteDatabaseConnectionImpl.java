@@ -36,7 +36,7 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
 
     /**
      * Performs an upsert query for defined object
-     * as stated in {@link me.zort.sqllib.api.SQLDatabaseConnection#save(String, Object)}.
+     * as stated in {@link SQLDatabaseConnection#save(String, Object)}.
      * <p>
      * Object needs to have {@link me.zort.sqllib.internal.annotation.PrimaryKey} annotation
      * set to determine which column is a primary key.

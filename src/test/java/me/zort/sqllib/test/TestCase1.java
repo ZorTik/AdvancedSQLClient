@@ -1,9 +1,11 @@
 package me.zort.sqllib.test;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import me.zort.sqllib.SQLConnectionBuilder;
 import me.zort.sqllib.SQLDatabaseOptions;
-import me.zort.sqllib.api.SQLDatabaseConnection;
+import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.provider.Select;
 import me.zort.sqllib.internal.impl.DefaultSQLEndpoint;
@@ -16,7 +18,8 @@ import org.junit.jupiter.api.condition.OS;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Log4j2
-@EnabledOnOs(value = {OS.LINUX, OS.WINDOWS}) // TODO: Fix tests, endless run
+@EnabledOnOs(value = {OS.LINUX, OS.WINDOWS})
+@TestMethodOrder(MethodOrderer.MethodName.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestCase1 {
 
@@ -57,21 +60,14 @@ public class TestCase1 {
         System.out.println("Connection established, preparing tables...");
 
         assertNull(connection.exec(() -> "CREATE TABLE IF NOT EXISTS users (nickname VARCHAR(16) PRIMARY KEY NOT NULL, points INT NOT NULL);").getRejectMessage());
+        assertNull(connection.exec(() -> "TRUNCATE TABLE users;").getRejectMessage());
 
         System.out.println("Tables prepared, test cases ready");
     }
 
-    @Timeout(5)
-    @AfterAll
-    public void close() {
-        System.out.println("Closing connection...");
-        connection.disconnect();
-        System.out.println("Connection closed");
-    }
-
     @Timeout(10)
     @Test
-    public void testUpsert() {
+    public void test1_Upsert() {
         System.out.println("Testing upsert (save)...");
         assertTrue(connection.save("users", user1).isSuccessful());
         System.out.println("Save successful");
@@ -88,26 +84,31 @@ public class TestCase1 {
 
     @Timeout(10)
     @Test
-    public void testSelect() {
+    public void test2_Select() {
         System.out.println("Testing select...");
         QueryRowsResult<User> result = connection.query(Select.of().from("users")
                 .where()
                 .isEqual("nickname", "User1"), User.class);
 
-        assertTrue(result.isSuccessful());
+        assertNull(result.getRejectMessage());
         assertEquals(1, result.size());
         assertEquals(user1, result.get(0));
         System.out.println("Select successful");
     }
 
-    private static class User {
-        private final String nickname;
-        private final int points;
+    @Timeout(5)
+    @Test
+    public void test3_Close() {
+        System.out.println("Closing connection...");
+        connection.disconnect();
+        System.out.println("Connection closed");
+    }
 
-        public User(String nickname, int points) {
-            this.nickname = nickname;
-            this.points = points;
-        }
+    @AllArgsConstructor
+    @NoArgsConstructor
+    private static class User {
+        private String nickname;
+        private int points;
 
         public String getNickname() {
             return nickname;

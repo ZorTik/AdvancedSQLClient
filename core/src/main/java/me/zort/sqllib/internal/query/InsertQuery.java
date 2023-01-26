@@ -2,7 +2,7 @@ package me.zort.sqllib.internal.query;
 
 import lombok.Getter;
 import me.zort.sqllib.api.Executive;
-import me.zort.sqllib.api.SQLDatabaseConnection;
+import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.internal.exception.IllegalStatementOperationException;
 import me.zort.sqllib.util.Encoding;
 import me.zort.sqllib.util.Util;
@@ -17,6 +17,7 @@ public class InsertQuery extends QueryNode<QueryNode<?>> implements Executive, C
     private String table;
     private String[] defs;
     private String[] values;
+    private int currPhIndex = 0;
 
     @Getter
     private final SQLDatabaseConnection connection;
@@ -74,12 +75,35 @@ public class InsertQuery extends QueryNode<QueryNode<?>> implements Executive, C
             throw new IllegalStatementOperationException("Definition count must be same as values count!");
         }
 
-        return new QueryDetails.Builder("INSERT INTO <table> (<defs>) VALUES (<vals>)") // TODO: Transform to array of placeholders
-                .placeholder("table", table)
-                .placeholder("defs", String.join(", ", defs))
-                .placeholder("vals", String.join(", ", values))
-                .build()
-                .append(buildInnerQuery());
+        QueryDetails details = new QueryDetails.Builder(String.format("INSERT INTO %s ", table)).build();
+
+        insertArray(details, defs, false);
+        details.append(" VALUES ");
+        insertArray(details, values, true);
+
+        return details;
+    }
+
+    private void insertArray(QueryDetails details, String[] array, boolean usePlaceholders) {
+        details.append("(");
+        for (String obj : array) {
+            String placeholder = nextPlaceholder();
+            if (!details.getQueryStr().endsWith("("))
+                details.append(", ");
+
+            if (usePlaceholders) {
+                details.append(new QueryDetails.Builder("<" + placeholder + ">")
+                        .placeholder(placeholder, obj)
+                        .build());
+            } else {
+                details.append(obj);
+            }
+        }
+        details.append(")");
+    }
+
+    private String nextPlaceholder() {
+        return "insert_" + currPhIndex++;
     }
 
     @Override

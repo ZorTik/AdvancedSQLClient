@@ -2,7 +2,7 @@ package me.zort.sqllib.internal.query;
 
 import lombok.Getter;
 import me.zort.sqllib.api.Executive;
-import me.zort.sqllib.api.SQLDatabaseConnection;
+import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.internal.query.part.SetStatement;
 import me.zort.sqllib.internal.query.part.WhereStatement;
 import org.jetbrains.annotations.Nullable;
@@ -57,9 +57,7 @@ public class UpdateQuery extends QueryNode<QueryNode<?>> implements Executive, C
     public QueryDetails buildQueryDetails() {
         Objects.requireNonNull(table, "Table cannot be null!");
 
-        return new QueryDetails.Builder("UPDATE <table>")
-                .placeholder("table", table)
-                .build().append(buildInnerQuery());
+        return new QueryDetails.Builder("UPDATE " + table).build().append(buildInnerQuery());
     }
 
     @Override

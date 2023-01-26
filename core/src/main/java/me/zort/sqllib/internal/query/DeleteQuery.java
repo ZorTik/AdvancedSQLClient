@@ -2,7 +2,7 @@ package me.zort.sqllib.internal.query;
 
 import lombok.Getter;
 import me.zort.sqllib.api.Executive;
-import me.zort.sqllib.api.SQLDatabaseConnection;
+import me.zort.sqllib.SQLDatabaseConnection;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -34,8 +34,7 @@ public class DeleteQuery extends QueryNode<QueryNode<?>> implements Executive, C
     public QueryDetails buildQueryDetails() {
         Objects.requireNonNull(table, "Table cannot be null!");
 
-        return new QueryDetails.Builder("DELETE FROM <table>")
-                .placeholder("table", table)
+        return new QueryDetails.Builder("DELETE FROM " + table)
                 .build()
                 .append(buildInnerQuery());
     }

@@ -1,6 +1,8 @@
-package me.zort.sqllib.api;
+package me.zort.sqllib;
 
 import lombok.Getter;
+import me.zort.sqllib.api.Query;
+import me.zort.sqllib.api.SQLConnection;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
@@ -26,6 +28,8 @@ public abstract class SQLDatabaseConnection implements SQLConnection {
     public SQLDatabaseConnection(SQLConnectionFactory connectionFactory) {
         this.connectionFactory = connectionFactory;
         this.connection = null;
+
+        SQLConnectionPool.register(this);
     }
 
     /**
@@ -79,6 +83,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection {
      */
     public abstract QueryResult exec(Query query);
     public abstract boolean isLogSqlErrors();
+    public abstract boolean isDebug();
 
     public abstract SelectQuery select(String... cols);
     public abstract UpdateQuery update();

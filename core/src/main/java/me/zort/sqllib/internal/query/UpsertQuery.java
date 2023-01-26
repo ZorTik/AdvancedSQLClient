@@ -1,10 +1,9 @@
 package me.zort.sqllib.internal.query;
 
-import me.zort.sqllib.api.SQLDatabaseConnection;
+import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.internal.query.part.SetStatement;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collections;
 import java.util.HashMap;
 
 public class UpsertQuery extends InsertQuery {
@@ -40,7 +39,7 @@ public class UpsertQuery extends InsertQuery {
                 QueryDetails details = new QueryDetails(" ON DUPLICATE KEY UPDATE", new HashMap<>());
 
                 QueryDetails superDetails = super.buildQueryDetails();
-                superDetails.setQueryStr(details.getQueryStr().replaceAll("SET ", ""));
+                superDetails.setQueryStr(superDetails.getQueryStr().replaceAll("SET ", ""));
                 details.append(superDetails);
 
                 return details;

@@ -2,7 +2,7 @@ package me.zort.sqllib.internal.query;
 
 import lombok.Getter;
 import me.zort.sqllib.api.Executive;
-import me.zort.sqllib.api.SQLDatabaseConnection;
+import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.internal.query.part.LimitStatement;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,9 +44,9 @@ public class SelectQuery extends QueryNodeR<QueryNode<?>> implements Executive, 
     public QueryDetails buildQueryDetails() {
         Objects.requireNonNull(table, "Table cannot be null!");
 
-        QueryDetails details = new QueryDetails.Builder("SELECT <selection> FROM <table>")
-                .placeholder("selection", this.cols.isEmpty() ? "*" : String.join(", ", this.cols))
-                .placeholder("table", table)
+        QueryDetails details = new QueryDetails.Builder(String.format("SELECT %s FROM %s",
+                this.cols.isEmpty() ? "*" : String.join(", ", this.cols),
+                table))
                 .build();
 
         return details.append(buildInnerQuery());

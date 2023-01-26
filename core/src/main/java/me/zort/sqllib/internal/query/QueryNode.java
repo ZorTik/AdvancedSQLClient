@@ -1,6 +1,7 @@
 package me.zort.sqllib.internal.query;
 
 import lombok.Getter;
+import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.SQLDatabaseConnectionImpl;
 import me.zort.sqllib.api.*;
 import me.zort.sqllib.api.data.QueryResult;
