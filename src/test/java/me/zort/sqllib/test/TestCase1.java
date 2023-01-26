@@ -32,7 +32,7 @@ public class TestCase1 {
     @Timeout(15)
     @BeforeAll
     public void prepare() {
-        log.info("Preparing test case...");
+        System.out.println("Preparing test case...");
 
         String host = System.getenv("D_MYSQL_HOST");
 
@@ -48,36 +48,34 @@ public class TestCase1 {
                 .withDriver("com.mysql.cj.jdbc.Driver")
                 .build(options);
 
-        log.info("Connection prepared, connecting...");
+        System.out.println("Connection prepared, connecting...");
 
         assertEquals(endpoint.buildJdbc(), String.format("jdbc:mysql://%s:3306/test", host));
         assertTrue(connection.connect());
         assertTrue(connection.isConnected());
 
-        log.info("Connection established, preparing tables...");
-
-        System.out.println("Connection established");
+        System.out.println("Connection established, preparing tables...");
 
         assertNull(connection.exec(() -> "CREATE TABLE IF NOT EXISTS users (nickname VARCHAR(16) PRIMARY KEY NOT NULL, points INT NOT NULL);").getRejectMessage());
 
-        log.info("Tables prepared, test cases ready");
+        System.out.println("Tables prepared, test cases ready");
     }
 
     @Timeout(5)
     @AfterAll
     public void close() {
-        log.info("Closing connection...");
+        System.out.println("Closing connection...");
         connection.disconnect();
-        log.info("Connection closed");
+        System.out.println("Connection closed");
     }
 
     @Timeout(10)
     @Test
     public void testUpsert() {
-        log.info("Testing upsert (save)...");
+        System.out.println("Testing upsert (save)...");
         assertTrue(connection.save("users", user1).isSuccessful());
-        log.info("Save successful");
-        log.info("Testing upsert...");
+        System.out.println("Save successful");
+        System.out.println("Testing upsert...");
         assertTrue(connection.upsert()
                 .into("users", "nickname", "points")
                 .values(user2.getNickname(), user2.getPoints())
@@ -85,13 +83,13 @@ public class TestCase1 {
                 .and("nickname", user2.getNickname())
                 .and("points", user2.getPoints())
                 .execute().isSuccessful());
-        log.info("Upsert successful");
+        System.out.println("Upsert successful");
     }
 
     @Timeout(10)
     @Test
     public void testSelect() {
-        log.info("Testing select...");
+        System.out.println("Testing select...");
         QueryRowsResult<User> result = connection.query(Select.of().from("users")
                 .where()
                 .isEqual("nickname", "User1"), User.class);
@@ -99,7 +97,7 @@ public class TestCase1 {
         assertTrue(result.isSuccessful());
         assertEquals(1, result.size());
         assertEquals(user1, result.get(0));
-        log.info("Select successful");
+        System.out.println("Select successful");
     }
 
     private static class User {
