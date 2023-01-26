@@ -1,10 +1,8 @@
 package me.zort.sqllib;
 
 import com.google.gson.Gson;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
+import me.zort.sqllib.api.ObjectMapper;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.StatementFactory;
 import me.zort.sqllib.api.data.QueryResult;
@@ -14,8 +12,10 @@ import me.zort.sqllib.api.options.NamingStrategy;
 import me.zort.sqllib.internal.Defaults;
 import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
+import me.zort.sqllib.internal.fieldResolver.ConstructorParameterResolver;
 import me.zort.sqllib.internal.fieldResolver.LinkedOneFieldResolver;
 import me.zort.sqllib.internal.impl.DefaultNamingStrategy;
+import me.zort.sqllib.internal.impl.DefaultObjectMapper;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.internal.query.*;
 import me.zort.sqllib.internal.query.part.SetStatement;
@@ -37,17 +37,19 @@ import java.util.*;
  */
 public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
+    // --***-- Default Constants --***--
+
     public static boolean DEFAULT_AUTO_RECONNECT = true;
     public static boolean DEFAULT_DEBUG = false;
     public static boolean DEFAULT_LOG_SQL_ERRORS = true;
     public static NamingStrategy DEFAULT_NAMING_STRATEGY = new DefaultNamingStrategy();
     public static Gson DEFAULT_GSON = Defaults.DEFAULT_GSON;
 
+    // --***-- Options & Utilities --***--
+
     @Getter
     private final SQLDatabaseOptions options;
-    // Resolvers used after no value is found for the field
-    // in mapped object as backup.
-    private final List<FieldValueResolver> backupValueResolvers;
+    private transient ObjectMapper objectMapper;
 
     /**
      * Constructs new instance of this implementation with default
@@ -78,16 +80,21 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
             );
 
         this.options = options;
-        this.backupValueResolvers = Collections.synchronizedList(new ArrayList<>());
+        this.objectMapper = new DefaultObjectMapper(this);
 
         // Default backup value resolvers.
         registerBackupValueResolver(new LinkedOneFieldResolver());
+        registerBackupValueResolver(new ConstructorParameterResolver());
     }
 
-    public void registerBackupValueResolver(@NotNull FieldValueResolver resolver) {
+    public void registerBackupValueResolver(@NotNull ObjectMapper.FieldValueResolver resolver) {
         Objects.requireNonNull(resolver, "Resolver cannot be null!");
 
-        backupValueResolvers.add(resolver);
+        objectMapper.registerBackupValueResolver(resolver);
+    }
+
+    public void setObjectMapper(@NotNull ObjectMapper objectMapper) {
+        this.objectMapper = Objects.requireNonNull(objectMapper, "Object mapper cannot be null!");
     }
 
     /**
@@ -162,7 +169,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         QueryRowsResult<Row> resultRows = query(query.getAncestor());
         QueryRowsResult<T> result = new QueryRowsResult<>(resultRows.isSuccessful());
         for(Row row : resultRows) {
-            Optional.ofNullable(assignValues(row, typeClass))
+            Optional.ofNullable(objectMapper.assignValues(row, typeClass))
                     .ifPresent(result::add);
         }
         return result;
@@ -216,95 +223,6 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         } catch (SQLException e) {
             logSqlError(e);
             return new QueryResultImpl(false, e.getMessage());
-        }
-    }
-
-    @Nullable
-    private <T> T assignValues(Row row, Class<T> typeClass) {
-        T instance = null;
-        try {
-            try {
-                Constructor<T> c = typeClass.getConstructor();
-                c.setAccessible(true);
-                instance = c.newInstance();
-            } catch (NoSuchMethodException e) {
-                for(Constructor<?> c : typeClass.getConstructors()) {
-                    if(c.getParameterCount() == row.size()) {
-                        Parameter[] params = c.getParameters();
-                        Object[] vals = new Object[c.getParameterCount()];
-                        for(int i = 0; i < row.size(); i++) {
-                            Parameter param = params[i];
-                            vals[i] = buildElementValue(param, row);
-                        }
-                        try {
-                            instance = (T) c.newInstance(vals);
-                        } catch(Exception ignored) {
-                            continue;
-                        }
-                    }
-                }
-            }
-            for(Field field : typeClass.getDeclaredFields()) {
-
-                if(Modifier.isTransient(field.getModifiers()) || Modifier.isStatic(field.getModifiers())) {
-                    continue;
-                }
-
-                try {
-                    field.setAccessible(true);
-                    field.set(instance, buildElementValue(field, row));
-                } catch(SecurityException ignored) {
-                    debug(String.format("Field %s on class %s cannot be set accessible!",
-                            field.getName(),
-                            typeClass.getName()));
-                } catch(Exception ignored) {
-                    continue;
-                }
-            }
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            debug("Cannot instantinate " + typeClass.getName() + " for assigning attributes from row!");
-            e.printStackTrace();
-            return null;
-        }
-        return instance;
-    }
-
-    @Nullable
-    private Object buildElementValue(AnnotatedElement element, Row row) {
-        String name;
-        Type type;
-        if(element instanceof Field) {
-            name = ((Field) element).getName();
-            type = ((Field) element).getGenericType();
-        } else if(element instanceof Parameter) { // TODO: Parameter names are arg[a-zA-Z0-9]+, use different strategy.
-            name = ((Parameter) element).getName();
-            type = ((Parameter) element).getType();
-        } else {
-            return null;
-        }
-        Object obj = row.get(name);
-        if(obj == null) {
-            String converted;
-            if((obj = row.get(converted = options.getNamingStrategy().fieldNameToColumn(name))) == null) {
-
-                // Now backup resolvers come.
-                for(FieldValueResolver resolver : backupValueResolvers) {
-                    Object backupValue = resolver.obtainValue(this, element, row, name, converted, type);
-                    if(backupValue != null) {
-                        return backupValue;
-                    }
-                }
-
-                debug(String.format("Cannot find column for target %s (%s)", name, converted));
-                return null;
-            }
-        }
-        if(element.isAnnotationPresent(JsonField.class) && obj instanceof String) {
-            String jsonString = (String) obj;
-            Gson gson = options.getGson();
-            return gson.fromJson(jsonString, type);
-        } else {
-            return obj;
         }
     }
 
@@ -388,15 +306,6 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
             Logger.debug(connection, "Query: " + queryString);
             return connection.prepareStatement(queryString);
         }
-    }
-
-    public interface FieldValueResolver {
-        Object obtainValue(SQLDatabaseConnectionImpl connection,
-                           AnnotatedElement element,
-                           Row row,
-                           String fieldName,
-                           String convertedName,
-                           Type type);
     }
 
     @AllArgsConstructor

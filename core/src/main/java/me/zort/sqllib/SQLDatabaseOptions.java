@@ -16,7 +16,7 @@ public class SQLDatabaseOptions {
     private boolean autoReconnect = true;
     private boolean debug = false;
     private boolean logSqlErrors = true;
-    private NamingStrategy namingStrategy = new DefaultNamingStrategy();
-    private Gson gson = Defaults.DEFAULT_GSON;
+    private transient NamingStrategy namingStrategy = new DefaultNamingStrategy();
+    private transient Gson gson = Defaults.DEFAULT_GSON;
 
 }

@@ -7,27 +7,26 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 import java.util.Optional;
 
-public abstract class QueryNodeR<P extends QueryNode<?>> extends QueryNode<P> {
+public abstract class QueryNodeRequest<P extends QueryNode<?>> extends QueryNode<P> {
 
-    public QueryNodeR(@Nullable P parent, List<QueryNode<?>> initial) {
+    public QueryNodeRequest(@Nullable P parent, List<QueryNode<?>> initial) {
         super(parent, initial);
     }
 
-    public QueryNodeR(@Nullable P parent, List<QueryNode<?>> initial, QueryPriority priority) {
+    public QueryNodeRequest(@Nullable P parent, List<QueryNode<?>> initial, QueryPriority priority) {
         super(parent, initial, priority);
     }
 
-    public QueryNodeR(@Nullable P parent, List<QueryNode<?>> initial, int priority) {
+    public QueryNodeRequest(@Nullable P parent, List<QueryNode<?>> initial, int priority) {
         super(parent, initial, priority);
     }
 
     public Optional<Row> obtainOne() {
         QueryRowsResult<Row> resultList = obtainAll();
-        if(resultList.isEmpty()) {
-            return Optional.empty();
-        } else {
-            return Optional.ofNullable(resultList.get(0));
-        }
+
+        return resultList.isEmpty()
+                ? Optional.empty()
+                : Optional.ofNullable(resultList.get(0));
     }
 
     public QueryRowsResult<Row> obtainAll() {
