@@ -19,7 +19,8 @@ jobs:
         uses: mirromutth/mysql-action@v1.1
         with:
           mysql database: 'test'
-          mysql root password: 'test'
+          mysql user: 'test'
+          mysql password: 'test'
           mysql port: 3306
       - name: Gradle Build
         run: ./gradlew build -x test

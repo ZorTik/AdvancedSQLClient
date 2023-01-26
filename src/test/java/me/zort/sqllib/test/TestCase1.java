@@ -16,7 +16,7 @@ import org.junit.jupiter.api.condition.OS;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Log4j2
-@EnabledOnOs(OS.LINUX) // TODO: Fix tests, endless run
+@EnabledOnOs(value = {OS.LINUX, OS.WINDOWS}) // TODO: Fix tests, endless run
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestCase1 {
 
@@ -42,7 +42,7 @@ public class TestCase1 {
         SQLDatabaseOptions options = new SQLDatabaseOptions();
         options.setDebug(true);
 
-        DefaultSQLEndpoint endpoint = new DefaultSQLEndpoint(String.format("%s:3306", host), "test", "root", "test");
+        DefaultSQLEndpoint endpoint = new DefaultSQLEndpoint(String.format("%s:3306", host), "test", "test", "test");
 
         connection = SQLConnectionBuilder.of(endpoint)
                 .withDriver("com.mysql.cj.jdbc.Driver")

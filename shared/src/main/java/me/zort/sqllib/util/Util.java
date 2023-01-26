@@ -14,7 +14,7 @@ public final class Util {
         int count = 0;
 
         while (copy.contains(substr)) {
-            copy = copy.replaceFirst(str, substr);
+            copy = copy.replaceFirst(substr, "");
             count++;
         }
 
