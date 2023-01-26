@@ -1,5 +1,6 @@
 package me.zort.sqllib.test;
 
+import lombok.extern.log4j.Log4j2;
 import me.zort.sqllib.SQLConnectionBuilder;
 import me.zort.sqllib.SQLDatabaseOptions;
 import me.zort.sqllib.api.SQLDatabaseConnection;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.condition.OS;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Log4j2
 @EnabledOnOs(OS.LINUX) // TODO: Fix tests, endless run
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestCase1 {
@@ -23,6 +25,8 @@ public class TestCase1 {
     @Timeout(15)
     @BeforeAll
     public void prepare() {
+        log.info("Preparing test case...");
+
         String host = System.getenv("D_MYSQL_HOST");
 
         if(host == null)
@@ -37,25 +41,36 @@ public class TestCase1 {
                 .withDriver("com.mysql.cj.jdbc.Driver")
                 .build(options);
 
+        log.info("Connection prepared, connecting...");
+
         assertEquals(endpoint.buildJdbc(), String.format("jdbc:mysql://%s:3306/test", host));
         assertTrue(connection.connect());
         assertTrue(connection.isConnected());
 
+        log.info("Connection established, preparing tables...");
+
         System.out.println("Connection established");
 
         assertNull(connection.exec(() -> "CREATE TABLE IF NOT EXISTS users (nickname VARCHAR(16) PRIMARY KEY NOT NULL, points INT NOT NULL);").getRejectMessage());
+
+        log.info("Tables prepared, test cases ready");
     }
 
     @Timeout(5)
     @AfterAll
     public void close() {
+        log.info("Closing connection...");
         connection.disconnect();
+        log.info("Connection closed");
     }
 
     @Timeout(10)
     @Test
     public void testUpsert() {
+        log.info("Testing upsert (save)...");
         assertTrue(connection.save("users", user1).isSuccessful());
+        log.info("Save successful");
+        log.info("Testing upsert...");
         assertTrue(connection.upsert()
                 .into("users", "nickname", "points")
                 .values(user2.getNickname(), user2.getPoints())
@@ -63,11 +78,13 @@ public class TestCase1 {
                 .and("nickname", user2.getNickname())
                 .and("points", user2.getPoints())
                 .execute().isSuccessful());
+        log.info("Upsert successful");
     }
 
     @Timeout(10)
     @Test
     public void testSelect() {
+        log.info("Testing select...");
         QueryRowsResult<User> result = connection.query(Select.of().from("users")
                 .where()
                 .isEqual("nickname", "User1"), User.class);
@@ -75,6 +92,7 @@ public class TestCase1 {
         assertTrue(result.isSuccessful());
         assertEquals(1, result.size());
         assertEquals(user1, result.get(0));
+        log.info("Select successful");
     }
 
     private static class User {
