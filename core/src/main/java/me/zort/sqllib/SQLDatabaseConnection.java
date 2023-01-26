@@ -58,7 +58,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection {
      * query(() -> "SELECT * FROM players;");
      *
      * @param query The query to use while constructing query string.
-     * @param typeClass Type class of object which will be instantinated and
+     * @param typeClass Type class of object which will be instantiated and
      *                  populated with column values.
      * @param <T> Type of objects in result.
      *

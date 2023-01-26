@@ -124,6 +124,7 @@ public class TestCase1 {
     @Timeout(10)
     @Test
     public void test4_Security() {
+        // SQL Injection check
         Optional<Row> rowOptional = connection.select()
                 .from(TABLE_NAME)
                 .where()
@@ -155,10 +156,9 @@ public class TestCase1 {
     }
 
     @AllArgsConstructor
-    @NoArgsConstructor
     private static class User {
-        private String nickname;
-        private int points;
+        private final String nickname;
+        private final int points;
 
         public String getNickname() {
             return nickname;

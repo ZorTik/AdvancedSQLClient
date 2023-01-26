@@ -3,13 +3,13 @@ package me.zort.sqllib.internal.query.part;
 import me.zort.sqllib.internal.exception.IllegalStatementOperationException;
 import me.zort.sqllib.internal.query.QueryDetails;
 import me.zort.sqllib.internal.query.QueryNode;
-import me.zort.sqllib.internal.query.QueryNodeR;
+import me.zort.sqllib.internal.query.QueryNodeRequest;
 import me.zort.sqllib.internal.query.QueryPriority;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class WhereStatement<P extends QueryNode<?>> extends QueryNodeR<P> {
+public class WhereStatement<P extends QueryNode<?>> extends QueryNodeRequest<P> {
 
     private final List<QueryDetails> conditions = new ArrayList<>();
     private int currPhIndex = 0;

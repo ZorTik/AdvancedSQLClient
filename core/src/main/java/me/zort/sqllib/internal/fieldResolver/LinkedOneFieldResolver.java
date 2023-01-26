@@ -1,5 +1,6 @@
 package me.zort.sqllib.internal.fieldResolver;
 
+import me.zort.sqllib.ObjectMapper;
 import me.zort.sqllib.SQLDatabaseConnectionImpl;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.provider.Select;
@@ -16,7 +17,7 @@ import java.lang.reflect.Type;
  * @see LinkedOne
  * @author ZorTik
  */
-public class LinkedOneFieldResolver implements SQLDatabaseConnectionImpl.FieldValueResolver {
+public class LinkedOneFieldResolver implements ObjectMapper.FieldValueResolver {
 
     @Override
     public Object obtainValue(SQLDatabaseConnectionImpl connection,
