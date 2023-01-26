@@ -6,16 +6,13 @@ import me.zort.sqllib.api.SQLDatabaseConnection;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.provider.Select;
 import me.zort.sqllib.internal.impl.DefaultSQLEndpoint;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@EnabledOnOs(OS.LINUX)
+@EnabledOnOs(OS.LINUX) // TODO: Fix tests, endless run
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestCase1 {
 
@@ -23,6 +20,7 @@ public class TestCase1 {
     private final User user1 = new User("User1", 100);
     private final User user2 = new User("User2", 200);
 
+    @Timeout(15)
     @BeforeAll
     public void prepare() {
         String host = System.getenv("D_MYSQL_HOST");
@@ -42,14 +40,19 @@ public class TestCase1 {
         assertEquals(endpoint.buildJdbc(), String.format("jdbc:mysql://%s:3306/test", host));
         assertTrue(connection.connect());
         assertTrue(connection.isConnected());
+
+        System.out.println("Connection established");
+
         assertNull(connection.exec(() -> "CREATE TABLE IF NOT EXISTS users (nickname VARCHAR(16) PRIMARY KEY NOT NULL, points INT NOT NULL);").getRejectMessage());
     }
 
+    @Timeout(5)
     @AfterAll
     public void close() {
         connection.disconnect();
     }
 
+    @Timeout(10)
     @Test
     public void testUpsert() {
         assertTrue(connection.save("users", user1).isSuccessful());
@@ -62,6 +65,7 @@ public class TestCase1 {
                 .execute().isSuccessful());
     }
 
+    @Timeout(10)
     @Test
     public void testSelect() {
         QueryRowsResult<User> result = connection.query(Select.of().from("users")
