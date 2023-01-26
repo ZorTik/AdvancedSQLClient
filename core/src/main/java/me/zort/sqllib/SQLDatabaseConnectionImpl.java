@@ -383,7 +383,10 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
         @Override
         public PreparedStatement prepare(Connection connection) throws SQLException {
-            return connection.prepareStatement(query.getAncestor().buildQuery());
+            String queryString = query.getAncestor().buildQuery();
+
+            Logger.debug(connection, "Query: " + queryString);
+            return connection.prepareStatement(queryString);
         }
     }
 

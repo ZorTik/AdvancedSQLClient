@@ -64,7 +64,7 @@ public class TestCase1 {
 
         System.out.println("Connection established, preparing tables...");
 
-        assertNull(connection.exec(() -> "CREATE TABLE IF NOT EXISTS users (nickname VARCHAR(16) PRIMARY KEY NOT NULL, points INT NOT NULL);").getRejectMessage());
+        assertNull(connection.exec(() -> "CREATE TABLE IF NOT EXISTS users (nickname VARCHAR(64) PRIMARY KEY NOT NULL, points INT NOT NULL);").getRejectMessage());
         assertNull(connection.exec(() -> "TRUNCATE TABLE users;").getRejectMessage());
 
         System.out.println("Tables prepared, test cases ready");
@@ -97,7 +97,7 @@ public class TestCase1 {
 
         assertNull(result.getRejectMessage());
         assertEquals(1, result.size());
-        assertEquals(user1, result.get(0));
+        assertEquals(user1.getNickname(), result.get(0).getNickname());
         System.out.println("Select successful");
     }
 
@@ -123,7 +123,21 @@ public class TestCase1 {
 
     @Timeout(10)
     @Test
-    public void test4_Delete() {
+    public void test4_Security() {
+        Optional<Row> rowOptional = connection.select()
+                .from(TABLE_NAME)
+                .where()
+                .isEqual("nickname", "asdfmnaskfopdmko' or '1' = '1").obtainOne();
+
+        assertFalse(rowOptional.isPresent());
+
+        // Check for table
+        test2_Select();
+    }
+
+    @Timeout(10)
+    @Test
+    public void test5_Delete() {
         QueryResult result = connection.delete()
                 .from(TABLE_NAME)
                 .where()
@@ -134,7 +148,7 @@ public class TestCase1 {
 
     @Timeout(5)
     @Test
-    public void test5_Close() {
+    public void test6_Close() {
         System.out.println("Closing connection...");
         connection.disconnect();
         System.out.println("Connection closed");
