@@ -4,20 +4,24 @@ import com.google.gson.Gson;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import me.zort.sqllib.api.Query;
-import me.zort.sqllib.api.SQLConnection;
-import me.zort.sqllib.api.SQLDatabaseConnection;
+import me.zort.sqllib.api.StatementFactory;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
+import me.zort.sqllib.api.options.NamingStrategy;
+import me.zort.sqllib.internal.Defaults;
 import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.fieldResolver.LinkedOneFieldResolver;
+import me.zort.sqllib.internal.impl.DefaultNamingStrategy;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.internal.query.*;
 import me.zort.sqllib.internal.query.part.SetStatement;
 import me.zort.sqllib.util.Pair;
 import me.zort.sqllib.util.Validator;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.*;
@@ -31,17 +35,19 @@ import java.util.*;
  *
  * @author ZorTik
  */
-public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
+public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
-    private final SQLConnectionFactory connectionFactory;
+    public static boolean DEFAULT_AUTO_RECONNECT = true;
+    public static boolean DEFAULT_DEBUG = false;
+    public static boolean DEFAULT_LOG_SQL_ERRORS = true;
+    public static NamingStrategy DEFAULT_NAMING_STRATEGY = new DefaultNamingStrategy();
+    public static Gson DEFAULT_GSON = Defaults.DEFAULT_GSON;
+
     @Getter
     private final SQLDatabaseOptions options;
     // Resolvers used after no value is found for the field
     // in mapped object as backup.
     private final List<FieldValueResolver> backupValueResolvers;
-
-    @Getter(onMethod_ = {@Nullable})
-    private Connection connection;
 
     /**
      * Constructs new instance of this implementation with default
@@ -50,7 +56,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
      * @see SQLDatabaseConnectionImpl#SQLDatabaseConnectionImpl(SQLConnectionFactory, SQLDatabaseOptions)
      */
     public SQLDatabaseConnectionImpl(SQLConnectionFactory connectionFactory) {
-        this(connectionFactory, new SQLDatabaseOptions());
+        this(connectionFactory, null);
     }
 
     /**
@@ -59,17 +65,28 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
      * @param connectionFactory Factory to use while opening connection.
      * @param options Client options to use.
      */
-    public SQLDatabaseConnectionImpl(SQLConnectionFactory connectionFactory, SQLDatabaseOptions options) {
-        this.connectionFactory = connectionFactory;
+    public SQLDatabaseConnectionImpl(SQLConnectionFactory connectionFactory, @Nullable SQLDatabaseOptions options) {
+        super(connectionFactory);
+
+        if (options == null)
+            options = new SQLDatabaseOptions(
+                    DEFAULT_AUTO_RECONNECT,
+                    DEFAULT_DEBUG,
+                    DEFAULT_LOG_SQL_ERRORS,
+                    DEFAULT_NAMING_STRATEGY,
+                    DEFAULT_GSON
+            );
+
         this.options = options;
         this.backupValueResolvers = Collections.synchronizedList(new ArrayList<>());
-        this.connection = null;
 
         // Default backup value resolvers.
         registerBackupValueResolver(new LinkedOneFieldResolver());
     }
 
-    public void registerBackupValueResolver(FieldValueResolver resolver) {
+    public void registerBackupValueResolver(@NotNull FieldValueResolver resolver) {
+        Objects.requireNonNull(resolver, "Resolver cannot be null!");
+
         backupValueResolvers.add(resolver);
     }
 
@@ -77,7 +94,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
      * @see SQLDatabaseConnection#save(String, Object)
      */
     @Override
-    public QueryResult save(String table, Object obj) {
+    public QueryResult save(String table, Object obj) { // by default, it creates and upsert request.
         Pair<String[], UnknownValueWrapper[]> defsValsPair = buildDefsVals(obj);
         if(defsValsPair == null) {
             return new QueryResultImpl(false);
@@ -98,6 +115,8 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
 
     @Nullable
     protected Pair<String[], UnknownValueWrapper[]> buildDefsVals(Object obj) {
+        Objects.requireNonNull(obj);
+
         Class<?> aClass = obj.getClass();
 
         Map<String, Object> fields = new HashMap<>();
@@ -140,7 +159,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
      */
     @Override
     public <T> QueryRowsResult<T> query(Query query, Class<T> typeClass) {
-        QueryRowsResult<Row> resultRows = query(query);
+        QueryRowsResult<Row> resultRows = query(query.getAncestor());
         QueryRowsResult<T> result = new QueryRowsResult<>(resultRows.isSuccessful());
         for(Row row : resultRows) {
             Optional.ofNullable(assignValues(row, typeClass))
@@ -154,14 +173,16 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
      */
     @Override
     public QueryRowsResult<Row> query(Query query) {
+        Objects.requireNonNull(query);
+
         if(!handleAutoReconnect()) {
-            return new QueryRowsResult<>(false);
+            return new QueryRowsResult<>(false, "Cannot connect to database!");
         }
-        String queryString = query.getAncestor().buildQuery();
-        debug("Query string: " + queryString);
-        try(PreparedStatement stmt = connection.prepareStatement(queryString);
+
+        try(PreparedStatement stmt = buildStatement(query);
             ResultSet resultSet = stmt.executeQuery()) {
             QueryRowsResult<Row> result = new QueryRowsResult<>(true);
+
             while(resultSet.next()) {
                 ResultSetMetaData meta = resultSet.getMetaData();
                 Row row = new Row();
@@ -174,10 +195,11 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
                 }
                 result.add(row);
             }
+
             return result;
         } catch (SQLException e) {
             logSqlError(e);
-            return new QueryRowsResult<>(false);
+            return new QueryRowsResult<>(false, e.getMessage());
         }
     }
 
@@ -186,16 +208,14 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
      */
     public QueryResult exec(Query query) {
         if(!handleAutoReconnect()) {
-            return new QueryResultImpl(false);
+            return new QueryResultImpl(false, "Cannot connect to database!");
         }
-        String queryString = query.getAncestor().buildQuery();
-        debug("Query string: " + queryString);
-        try(PreparedStatement stmt = connection.prepareStatement(queryString)) {
+        try(PreparedStatement stmt = buildStatement(query)) {
             stmt.execute();
             return new QueryResultImpl(true);
         } catch (SQLException e) {
             logSqlError(e);
-            return new QueryResultImpl(false);
+            return new QueryResultImpl(false, e.getMessage());
         }
     }
 
@@ -205,6 +225,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         try {
             try {
                 Constructor<T> c = typeClass.getConstructor();
+                c.setAccessible(true);
                 instance = c.newInstance();
             } catch (NoSuchMethodException e) {
                 for(Constructor<?> c : typeClass.getConstructors()) {
@@ -255,7 +276,7 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         if(element instanceof Field) {
             name = ((Field) element).getName();
             type = ((Field) element).getGenericType();
-        } else if(element instanceof Parameter) {
+        } else if(element instanceof Parameter) { // TODO: Parameter names are arg[a-zA-Z0-9]+, use different strategy.
             name = ((Parameter) element).getName();
             type = ((Parameter) element).getType();
         } else {
@@ -298,37 +319,6 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         return true;
     }
 
-    /**
-     * @see SQLConnection#connect()
-     */
-    @Override
-    public boolean connect() {
-        if(isConnected()) {
-            disconnect();
-        }
-        try {
-            connection = connectionFactory.connect();
-        } catch (SQLException e) {
-            logSqlError(e);
-            connection = null;
-        }
-        return isConnected();
-    }
-
-    /**
-     * @see SQLConnection#disconnect()
-     */
-    @Override
-    public void disconnect() {
-        if(isConnected()) {
-            try {
-                connection.close();
-            } catch (SQLException e) {
-                logSqlError(e);
-            }
-        }
-    }
-
     public SelectQuery select(String... cols) {
         return new SelectQuery(this, cols);
     }
@@ -367,9 +357,33 @@ public class SQLDatabaseConnectionImpl implements SQLDatabaseConnection {
         }
     }
 
-    protected void logSqlError(Exception e) {
-        if(options.isLogSqlErrors()) {
-            e.printStackTrace();
+    @Override
+    public boolean isLogSqlErrors() {
+        return options.isLogSqlErrors();
+    }
+
+    @Override
+    public boolean isDebug() {
+        return options.isDebug();
+    }
+
+    @SuppressWarnings("unchecked")
+    private PreparedStatement buildStatement(Query query) throws SQLException {
+        StatementFactory<PreparedStatement> factory = new DefaultStatementFactory(query);
+        if (query instanceof StatementFactory)
+            factory = (StatementFactory<PreparedStatement>) query;
+
+        return factory.prepare(getConnection());
+    }
+
+    @RequiredArgsConstructor
+    private static class DefaultStatementFactory implements StatementFactory<PreparedStatement> {
+
+        private final Query query;
+
+        @Override
+        public PreparedStatement prepare(Connection connection) throws SQLException {
+            return connection.prepareStatement(query.getAncestor().buildQuery());
         }
     }
 

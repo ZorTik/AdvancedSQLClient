@@ -18,6 +18,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
+/**
+ * SQLite database connection that changes some operations
+ * since SQLite does not have support for some SQL statements.
+ *
+ * @author ZorTik
+ */
 public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
 
     public SQLiteDatabaseConnectionImpl(SQLConnectionFactory connectionFactory) {
@@ -30,7 +36,7 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
 
     /**
      * Performs an upsert query for defined object
-     * as stated in {@link me.zort.sqllib.api.SQLDatabaseConnection#save(String, Object)}.
+     * as stated in {@link SQLDatabaseConnection#save(String, Object)}.
      * <p>
      * Object needs to have {@link me.zort.sqllib.internal.annotation.PrimaryKey} annotation
      * set to determine which column is a primary key.
@@ -95,6 +101,18 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
         return upsert(table, primaryKey, insert, update);
     }
 
+    /**
+     * Simulates upsert query for SQLite.
+     * It selects rows with limit 1 to check whether there is a row present
+     * matching the current request and then it performs either insert or
+     * update according to the result.
+     *
+     * @param table Table to upsert into.
+     * @param primaryKey Primary key of the object.
+     * @param insert Insert query.
+     * @param update Update query.
+     * @return Result of the query.
+     */
     public QueryResult upsert(String table, PrimaryKey primaryKey, InsertQuery insert, UpdateQuery update) {
         QueryRowsResult<Row> slct = select("*")
                 .from(table)

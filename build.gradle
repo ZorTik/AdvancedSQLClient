@@ -15,10 +15,26 @@ repositories {
 dependencies {
     implementation group: 'org.jetbrains', name: 'annotations', version: '20.1.0'
     implementation 'com.google.code.gson:gson:2.9.0'
-    compileOnly 'org.projectlombok:lombok:1.18.24'
-    annotationProcessor 'org.projectlombok:lombok:1.18.24'
     implementation project(":api")
     implementation project(":core")
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
+    testImplementation project(":api")
+    testImplementation project(":core")
+    testImplementation project(":shared")
+    testImplementation 'com.mysql:mysql-connector-j:8.0.32'
+    testImplementation 'org.apache.logging.log4j:log4j-core:2.19.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+    testRuntimeOnly 'com.google.guava:guava:31.0-jre'
+    testRuntimeOnly 'commons-lang:commons-lang:2.6'
+    testCompileOnly 'org.projectlombok:lombok:1.18.24'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.24'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 jar {

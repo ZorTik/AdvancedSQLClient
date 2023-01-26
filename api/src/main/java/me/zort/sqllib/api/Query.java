@@ -17,4 +17,8 @@ public interface Query {
         return this;
     }
 
+    default boolean isAncestor() {
+        return getAncestor() == this;
+    }
+
 }

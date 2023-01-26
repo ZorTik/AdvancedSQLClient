@@ -79,14 +79,14 @@ public class SQLConnectionBuilder {
     }
 
     public SQLDatabaseConnectionImpl build() {
-        return build(new SQLDatabaseOptions());
+        return build(null);
     }
 
-    public SQLDatabaseConnectionImpl build(SQLDatabaseOptions options) {
+    public SQLDatabaseConnectionImpl build(@Nullable SQLDatabaseOptions options) {
         return build(driver, options);
     }
 
-    public SQLDatabaseConnectionImpl build(@Nullable String driver, SQLDatabaseOptions options) {
+    public SQLDatabaseConnectionImpl build(@Nullable String driver, @Nullable SQLDatabaseOptions options) {
         Objects.requireNonNull(endpoint, "Endpoint must be set!");
         Objects.requireNonNull(jdbc);
         if(driver == null) {

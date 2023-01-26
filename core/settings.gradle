@@ -1,2 +1,3 @@
 include ":api"
 project(":api").projectDir = file("../api")
+project(":shared").projectDir = file("../shared")

@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /**
  * Serves as definitive identity of entity id field.
  * This is useful if you have different PrimaryKey than
- * you want to use as id in {@link me.zort.sqllib.api.repository.SQLTableRepository},
+ * you want to use as id in SQLTableRepository,
  * otherwise a {@link PrimaryKey} is used as ID.
  */
 @Retention(RetentionPolicy.RUNTIME)
