@@ -6,7 +6,9 @@ import lombok.extern.log4j.Log4j2;
 import me.zort.sqllib.SQLConnectionBuilder;
 import me.zort.sqllib.SQLDatabaseOptions;
 import me.zort.sqllib.SQLDatabaseConnection;
+import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
+import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.provider.Select;
 import me.zort.sqllib.internal.impl.DefaultSQLEndpoint;
 import org.apache.logging.log4j.Level;
@@ -14,6 +16,8 @@ import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestCase1 {
 
     private SQLDatabaseConnection connection;
+    private static final String TABLE_NAME = "users";
     private final User user1 = new User("User1", 100);
     private final User user2 = new User("User2", 200);
 
@@ -69,11 +74,11 @@ public class TestCase1 {
     @Test
     public void test1_Upsert() {
         System.out.println("Testing upsert (save)...");
-        assertTrue(connection.save("users", user1).isSuccessful());
+        assertTrue(connection.save(TABLE_NAME, user1).isSuccessful());
         System.out.println("Save successful");
         System.out.println("Testing upsert...");
         assertTrue(connection.upsert()
-                .into("users", "nickname", "points")
+                .into(TABLE_NAME, "nickname", "points")
                 .values(user2.getNickname(), user2.getPoints())
                 .onDuplicateKey()
                 .and("nickname", user2.getNickname())
@@ -86,7 +91,7 @@ public class TestCase1 {
     @Test
     public void test2_Select() {
         System.out.println("Testing select...");
-        QueryRowsResult<User> result = connection.query(Select.of().from("users")
+        QueryRowsResult<User> result = connection.query(Select.of().from(TABLE_NAME)
                 .where()
                 .isEqual("nickname", "User1"), User.class);
 
@@ -96,9 +101,40 @@ public class TestCase1 {
         System.out.println("Select successful");
     }
 
+    @Timeout(10)
+    @Test
+    public void test3_Update() {
+        System.out.println("Testing update...");
+        assertNull(connection.update()
+                .table(TABLE_NAME)
+                .set("points", 300)
+                .where()
+                .isEqual("nickname", user1.getNickname())
+                .execute().getRejectMessage());
+        Optional<Row> rowOptional = connection.select("points")
+                .from(TABLE_NAME)
+                .where()
+                .isEqual("nickname", user1.getNickname())
+                .obtainOne();
+
+        assertTrue(rowOptional.isPresent());
+        assertEquals(300, rowOptional.get().get("points"));
+    }
+
+    @Timeout(10)
+    @Test
+    public void test4_Delete() {
+        QueryResult result = connection.delete()
+                .from(TABLE_NAME)
+                .where()
+                .isEqual("nickname", "User1").execute();
+
+        assertNull(result.getRejectMessage());
+    }
+
     @Timeout(5)
     @Test
-    public void test3_Close() {
+    public void test5_Close() {
         System.out.println("Closing connection...");
         connection.disconnect();
         System.out.println("Connection closed");
