@@ -7,6 +7,8 @@ import me.zort.sqllib.api.SQLDatabaseConnection;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.provider.Select;
 import me.zort.sqllib.internal.impl.DefaultSQLEndpoint;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -21,6 +23,11 @@ public class TestCase1 {
     private SQLDatabaseConnection connection;
     private final User user1 = new User("User1", 100);
     private final User user2 = new User("User2", 200);
+
+    @BeforeAll
+    public void prepareLogging() {
+        Configurator.setAllLevels("", Level.ALL);
+    }
 
     @Timeout(15)
     @BeforeAll
