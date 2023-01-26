@@ -16,10 +16,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class DefaultObjectMapper implements ObjectMapper {
 
-    @Getter(AccessLevel.PROTECTED)
-    private final List<ObjectMapper.FieldValueResolver> backupValueResolvers;
     // Resolvers used after no value is found for the field
     // in mapped object as backup.
+    @Getter(AccessLevel.PROTECTED)
+    private final List<ObjectMapper.FieldValueResolver> backupValueResolvers;
     private final SQLDatabaseConnectionImpl connectionWrapper;
 
     public DefaultObjectMapper(SQLDatabaseConnectionImpl connectionWrapper) {
