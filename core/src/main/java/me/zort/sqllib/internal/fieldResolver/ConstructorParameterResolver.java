@@ -1,7 +1,8 @@
 package me.zort.sqllib.internal.fieldResolver;
 
-import me.zort.sqllib.ObjectMapper;
 import me.zort.sqllib.SQLDatabaseConnectionImpl;
+import me.zort.sqllib.api.ObjectMapper;
+import me.zort.sqllib.api.SQLConnection;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.util.Validator;
 import org.jetbrains.annotations.ApiStatus;
@@ -16,7 +17,7 @@ public class ConstructorParameterResolver implements ObjectMapper.FieldValueReso
     private static final Pattern argumentPattern = Pattern.compile("(arg)(\\d+)");
 
     @Override
-    public Object obtainValue(SQLDatabaseConnectionImpl connection,
+    public Object obtainValue(SQLConnection connection,
                               AnnotatedElement element,
                               Row row,
                               String fieldName,

@@ -1,7 +1,8 @@
 package me.zort.sqllib.internal.fieldResolver;
 
-import me.zort.sqllib.ObjectMapper;
 import me.zort.sqllib.SQLDatabaseConnectionImpl;
+import me.zort.sqllib.api.ObjectMapper;
+import me.zort.sqllib.api.SQLConnection;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.provider.Select;
 import me.zort.sqllib.internal.annotation.LinkedOne;
@@ -20,12 +21,18 @@ import java.lang.reflect.Type;
 public class LinkedOneFieldResolver implements ObjectMapper.FieldValueResolver {
 
     @Override
-    public Object obtainValue(SQLDatabaseConnectionImpl connection,
+    public Object obtainValue(SQLConnection _connection,
                               AnnotatedElement element,
                               Row row,
                               String fieldName,
                               String convertedName,
                               Type type) {
+
+        if(!(_connection instanceof SQLDatabaseConnectionImpl))
+            return null;
+
+        SQLDatabaseConnectionImpl connection = (SQLDatabaseConnectionImpl) _connection;
+
         if(!element.isAnnotationPresent(LinkedOne.class)) {
             // This makes mapping function hop to the next resolver.
             return null;

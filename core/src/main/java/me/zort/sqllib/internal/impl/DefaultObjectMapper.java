@@ -1,27 +1,35 @@
-package me.zort.sqllib;
+package me.zort.sqllib.internal.impl;
 
 import com.google.gson.Gson;
 import lombok.AccessLevel;
 import lombok.Getter;
+import me.zort.sqllib.SQLDatabaseConnectionImpl;
+import me.zort.sqllib.api.ObjectMapper;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.internal.annotation.JsonField;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.*;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class ObjectMapper {
+public class DefaultObjectMapper implements ObjectMapper {
 
     @Getter(AccessLevel.PROTECTED)
-    private final List<FieldValueResolver> backupValueResolvers;
+    private final List<ObjectMapper.FieldValueResolver> backupValueResolvers;
     // Resolvers used after no value is found for the field
     // in mapped object as backup.
     private final SQLDatabaseConnectionImpl connectionWrapper;
 
-    public ObjectMapper(SQLDatabaseConnectionImpl connectionWrapper) {
+    public DefaultObjectMapper(SQLDatabaseConnectionImpl connectionWrapper) {
         this.backupValueResolvers = new CopyOnWriteArrayList<>();
         this.connectionWrapper = connectionWrapper;
+    }
+
+    @Override
+    public void registerBackupValueResolver(@NotNull FieldValueResolver resolver) {
+        this.backupValueResolvers.add(resolver);
     }
 
     @Nullable
@@ -118,12 +126,4 @@ public class ObjectMapper {
         connectionWrapper.debug(message);
     }
 
-    public interface FieldValueResolver {
-        Object obtainValue(SQLDatabaseConnectionImpl connection,
-                           AnnotatedElement element,
-                           Row row,
-                           String fieldName,
-                           String convertedName,
-                           Type type);
-    }
 }

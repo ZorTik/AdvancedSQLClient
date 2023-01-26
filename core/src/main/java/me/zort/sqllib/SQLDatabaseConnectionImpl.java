@@ -2,6 +2,7 @@ package me.zort.sqllib;
 
 import com.google.gson.Gson;
 import lombok.*;
+import me.zort.sqllib.api.ObjectMapper;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.StatementFactory;
 import me.zort.sqllib.api.data.QueryResult;
@@ -14,6 +15,7 @@ import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.fieldResolver.ConstructorParameterResolver;
 import me.zort.sqllib.internal.fieldResolver.LinkedOneFieldResolver;
 import me.zort.sqllib.internal.impl.DefaultNamingStrategy;
+import me.zort.sqllib.internal.impl.DefaultObjectMapper;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.internal.query.*;
 import me.zort.sqllib.internal.query.part.SetStatement;
@@ -35,15 +37,19 @@ import java.util.*;
  */
 public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
+    // --***-- Default Constants --***--
+
     public static boolean DEFAULT_AUTO_RECONNECT = true;
     public static boolean DEFAULT_DEBUG = false;
     public static boolean DEFAULT_LOG_SQL_ERRORS = true;
     public static NamingStrategy DEFAULT_NAMING_STRATEGY = new DefaultNamingStrategy();
     public static Gson DEFAULT_GSON = Defaults.DEFAULT_GSON;
 
+    // --***-- Options & Utilities --***--
+
     @Getter
     private final SQLDatabaseOptions options;
-    private final ObjectMapper objectMapper;
+    private transient ObjectMapper objectMapper;
 
     /**
      * Constructs new instance of this implementation with default
@@ -74,7 +80,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
             );
 
         this.options = options;
-        this.objectMapper = new ObjectMapper(this);
+        this.objectMapper = new DefaultObjectMapper(this);
 
         // Default backup value resolvers.
         registerBackupValueResolver(new LinkedOneFieldResolver());
@@ -84,7 +90,11 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     public void registerBackupValueResolver(@NotNull ObjectMapper.FieldValueResolver resolver) {
         Objects.requireNonNull(resolver, "Resolver cannot be null!");
 
-        objectMapper.getBackupValueResolvers().add(resolver);
+        objectMapper.registerBackupValueResolver(resolver);
+    }
+
+    public void setObjectMapper(@NotNull ObjectMapper objectMapper) {
+        this.objectMapper = Objects.requireNonNull(objectMapper, "Object mapper cannot be null!");
     }
 
     /**
