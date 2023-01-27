@@ -12,6 +12,8 @@ import me.zort.sqllib.mapping.annotation.Where;
 import me.zort.sqllib.util.ParameterPair;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class SelectQueryBuilder implements QueryAnnotation.QueryBuilder<Select> {
     @Override
@@ -20,7 +22,8 @@ public class SelectQueryBuilder implements QueryAnnotation.QueryBuilder<Select> 
 
         String table = Table.Util.getFromContext(method);
 
-        QueryNode<?> node = new SelectQuery(null, table);
+        QueryNode<?> node = new SelectQuery(null, table, queryAnnotation.value().equals("*")
+        ? new ArrayList<>() : Arrays.asList(queryAnnotation.value().replaceAll(" ", "").split(",")));
         if (method.isAnnotationPresent(Where.class)) {
             node = Where.Builder.build((Conditional<?>) node, method.getAnnotation(Where.class));
             node = node.getAncestor();
