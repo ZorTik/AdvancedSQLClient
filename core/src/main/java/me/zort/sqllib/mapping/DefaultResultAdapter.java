@@ -5,7 +5,8 @@ import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.TypeVariable;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.List;
 import java.util.Optional;
 
@@ -13,8 +14,12 @@ public class DefaultResultAdapter implements StatementMappingResultAdapter {
     @Override
     public Object adaptResult(Method method, QueryResult result) {
         Class<?> returnType = method.getReturnType();
-        if (isVoid(returnType) || !(result instanceof QueryRowsResult))
+
+        if(returnType.equals(QueryResult.class)) {
+            return result;
+        } else if (isVoid(returnType) || !(result instanceof QueryRowsResult)) {
             return null;
+        }
 
         QueryRowsResult<?> rows = (QueryRowsResult<?>) result;
 
@@ -34,7 +39,7 @@ public class DefaultResultAdapter implements StatementMappingResultAdapter {
     public Class<?> retrieveResultType(Method method) {
         Class<?> returnType = method.getReturnType();
         if (returnType.equals(Optional.class) || returnType.equals(List.class)) {
-            return getGenericArgument(returnType, true);
+            return getGenericArgument(returnType, method.getGenericReturnType(), true);
         } else if (isVoid(returnType)) {
             return null;
         } else {
@@ -42,8 +47,9 @@ public class DefaultResultAdapter implements StatementMappingResultAdapter {
         }
     }
 
-    private static Class<?> getGenericArgument(Class<?> clazz, boolean throwNotFound) {
-        TypeVariable<? extends Class<?>>[] typeParameters = clazz.getTypeParameters();
+    // List<T>
+    private static Class<?> getGenericArgument(Class<?> clazz, Type genericType, boolean throwNotFound) {
+        Type[] typeParameters = ((ParameterizedType) genericType).getActualTypeArguments();
         if (typeParameters.length < 1) {
             if (throwNotFound) {
                 throw new IllegalArgumentException("The given class does not have a generic argument");
@@ -52,7 +58,12 @@ public class DefaultResultAdapter implements StatementMappingResultAdapter {
             } // For simplicity, return itself to be mapped.
         }
 
-        return typeParameters[0].getGenericDeclaration(); // TODO: Test
+        try {
+            return Class.forName(typeParameters[0].getTypeName());
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return clazz;
+        }
     }
 
     private static boolean isVoid(Class<?> type) {

@@ -20,7 +20,7 @@ import java.util.function.Function;
 public abstract class QueryNode<P extends QueryNode<?>> implements Query, StatementFactory<PreparedStatement> {
 
     @Getter(onMethod_ = {@Nullable})
-    private final P parent;
+    private final transient P parent;
     private final List<QueryNode<?>> children;
     private final int priority;
     private final Map<String, QueryDetails> details;

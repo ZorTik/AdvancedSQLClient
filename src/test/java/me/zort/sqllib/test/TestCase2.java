@@ -51,6 +51,8 @@ public class TestCase2 { // Experimental features
     @Timeout(10)
     @Test
     public void test1_Mapping() {
+        assertNull(connection.save("users", new User("User1", 1000)).getRejectMessage());
+
         DatabaseRepository repository = connection.createMapping(DatabaseRepository.class);
         // TODO: Insert
         assertTrue(repository.selectOne().isPresent());
@@ -63,15 +65,14 @@ public class TestCase2 { // Experimental features
         connection.disconnect();
     }
 
+    @Table("users")
     public interface DatabaseRepository {
 
         @Select
-        @Table("users")
         @Limit(1)
         Optional<User> selectOne();
 
         @Delete
-        @Table("users")
         QueryResult deleteAll();
     }
 

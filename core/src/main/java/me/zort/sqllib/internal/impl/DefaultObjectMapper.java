@@ -87,12 +87,15 @@ public class DefaultObjectMapper implements ObjectMapper {
     private Object buildElementValue(AnnotatedElement element, Row row) {
         String name;
         Type type;
+        Class<?> declaringClass;
         if(element instanceof Field) {
             name = ((Field) element).getName();
             type = ((Field) element).getGenericType();
-        } else if(element instanceof Parameter) { // TODO: Parameter names are arg[a-zA-Z0-9]+, use different strategy.
+            declaringClass = ((Field) element).getDeclaringClass();
+        } else if(element instanceof Parameter) {
             name = ((Parameter) element).getName();
             type = ((Parameter) element).getType();
+            declaringClass = ((Parameter) element).getDeclaringExecutable().getDeclaringClass();
         } else {
             return null;
         }
@@ -109,7 +112,7 @@ public class DefaultObjectMapper implements ObjectMapper {
                     }
                 }
 
-                debug(String.format("Cannot find column for target %s (%s)", name, converted));
+                debug(String.format("Cannot find column for class %s target %s (%s)", declaringClass.getName(), name, converted));
                 return null;
             }
         }

@@ -76,8 +76,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         super(connectionFactory);
 
         if (options == null)
-            options = new SQLDatabaseOptions(
-                    DEFAULT_AUTO_RECONNECT,
+            options = new SQLDatabaseOptions(DEFAULT_AUTO_RECONNECT,
                     DEFAULT_DEBUG,
                     DEFAULT_LOG_SQL_ERRORS,
                     DEFAULT_NAMING_STRATEGY,
@@ -94,16 +93,38 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         registerBackupValueResolver(new ConstructorParameterResolver());
     }
 
+    /**
+     * Registers a backup value resolver to the registry.
+     * Backup value resolvers are used when no value is found for mapped
+     * field in {@link ObjectMapper}.
+     *
+     * @param resolver Resolver to register.
+     */
     public void registerBackupValueResolver(@NotNull ObjectMapper.FieldValueResolver resolver) {
         Objects.requireNonNull(resolver, "Resolver cannot be null!");
 
         objectMapper.registerBackupValueResolver(resolver);
     }
 
+    /**
+     * Sets the object mapper to use.
+     * Object mapper maps queries to objects, as specified in {@link SQLDatabaseConnection#query(Query, Class)}.
+     *
+     * @param objectMapper Object mapper to use.
+     */
     public void setObjectMapper(@NotNull ObjectMapper objectMapper) {
         this.objectMapper = Objects.requireNonNull(objectMapper, "Object mapper cannot be null!");
     }
 
+    /**
+     * Constructs a mapping repository based on provided interface.
+     * The interface should follow rules for creating mapping repositories
+     * in this library.
+     *
+     * @param mappingInterface Interface to create mapping repository for.
+     * @return Mapping repository.
+     * @param <T> Type of mapping repository.
+     */
     @SuppressWarnings("unchecked")
     @ApiStatus.Experimental
     public <T> T createMapping(Class<T> mappingInterface) {
