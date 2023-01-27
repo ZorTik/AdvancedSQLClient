@@ -63,8 +63,8 @@ public class QueryAnnotation {
     }
 
     public static class Validator {
-        public static void requireTableDefinition(Method method) {
-            if (Table.Util.getFromContext(method) == null)
+        public static void requireTableDefinition(Method method, PlaceholderMapper placeholderMapper) {
+            if (Table.Util.getFromContext(method, placeholderMapper) == null)
                 throw new SQLMappingException("Method " + method.getName() + " requires @Table annotation", method, null);
         }
         public static void requireWhereDefinition(Method method) {

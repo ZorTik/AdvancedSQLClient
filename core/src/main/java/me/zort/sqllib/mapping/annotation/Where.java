@@ -2,6 +2,7 @@ package me.zort.sqllib.mapping.annotation;
 
 import me.zort.sqllib.internal.query.Conditional;
 import me.zort.sqllib.internal.query.part.WhereStatement;
+import me.zort.sqllib.mapping.PlaceholderMapper;
 import org.intellij.lang.annotations.Pattern;
 
 import java.lang.annotation.ElementType;
@@ -18,7 +19,6 @@ public @interface Where {
     @interface Condition {
 
         String column();
-        @Pattern("[a-zA-Z0-9_]+")
         String value();
         Type type() default Type.EQUALS;
 
@@ -28,24 +28,26 @@ public @interface Where {
     }
 
     class Builder {
-        public static WhereStatement<?> build(Conditional<?> parent, Where annotation) {
+        public static WhereStatement<?> build(Conditional<?> parent, Where annotation, PlaceholderMapper mapper) {
             WhereStatement<?> where = parent.where();
             for (Condition condition : annotation.value()) {
+                String value = mapper.assignValues(condition.value());
+
                 switch (condition.type()) {
                     case EQUALS:
-                        where.isEqual(condition.column(), condition.value());
+                        where.isEqual(condition.column(), value);
                         break;
                     case BT:
                     case LT:
                         try {
-                            int number = Integer.parseInt(condition.value());
+                            int number = Integer.parseInt(value);
                             if (condition.type().equals(Condition.Type.BT)) {
                                 where.bt(condition.column(), number);
                             } else {
                                 where.lt(condition.column(), number);
                             }
                         } catch (NumberFormatException e) {
-                            throw new IllegalArgumentException("Value of current @Where.Condition must be a number! (" + condition.value() + ")");
+                            throw new IllegalArgumentException("Value of current @Where.Condition must be a number! (" + value + ")");
                         }
                         break;
                 }

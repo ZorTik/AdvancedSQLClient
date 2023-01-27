@@ -1,7 +1,7 @@
 package me.zort.sqllib.api;
 
 /**
- * The StatementMappingFactory is responsible for creating new StatementMapping
+ * The StatementMappingFactory is responsible for creating new {@link StatementMappingStrategy}
  * for defined interfaces.
  *
  * @author ZorTik
@@ -17,6 +17,6 @@ public interface StatementMappingFactory {
      * @return The StatementMapping.
      * @param <T> The interface class type.
      */
-    <T> StatementMapping<T> create(Class<T> interfaceClass, SQLConnection connection);
+    <T> StatementMappingStrategy<T> create(Class<T> interfaceClass, SQLConnection connection);
 
 }

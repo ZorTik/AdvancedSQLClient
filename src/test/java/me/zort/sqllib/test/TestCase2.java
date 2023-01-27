@@ -6,10 +6,7 @@ import me.zort.sqllib.SQLConnectionBuilder;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.SQLDatabaseOptions;
 import me.zort.sqllib.api.data.QueryResult;
-import me.zort.sqllib.mapping.annotation.Delete;
-import me.zort.sqllib.mapping.annotation.Limit;
-import me.zort.sqllib.mapping.annotation.Select;
-import me.zort.sqllib.mapping.annotation.Table;
+import me.zort.sqllib.mapping.annotation.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -55,7 +52,7 @@ public class TestCase2 { // Experimental features
 
         DatabaseRepository repository = connection.createMapping(DatabaseRepository.class);
         // TODO: Insert
-        assertTrue(repository.selectOne().isPresent());
+        assertTrue(repository.selectOne("User1").isPresent());
         assertNull(repository.deleteAll().getRejectMessage());
     }
 
@@ -69,8 +66,12 @@ public class TestCase2 { // Experimental features
     public interface DatabaseRepository {
 
         @Select
+        @Where(value = {
+                @Where.Condition(column = "nickname", value = "{nickname}"),
+                @Where.Condition(column = "points", value = "500", type = Where.Condition.Type.BT)
+        })
         @Limit(1)
-        Optional<User> selectOne();
+        Optional<User> selectOne(@Placeholder("nickname") String nickname);
 
         @Delete
         QueryResult deleteAll();

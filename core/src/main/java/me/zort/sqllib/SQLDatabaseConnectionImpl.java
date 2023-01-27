@@ -128,7 +128,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     @SuppressWarnings("unchecked")
     @ApiStatus.Experimental
     public <T> T createMapping(Class<T> mappingInterface) {
-        StatementMapping<T> statementMapping = mappingFactory.create(mappingInterface, this);
+        StatementMappingStrategy<T> statementMapping = mappingFactory.create(mappingInterface, this);
         return (T) Proxy.newProxyInstance(mappingInterface.getClassLoader(),
                 new Class[]{mappingInterface}, (proxy, method, args) -> {
 

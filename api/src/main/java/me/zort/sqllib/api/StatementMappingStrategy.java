@@ -12,7 +12,7 @@ import java.lang.reflect.Method;
  * @param <T> The type of the proxy instance.
  * @author ZorTik
  */
-public interface StatementMapping<T> {
+public interface StatementMappingStrategy<T> {
 
     /**
      * Executes query based on invoked method with invoked args from

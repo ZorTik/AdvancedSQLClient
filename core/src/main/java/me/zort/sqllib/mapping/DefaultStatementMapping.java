@@ -3,7 +3,7 @@ package me.zort.sqllib.mapping;
 import lombok.RequiredArgsConstructor;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.api.SQLConnection;
-import me.zort.sqllib.api.StatementMapping;
+import me.zort.sqllib.api.StatementMappingStrategy;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.internal.query.QueryNode;
 import me.zort.sqllib.internal.query.QueryNodeRequest;
@@ -15,8 +15,15 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 
+/**
+ * This mapping strategy uses annotations from me.zort.sqllib.mapping.annotation
+ * to build queries. It is the default mapping strategy.
+ *
+ * @param <T> The type of the proxy instance.
+ * @author ZorTik
+ */
 @RequiredArgsConstructor
-public class DefaultStatementMapping<T> implements StatementMapping<T> {
+public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
 
     private final SQLConnection connection;
 
@@ -65,4 +72,5 @@ public class DefaultStatementMapping<T> implements StatementMapping<T> {
         }
         return false;
     }
+
 }

@@ -6,14 +6,14 @@ import java.lang.reflect.Method;
 
 /**
  * Result adapter used for handling operations between {@link SQLConnection}
- * and {@link StatementMapping}.
+ * and {@link StatementMappingStrategy}.
  *
  * @author ZorTik
  */
 public interface StatementMappingResultAdapter {
 
     /**
-     * Adapts invoked {@link StatementMapping} method QueryResult to
+     * Adapts invoked {@link StatementMappingStrategy} method QueryResult to
      * the final result that can be passed to proxy instance.
      *
      * @param method The invoked proxy method.

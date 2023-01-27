@@ -1,5 +1,6 @@
 package me.zort.sqllib.mapping.annotation;
 
+import me.zort.sqllib.mapping.PlaceholderMapper;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.annotation.ElementType;
@@ -15,11 +16,11 @@ public @interface Table {
 
     class Util {
         @Nullable
-        public static String getFromContext(Method method) {
+        public static String getFromContext(Method method, PlaceholderMapper mapper) {
             if (method.isAnnotationPresent(Table.class)) {
-                return method.getAnnotation(Table.class).value();
+                return mapper.assignValues(method.getAnnotation(Table.class).value());
             } else if(method.getDeclaringClass().isAnnotationPresent(Table.class)) {
-                return method.getDeclaringClass().getAnnotation(Table.class).value();
+                return mapper.assignValues(method.getDeclaringClass().getAnnotation(Table.class).value());
             } else {
                 return null;
             }
