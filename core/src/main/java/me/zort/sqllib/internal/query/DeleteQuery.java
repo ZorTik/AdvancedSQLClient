@@ -3,12 +3,13 @@ package me.zort.sqllib.internal.query;
 import lombok.Getter;
 import me.zort.sqllib.api.Executive;
 import me.zort.sqllib.SQLDatabaseConnection;
+import me.zort.sqllib.internal.query.part.LimitStatement;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Objects;
 
-public class DeleteQuery extends QueryNode<QueryNode<?>> implements Executive, Conditional<DeleteQuery> {
+public class DeleteQuery extends QueryNode<QueryNode<?>> implements Executive, Conditional<DeleteQuery>, Limitable<DeleteQuery> {
 
     private String table;
 
@@ -27,6 +28,11 @@ public class DeleteQuery extends QueryNode<QueryNode<?>> implements Executive, C
 
     public DeleteQuery from(String table) {
         this.table = table;
+        return this;
+    }
+
+    public DeleteQuery limit(int limit) {
+        then(new LimitStatement<>(this, new ArrayList<>(), limit));
         return this;
     }
 
