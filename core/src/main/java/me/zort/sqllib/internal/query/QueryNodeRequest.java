@@ -9,10 +9,6 @@ import java.util.Optional;
 
 public abstract class QueryNodeRequest<P extends QueryNode<?>> extends QueryNode<P> {
 
-    public QueryNodeRequest(@Nullable P parent, List<QueryNode<?>> initial) {
-        super(parent, initial);
-    }
-
     public QueryNodeRequest(@Nullable P parent, List<QueryNode<?>> initial, QueryPriority priority) {
         super(parent, initial, priority);
     }

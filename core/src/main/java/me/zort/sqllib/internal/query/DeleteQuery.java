@@ -15,11 +15,11 @@ public class DeleteQuery extends QueryNode<QueryNode<?>> implements Executive, C
     @Getter
     private final SQLDatabaseConnection connection;
 
-    public DeleteQuery(SQLDatabaseConnection connection) {
+    public DeleteQuery(@Nullable SQLDatabaseConnection connection) {
         this(connection, null);
     }
 
-    public DeleteQuery(SQLDatabaseConnection connection, @Nullable String table) {
+    public DeleteQuery(@Nullable SQLDatabaseConnection connection, @Nullable String table) {
         super(null, new ArrayList<>(), QueryPriority.GENERAL);
         this.table = table;
         this.connection = connection;

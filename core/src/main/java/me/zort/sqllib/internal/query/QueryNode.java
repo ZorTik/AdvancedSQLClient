@@ -25,10 +25,6 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
     private final int priority;
     private final Map<String, QueryDetails> details;
 
-    public QueryNode(@Nullable P parent, List<QueryNode<?>> initial) {
-        this(parent, initial, QueryPriority.GENERAL);
-    }
-
     public QueryNode(@Nullable P parent, List<QueryNode<?>> initial, QueryPriority priority) {
         this(parent, initial, priority.getPrior());
     }

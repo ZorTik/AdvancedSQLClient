@@ -1,11 +1,10 @@
 package me.zort.sqllib.test;
 
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import me.zort.sqllib.SQLConnectionBuilder;
-import me.zort.sqllib.SQLDatabaseOptions;
 import me.zort.sqllib.SQLDatabaseConnection;
+import me.zort.sqllib.SQLDatabaseOptions;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
@@ -25,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @EnabledOnOs(value = {OS.LINUX, OS.WINDOWS})
 @TestMethodOrder(MethodOrderer.MethodName.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestCase1 {
+public class TestCase1 { // Basic operations
 
     private SQLDatabaseConnection connection;
     private static final String TABLE_NAME = "users";

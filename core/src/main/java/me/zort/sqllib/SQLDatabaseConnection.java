@@ -8,6 +8,7 @@ import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.query.*;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.Connection;
@@ -31,6 +32,9 @@ public abstract class SQLDatabaseConnection implements SQLConnection {
 
         SQLConnectionPool.register(this);
     }
+
+    @ApiStatus.Experimental
+    public abstract <T> T createMapping(Class<T> mappingInterface);
 
     /**
      * Saves this mapping object into database using upsert query.

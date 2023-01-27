@@ -17,13 +17,13 @@ public class SelectQuery extends QueryNodeRequest<QueryNode<?>> implements Execu
     private String table;
 
     @Getter
-    private SQLDatabaseConnection connection;
+    private final SQLDatabaseConnection connection;
 
-    public SelectQuery(SQLDatabaseConnection connection, String... cols) {
+    public SelectQuery(@Nullable SQLDatabaseConnection connection, String... cols) {
         this(connection, null, Arrays.asList(cols));
     }
 
-    public SelectQuery(SQLDatabaseConnection connection, @Nullable String table, List<String> cols) {
+    public SelectQuery(@Nullable SQLDatabaseConnection connection, @Nullable String table, List<String> cols) {
         super(null, new ArrayList<>(), QueryPriority.GENERAL);
         this.table = table;
         this.cols = cols;

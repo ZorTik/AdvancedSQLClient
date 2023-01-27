@@ -2,9 +2,7 @@ package me.zort.sqllib;
 
 import com.google.gson.Gson;
 import lombok.*;
-import me.zort.sqllib.api.ObjectMapper;
-import me.zort.sqllib.api.Query;
-import me.zort.sqllib.api.StatementFactory;
+import me.zort.sqllib.api.*;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
@@ -19,8 +17,11 @@ import me.zort.sqllib.internal.impl.DefaultObjectMapper;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.internal.query.*;
 import me.zort.sqllib.internal.query.part.SetStatement;
+import me.zort.sqllib.mapping.DefaultResultAdapter;
+import me.zort.sqllib.mapping.DefaultStatementMappingFactory;
 import me.zort.sqllib.util.Pair;
 import me.zort.sqllib.util.Validator;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,6 +50,10 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
     @Getter
     private final SQLDatabaseOptions options;
+    @ApiStatus.Experimental
+    private final transient StatementMappingFactory mappingFactory;
+    @ApiStatus.Experimental
+    private final transient StatementMappingResultAdapter mappingResultAdapter;
     private transient ObjectMapper objectMapper;
 
     /**
@@ -81,6 +86,8 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
         this.options = options;
         this.objectMapper = new DefaultObjectMapper(this);
+        this.mappingFactory = new DefaultStatementMappingFactory();
+        this.mappingResultAdapter = new DefaultResultAdapter();
 
         // Default backup value resolvers.
         registerBackupValueResolver(new LinkedOneFieldResolver());
@@ -97,6 +104,27 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         this.objectMapper = Objects.requireNonNull(objectMapper, "Object mapper cannot be null!");
     }
 
+    @SuppressWarnings("unchecked")
+    @ApiStatus.Experimental
+    public <T> T createMapping(Class<T> mappingInterface) {
+        StatementMapping<T> statementMapping = mappingFactory.create(mappingInterface, this);
+        return (T) Proxy.newProxyInstance(mappingInterface.getClassLoader(),
+                new Class[]{mappingInterface}, (proxy, method, args) -> {
+
+                    // Allow invokation from interfaces or abstract classes only.
+                    Class<?> declaringClass = method.getDeclaringClass();
+                    if ((declaringClass.isInterface() || Modifier.isAbstract(declaringClass.getModifiers()))
+                            && statementMapping.isMappingMethod(method)) {
+                        // Prepare and execute query based on invoked method.
+                        QueryResult result = statementMapping.executeQuery(method, args, mappingResultAdapter.retrieveResultType(method));
+                        // Adapt QueryResult to method return type.
+                        return mappingResultAdapter.adaptResult(method, result);
+                    }
+
+                    return method.invoke(this, args);
+                });
+    }
+
     /**
      * @see SQLDatabaseConnection#save(String, Object)
      */
@@ -106,6 +134,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         if(defsValsPair == null) {
             return new QueryResultImpl(false);
         }
+
         String[] defs = defsValsPair.getFirst();
         UnknownValueWrapper[] vals = defsValsPair.getSecond();
 
@@ -113,13 +142,16 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         for(UnknownValueWrapper wrapper : vals) {
             upsert.appendVal(wrapper.getObject());
         }
+
         SetStatement<InsertQuery> setStmt = upsert.onDuplicateKey();
         for(int i = 0; i < defs.length; i++) {
             setStmt.and(defs[i], vals[i].getObject());
         }
+
         return setStmt.execute();
     }
 
+    @SuppressWarnings("unchecked")
     @Nullable
     protected Pair<String[], UnknownValueWrapper[]> buildDefsVals(Object obj) {
         Objects.requireNonNull(obj);
@@ -168,6 +200,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     public <T> QueryRowsResult<T> query(Query query, Class<T> typeClass) {
         QueryRowsResult<Row> resultRows = query(query.getAncestor());
         QueryRowsResult<T> result = new QueryRowsResult<>(resultRows.isSuccessful());
+
         for(Row row : resultRows) {
             Optional.ofNullable(objectMapper.assignValues(row, typeClass))
                     .ifPresent(result::add);
