@@ -17,7 +17,6 @@ public class SelectQueryBuilder implements QueryAnnotation.QueryBuilder<Select> 
     @Override
     public QueryNode<?> build(Select queryAnnotation, Method method, ParameterPair[] parameters) {
         QueryAnnotation.Validator.requireTableDefinition(method);
-        QueryAnnotation.Validator.requireWhereDefinition(method);
 
         String table = Table.Util.getFromContext(method);
 

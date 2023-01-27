@@ -17,7 +17,6 @@ public class DeleteQueryBuilder implements QueryAnnotation.QueryBuilder<Delete> 
     @Override
     public QueryNode<?> build(Delete queryAnnotation, Method method, ParameterPair[] parameters) {
         QueryAnnotation.Validator.requireTableDefinition(method);
-        QueryAnnotation.Validator.requireWhereDefinition(method);
 
         String table = Table.Util.getFromContext(method);
 
