@@ -147,74 +147,6 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     }
 
     /**
-     * @see SQLDatabaseConnection#save(String, Object)
-     */
-    @Override
-    public QueryResult save(String table, Object obj) { // by default, it creates and upsert request.
-        Pair<String[], UnknownValueWrapper[]> defsValsPair = buildDefsVals(obj);
-        if(defsValsPair == null) {
-            return new QueryResultImpl(false);
-        }
-
-        String[] defs = defsValsPair.getFirst();
-        UnknownValueWrapper[] vals = defsValsPair.getSecond();
-
-        UpsertQuery upsert = upsert().into(table, defs);
-        for(UnknownValueWrapper wrapper : vals) {
-            upsert.appendVal(wrapper.getObject());
-        }
-
-        SetStatement<InsertQuery> setStmt = upsert.onDuplicateKey();
-        for(int i = 0; i < defs.length; i++) {
-            setStmt.and(defs[i], vals[i].getObject());
-        }
-
-        return setStmt.execute();
-    }
-
-    @SuppressWarnings("unchecked")
-    @Nullable
-    protected Pair<String[], UnknownValueWrapper[]> buildDefsVals(Object obj) {
-        Objects.requireNonNull(obj);
-
-        Class<?> aClass = obj.getClass();
-
-        Map<String, Object> fields = new HashMap<>();
-        for(Field field : aClass.getDeclaredFields()) {
-
-            if(Modifier.isTransient(field.getModifiers())) {
-                // Transient fields are ignored.
-                continue;
-            }
-
-            try {
-                field.setAccessible(true);
-                Object o = field.get(obj);
-                if(field.isAnnotationPresent(JsonField.class)) {
-                    o = options.getGson().toJson(o);
-                } else if(Validator.validateAutoIncrement(field) && field.get(obj) == null) {
-                    // If field is PrimaryKey and autoIncrement true and is null,
-                    // We will skip this to use auto increment strategy on SQL server.
-                    continue;
-                }
-                fields.put(options.getNamingStrategy().fieldNameToColumn(field.getName()), o);
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-                return null;
-            }
-        }
-        // I make entry array for indexing safety.
-        Map.Entry<String, Object>[] entryArray = fields.entrySet().toArray(new Map.Entry[0]);
-        String[] defs = new String[entryArray.length];
-        UnknownValueWrapper[] vals = new UnknownValueWrapper[entryArray.length];
-        for(int i = 0; i < entryArray.length; i++) {
-            defs[i] = entryArray[i].getKey();
-            vals[i] = new UnknownValueWrapper(entryArray[i].getValue());
-        }
-        return new Pair<>(defs, vals);
-    }
-
-    /**
      * @see SQLDatabaseConnection#query(Query, Class)
      */
     @Override
@@ -280,6 +212,76 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         }
     }
 
+    /**
+     * @see SQLDatabaseConnection#save(String, Object)
+     */
+    @Override
+    public QueryResult save(String table, Object obj) { // by default, it creates and upsert request.
+        Pair<String[], UnknownValueWrapper[]> data = buildDefsVals(obj);
+
+        if(data == null) {
+            return new QueryResultImpl(false);
+        }
+
+        return save(obj).table(table).execute();
+    }
+
+    public QueryResult insert(String table, Object obj) {
+        Pair<String[], UnknownValueWrapper[]> data = buildDefsVals(obj);
+
+        if (data == null)
+            return new QueryResultImpl(false);
+
+        InsertQuery query = insert().into(table, data.getFirst());
+        for (UnknownValueWrapper valueWrapper : data.getSecond()) {
+            query.appendVal(valueWrapper.getObject());
+        }
+
+        return query.execute();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Nullable
+    protected Pair<String[], UnknownValueWrapper[]> buildDefsVals(Object obj) {
+        Objects.requireNonNull(obj);
+
+        Class<?> aClass = obj.getClass();
+
+        Map<String, Object> fields = new HashMap<>();
+        for(Field field : aClass.getDeclaredFields()) {
+
+            if(Modifier.isTransient(field.getModifiers())) {
+                // Transient fields are ignored.
+                continue;
+            }
+
+            try {
+                field.setAccessible(true);
+                Object o = field.get(obj);
+                if(field.isAnnotationPresent(JsonField.class)) {
+                    o = options.getGson().toJson(o);
+                } else if(Validator.validateAutoIncrement(field) && field.get(obj) == null) {
+                    // If field is PrimaryKey and autoIncrement true and is null,
+                    // We will skip this to use auto increment strategy on SQL server.
+                    continue;
+                }
+                fields.put(options.getNamingStrategy().fieldNameToColumn(field.getName()), o);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+        // I make entry array for indexing safety.
+        Map.Entry<String, Object>[] entryArray = fields.entrySet().toArray(new Map.Entry[0]);
+        String[] defs = new String[entryArray.length];
+        UnknownValueWrapper[] vals = new UnknownValueWrapper[entryArray.length];
+        for(int i = 0; i < entryArray.length; i++) {
+            defs[i] = entryArray[i].getKey();
+            vals[i] = new UnknownValueWrapper(entryArray[i].getValue());
+        }
+        return new Pair<>(defs, vals);
+    }
+
     private boolean handleAutoReconnect() {
         if(options.isAutoReconnect() && !isConnected()) {
             debug("Trying to make a new connection with the database!");
@@ -321,6 +323,29 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
     public DeleteQuery delete() {
         return new DeleteQuery(this);
+    }
+
+    public UpsertQuery save(Object obj) {
+        Pair<String[], UnknownValueWrapper[]> data = buildDefsVals(obj);
+
+        if(data == null) {
+            return null;
+        }
+
+        String[] defs = data.getFirst();
+        UnknownValueWrapper[] vals = data.getSecond();
+
+        UpsertQuery upsert = upsert().into(null, defs);
+        for(UnknownValueWrapper wrapper : vals) {
+            upsert.appendVal(wrapper.getObject());
+        }
+
+        SetStatement<InsertQuery> setStmt = upsert.onDuplicateKey();
+        for(int i = 0; i < defs.length; i++) {
+            setStmt.and(defs[i], vals[i].getObject());
+        }
+
+        return (UpsertQuery) setStmt.getAncestor();
     }
 
     public void debug(String message) {

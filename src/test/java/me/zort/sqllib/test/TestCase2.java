@@ -11,10 +11,10 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
+import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @Log4j2
 @EnabledOnOs(value = {OS.LINUX, OS.WINDOWS})
@@ -51,8 +51,8 @@ public class TestCase2 { // Experimental features
         assertNull(connection.save("users", new User("User1", 1000)).getRejectMessage());
 
         DatabaseRepository repository = connection.createMapping(DatabaseRepository.class);
-        // TODO: Insert
         assertTrue(repository.selectOne("User1").isPresent());
+        assertFalse(repository.selectAll().isEmpty());
         assertNull(repository.deleteAll().getRejectMessage());
     }
 
@@ -65,6 +65,9 @@ public class TestCase2 { // Experimental features
     @Table("users")
     public interface DatabaseRepository {
 
+        @Save // Upsert
+        QueryResult save(User user);
+
         @Select
         @Where(value = {
                 @Where.Condition(column = "nickname", value = "{nickname}"),
@@ -72,6 +75,9 @@ public class TestCase2 { // Experimental features
         })
         @Limit(1)
         Optional<User> selectOne(@Placeholder("nickname") String nickname);
+
+        @Select
+        List<User> selectAll();
 
         @Delete
         QueryResult deleteAll();

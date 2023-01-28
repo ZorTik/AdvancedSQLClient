@@ -1,5 +1,6 @@
 package me.zort.sqllib.mapping.builder;
 
+import me.zort.sqllib.api.SQLConnection;
 import me.zort.sqllib.internal.query.Conditional;
 import me.zort.sqllib.internal.query.Limitable;
 import me.zort.sqllib.internal.query.QueryNode;
@@ -18,7 +19,7 @@ import java.util.Arrays;
 
 public class SelectQueryBuilder implements QueryAnnotation.QueryBuilder<Select> {
     @Override
-    public QueryNode<?> build(Select queryAnnotation, Method method, ParameterPair[] parameters) {
+    public QueryNode<?> build(SQLConnection connection, Select queryAnnotation, Method method, ParameterPair[] parameters) {
         PlaceholderMapper placeholderMapper = new PlaceholderMapper(parameters);
         QueryAnnotation.Validator.requireTableDefinition(method, placeholderMapper);
         String table = Table.Util.getFromContext(method, placeholderMapper);

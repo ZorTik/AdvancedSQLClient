@@ -1,5 +1,6 @@
 package me.zort.sqllib.mapping.builder;
 
+import me.zort.sqllib.api.SQLConnection;
 import me.zort.sqllib.internal.query.Conditional;
 import me.zort.sqllib.internal.query.DeleteQuery;
 import me.zort.sqllib.internal.query.Limitable;
@@ -16,7 +17,7 @@ import java.lang.reflect.Method;
 
 public class DeleteQueryBuilder implements QueryAnnotation.QueryBuilder<Delete> {
     @Override
-    public QueryNode<?> build(Delete queryAnnotation, Method method, ParameterPair[] parameters) {
+    public QueryNode<?> build(SQLConnection connection, Delete queryAnnotation, Method method, ParameterPair[] parameters) {
         PlaceholderMapper placeholderMapper = new PlaceholderMapper(parameters);
         QueryAnnotation.Validator.requireTableDefinition(method, placeholderMapper);
         String table = Table.Util.getFromContext(method, placeholderMapper);

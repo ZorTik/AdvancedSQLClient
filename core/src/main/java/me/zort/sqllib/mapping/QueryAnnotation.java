@@ -3,12 +3,11 @@ package me.zort.sqllib.mapping;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import me.zort.sqllib.api.SQLConnection;
 import me.zort.sqllib.internal.query.QueryNode;
-import me.zort.sqllib.mapping.annotation.Delete;
-import me.zort.sqllib.mapping.annotation.Select;
-import me.zort.sqllib.mapping.annotation.Table;
-import me.zort.sqllib.mapping.annotation.Where;
+import me.zort.sqllib.mapping.annotation.*;
 import me.zort.sqllib.mapping.builder.DeleteQueryBuilder;
+import me.zort.sqllib.mapping.builder.SaveQueryBuilder;
 import me.zort.sqllib.mapping.builder.SelectQueryBuilder;
 import me.zort.sqllib.mapping.exception.SQLMappingException;
 import me.zort.sqllib.util.ParameterPair;
@@ -24,6 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * mapping proxy. Query that is wrapped appears on abstract methods
  * of the proxy instance created using:
  * {@link me.zort.sqllib.SQLDatabaseConnection#createMapping(Class)}
+ *
+ * @author ZorTik
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 @Getter
@@ -38,6 +39,7 @@ public class QueryAnnotation {
     static {
         QUERY_ANNOT.put(Select.class, new QueryAnnotation(true, new SelectQueryBuilder()));
         QUERY_ANNOT.put(Delete.class, new QueryAnnotation(false, new DeleteQueryBuilder()));
+        QUERY_ANNOT.put(Save.class, new QueryAnnotation(false, new SaveQueryBuilder()));
         // TODO: Populate
     }
 
@@ -59,7 +61,8 @@ public class QueryAnnotation {
      * method annotations and parameters, to be executed by {@link DefaultStatementMapping}.
      */
     public interface QueryBuilder<T extends Annotation> {
-        QueryNode<?> build(T queryAnnotation, Method method, ParameterPair[] parameters);
+
+        QueryNode<?> build(SQLConnection connection, T queryAnnotation, Method method, ParameterPair[] parameters);
     }
 
     public static class Validator {

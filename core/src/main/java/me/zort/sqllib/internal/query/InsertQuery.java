@@ -35,8 +35,12 @@ public class InsertQuery extends QueryNode<QueryNode<?>> implements Executive, C
     }
 
     public InsertQuery into(String table, String... defs) {
-        this.table = table;
         this.defs = defs;
+        return table(table);
+    }
+
+    public InsertQuery table(String table) {
+        this.table = table;
         return this;
     }
 
