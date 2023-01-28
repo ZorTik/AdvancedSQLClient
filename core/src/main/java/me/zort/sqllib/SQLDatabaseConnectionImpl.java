@@ -39,6 +39,7 @@ import java.util.*;
  *
  * @author ZorTik
  */
+@SuppressWarnings("unused")
 public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
     // --***-- Default Constants --***--
@@ -123,6 +124,28 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
      * Constructs a mapping repository based on provided interface.
      * The interface should follow rules for creating mapping repositories
      * in this library.
+     * <p>
+     * Example:
+     * <pre>
+     *     &#64;Table("users")
+     *     public interface MyRepository {
+     *          &#64;Select("*")
+     *          &#64;Where(&#64;Where.Condition(column = "firstname", value = "{First Name}"))
+     *          &#64;Limit(1)
+     *          Optional&lt;User&gt; getUser(&#64;Placeholder("First Name") String firstName);
+     *
+     *          &#64;Select
+     *          List&lt;User&gt; getUsers();
+     *
+     *          &#64;Delete
+     *          QueryResult deleteUsers();
+     *     }
+     *
+     *     SQLDatabaseConnection connection = ...;
+     *     MyRepository repository = connection.createGate(MyRepository.class);
+     *
+     *     Optional&lt;User&gt; user = repository.getUser("John");
+     * </pre>
      *
      * @param mappingInterface Interface to create mapping repository for.
      * @return Mapping repository.
@@ -130,7 +153,9 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
      */
     @SuppressWarnings("unchecked")
     @ApiStatus.Experimental
-    public <T> T createGate(Class<T> mappingInterface) {
+    public final <T> T createGate(Class<T> mappingInterface) {
+        Objects.requireNonNull(mappingInterface, "Mapping interface cannot be null!");
+
         StatementMappingStrategy<T> statementMapping = mappingFactory.create(mappingInterface, this);
         return (T) Proxy.newProxyInstance(mappingInterface.getClassLoader(),
                 new Class[]{mappingInterface}, (proxy, method, args) -> {
@@ -150,10 +175,30 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     }
 
     /**
-     * @see SQLDatabaseConnection#query(Query, Class)
+     * Performs new query and returns the result. This result is never null.
+     * See: {@link QueryRowsResult#isSuccessful()}
+     *
+     * Examples:
+     * <p>
+     * query(Select.of().from("players"), Player.class)
+     *  .stream()
+     *  .map(Player::getNickname)
+     *  .forEach(System.out::println);
+     * <p>
+     * query(() -> "SELECT * FROM players;");
+     *
+     * @param query The query to use while constructing query string.
+     * @param typeClass Type class of object which will be instantiated and
+     *                  populated with column values.
+     * @param <T> Type of objects in result.
+     *
+     * @return Collection of row objects.
      */
     @Override
     public <T> QueryRowsResult<T> query(Query query, Class<T> typeClass) {
+        Objects.requireNonNull(query);
+        Objects.requireNonNull(typeClass);
+
         QueryRowsResult<Row> resultRows = query(query.getAncestor());
         QueryRowsResult<T> result = new QueryRowsResult<>(resultRows.isSuccessful());
 
@@ -165,7 +210,9 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     }
 
     /**
-     * @see SQLDatabaseConnectionImpl#query(Query, Class)
+     * Performs new query and returns the result. This result is never null.
+     *
+     * @see SQLDatabaseConnection#query(Query, Class)
      */
     @Override
     public QueryRowsResult<Row> query(Query query) {
@@ -200,7 +247,14 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     }
 
     /**
-     * @see SQLDatabaseConnection#exec(Query)
+     * Executes given query and returns execution result.
+     * This result does not contain any rows. If you want to
+     * execute query return result of rows, see method
+     * {@link SQLDatabaseConnection#query(Query)}
+     *
+     * @param query Query to use for building query string.
+     * @return Blank rows result that only informs
+     * about success state of the request.
      */
     public QueryResult exec(Query query) {
         if(!handleAutoReconnect()) {
@@ -216,7 +270,14 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     }
 
     /**
-     * @see SQLDatabaseConnection#save(String, Object)
+     * Saves this mapping object into database using upsert query.
+     * <p>
+     * All mapping strategies are described in:
+     * {@link SQLDatabaseConnection#query(Query, Class)}.
+     *
+     * @param table Table to save into.
+     * @param obj The object to save.
+     * @return Result of the query.
      */
     @Override
     public QueryResult save(String table, Object obj) { // by default, it creates and upsert request.
@@ -285,6 +346,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         return new Pair<>(defs, vals);
     }
 
+    @SuppressWarnings("all")
     private boolean handleAutoReconnect() {
         if(options.isAutoReconnect() && !isConnected()) {
             debug("Trying to make a new connection with the database!");
@@ -295,6 +357,8 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         }
         return true;
     }
+
+    // --***-- Query builders --***--
 
     public SelectQuery select(String... cols) {
         return new SelectQuery(this, cols);
@@ -365,6 +429,16 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     @Override
     public boolean isDebug() {
         return options.isDebug();
+    }
+
+    public final SQLDatabaseOptions cloneOptions() {
+        SQLDatabaseOptions cloned = new SQLDatabaseOptions();
+        cloned.setDebug(options.isDebug());
+        cloned.setLogSqlErrors(options.isLogSqlErrors());
+        cloned.setNamingStrategy(options.getNamingStrategy());
+        cloned.setGson(options.getGson());
+        cloned.setAutoReconnect(options.isAutoReconnect());
+        return cloned;
     }
 
     @SuppressWarnings("unchecked")

@@ -33,6 +33,37 @@ public abstract class SQLDatabaseConnection implements SQLConnection {
         SQLConnectionPool.register(this);
     }
 
+    /**
+     * Constructs a mapping repository based on provided interface.
+     * The interface should follow rules for creating mapping repositories
+     * in this library.
+     * <p>
+     * Example:
+     * <pre>
+     *     &#64;Table("users")
+     *     public interface MyRepository {
+     *          &#64;Select("*")
+     *          &#64;Where(&#64;Where.Condition(column = "firstname", value = "{First Name}"))
+     *          &#64;Limit(1)
+     *          Optional&lt;User&gt; getUser(&#64;Placeholder("First Name") String firstName);
+     *
+     *          &#64;Select
+     *          List&lt;User&gt; getUsers();
+     *
+     *          &#64;Delete
+     *          QueryResult deleteUsers();
+     *     }
+     *
+     *     SQLDatabaseConnection connection = ...;
+     *     MyRepository repository = connection.createGate(MyRepository.class);
+     *
+     *     Optional&lt;User&gt; user = repository.getUser("John");
+     * </pre>
+     *
+     * @param mappingInterface Interface to create mapping repository for.
+     * @return Mapping repository.
+     * @param <T> Type of mapping repository.
+     */
     @ApiStatus.Experimental
     public abstract <T> T createGate(Class<T> mappingInterface);
 
