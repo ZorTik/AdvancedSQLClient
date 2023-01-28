@@ -3,7 +3,7 @@ package me.zort.sqllib.mapping;
 import lombok.RequiredArgsConstructor;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.api.SQLConnection;
-import me.zort.sqllib.api.StatementMappingStrategy;
+import me.zort.sqllib.api.mapping.StatementMappingStrategy;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.internal.query.QueryNode;
 import me.zort.sqllib.internal.query.QueryNodeRequest;

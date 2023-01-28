@@ -1,6 +1,6 @@
 package me.zort.sqllib.mapping;
 
-import me.zort.sqllib.api.StatementMappingResultAdapter;
+import me.zort.sqllib.api.mapping.StatementMappingResultAdapter;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 

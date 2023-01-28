@@ -1,4 +1,4 @@
-package me.zort.sqllib.api;
+package me.zort.sqllib.api.mapping;
 
 import me.zort.sqllib.api.data.QueryResult;
 import org.jetbrains.annotations.Nullable;

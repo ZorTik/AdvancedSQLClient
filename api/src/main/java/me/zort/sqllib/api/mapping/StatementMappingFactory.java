@@ -1,4 +1,6 @@
-package me.zort.sqllib.api;
+package me.zort.sqllib.api.mapping;
+
+import me.zort.sqllib.api.SQLConnection;
 
 /**
  * The StatementMappingFactory is responsible for creating new {@link StatementMappingStrategy}

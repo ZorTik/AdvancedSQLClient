@@ -1,8 +1,8 @@
 package me.zort.sqllib.mapping;
 
 import me.zort.sqllib.api.SQLConnection;
-import me.zort.sqllib.api.StatementMappingStrategy;
-import me.zort.sqllib.api.StatementMappingFactory;
+import me.zort.sqllib.api.mapping.StatementMappingStrategy;
+import me.zort.sqllib.api.mapping.StatementMappingFactory;
 
 import java.lang.reflect.Modifier;
 
