@@ -23,5 +23,3 @@ You can add AdvancedSQLClient to your build path using Maven or Gradle. You can 
 This repository contains some basic rules specified in Code of Conduct file.<br>
 
 <a href="https://github.com/ZorTik/AdvancedSQLClient/blob/master/CODE_OF_CONDUCT.md">Code of Conduct</a>
-
-> Wiki in progress!
