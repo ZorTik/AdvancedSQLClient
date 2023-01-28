@@ -10,7 +10,7 @@ import java.util.List;
 public class Example {
 
     public void example() {
-        SQLDatabaseConnectionImpl connection = SQLConnectionBuilder.of(
+        SQLDatabaseConnection connection = SQLConnectionBuilder.of(
                 "localhost",
                         3306,
                         "database",
