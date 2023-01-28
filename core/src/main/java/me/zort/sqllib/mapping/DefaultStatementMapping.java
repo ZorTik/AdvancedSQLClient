@@ -53,7 +53,7 @@ public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
             throw new SQLMappingException("Connection is not a SQLDatabaseConnection!", method, args);
         }
 
-        QueryNode<?> node = wrappedAnnotation.getQueryBuilder().build(queryAnnotation, method, parameters);
+        QueryNode<?> node = wrappedAnnotation.getQueryBuilder().build(connection, queryAnnotation, method, parameters);
         if (wrappedAnnotation.isProducesResult() && node instanceof QueryNodeRequest) {
             return mapTo != null
                     ? ((SQLDatabaseConnection) connection).query(node, mapTo)
