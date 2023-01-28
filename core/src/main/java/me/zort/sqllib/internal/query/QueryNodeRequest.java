@@ -9,10 +9,6 @@ import java.util.Optional;
 
 public abstract class QueryNodeRequest<P extends QueryNode<?>> extends QueryNode<P> {
 
-    public QueryNodeRequest(@Nullable P parent, List<QueryNode<?>> initial) {
-        super(parent, initial);
-    }
-
     public QueryNodeRequest(@Nullable P parent, List<QueryNode<?>> initial, QueryPriority priority) {
         super(parent, initial, priority);
     }
@@ -29,8 +25,20 @@ public abstract class QueryNodeRequest<P extends QueryNode<?>> extends QueryNode
                 : Optional.ofNullable(resultList.get(0));
     }
 
+    public <T> Optional<T> obtainOne(Class<T> mapTo) {
+        QueryRowsResult<T> resultList = obtainAll(mapTo);
+
+        return resultList.isEmpty()
+                ? Optional.empty()
+                : Optional.ofNullable(resultList.get(0));
+    }
+
     public QueryRowsResult<Row> obtainAll() {
         return invokeToConnection(connection -> connection.query(getAncestor()));
+    }
+
+    public <T> QueryRowsResult<T> obtainAll(Class<T> mapTo) {
+        return invokeToConnection(connection -> connection.query(getAncestor(), mapTo));
     }
 
 }

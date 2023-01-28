@@ -11,19 +11,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class SelectQuery extends QueryNodeRequest<QueryNode<?>> implements Executive, Conditional<SelectQuery> {
+public class SelectQuery extends QueryNodeRequest<QueryNode<?>> implements Executive, Conditional<SelectQuery>, Limitable<SelectQuery> {
 
     private final List<String> cols;
     private String table;
 
     @Getter
-    private SQLDatabaseConnection connection;
+    private final SQLDatabaseConnection connection;
 
-    public SelectQuery(SQLDatabaseConnection connection, String... cols) {
+    public SelectQuery(@Nullable SQLDatabaseConnection connection, String... cols) {
         this(connection, null, Arrays.asList(cols));
     }
 
-    public SelectQuery(SQLDatabaseConnection connection, @Nullable String table, List<String> cols) {
+    public SelectQuery(@Nullable SQLDatabaseConnection connection, @Nullable String table, List<String> cols) {
         super(null, new ArrayList<>(), QueryPriority.GENERAL);
         this.table = table;
         this.cols = cols;

@@ -18,11 +18,7 @@ import java.util.Optional;
 
 public class SQLConnectionBuilder {
 
-    public static SQLConnectionBuilder of(String address,
-                                          int port,
-                                          String database,
-                                          String username,
-                                          String password) {
+    public static SQLConnectionBuilder of(String address, int port, String database, String username, String password) {
         return of(new DefaultSQLEndpoint(address + ":" + port, database, username, password));
     }
 
@@ -46,6 +42,10 @@ public class SQLConnectionBuilder {
     private SQLEndpoint endpoint;
     private String jdbc;
     private String driver = null;
+
+    public SQLConnectionBuilder(String address, int port, String database, String username, String password) {
+        this(new DefaultSQLEndpoint(address + ":" + port, database, username, password));
+    }
 
     public SQLConnectionBuilder() {
         this(null);

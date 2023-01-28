@@ -5,7 +5,7 @@ import me.zort.sqllib.internal.query.part.WhereStatement;
 
 import java.util.ArrayList;
 
-public interface Conditional<P extends QueryNode<?> & Conditional<P>> {
+public interface Conditional<P extends QueryNode<?> & Conditional<P>> { // P = self
 
     default WhereStatement<P> where() {
         return where(QueryPriority.CONDITION.getPrior());

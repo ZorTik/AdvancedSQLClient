@@ -17,15 +17,15 @@ public class UpdateQuery extends QueryNode<QueryNode<?>> implements Executive, C
     @Getter
     private final SQLDatabaseConnection connection;
 
-    public UpdateQuery(SQLDatabaseConnection connection) {
+    public UpdateQuery(@Nullable SQLDatabaseConnection connection) {
         this(connection, null);
     }
 
-    public UpdateQuery(SQLDatabaseConnection connection, @Nullable String table) {
+    public UpdateQuery(@Nullable SQLDatabaseConnection connection, @Nullable String table) {
         this(connection, table, QueryPriority.GENERAL.getPrior());
     }
 
-    protected UpdateQuery(SQLDatabaseConnection connection, @Nullable String table, int priority) {
+    protected UpdateQuery(@Nullable SQLDatabaseConnection connection, @Nullable String table, int priority) {
         super(null, new ArrayList<>(), priority);
         this.table = table;
         this.connection = connection;

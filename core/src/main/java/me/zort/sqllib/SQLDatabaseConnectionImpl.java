@@ -2,12 +2,13 @@ package me.zort.sqllib;
 
 import com.google.gson.Gson;
 import lombok.*;
-import me.zort.sqllib.api.ObjectMapper;
-import me.zort.sqllib.api.Query;
-import me.zort.sqllib.api.StatementFactory;
+import me.zort.sqllib.api.*;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
+import me.zort.sqllib.api.mapping.StatementMappingFactory;
+import me.zort.sqllib.api.mapping.StatementMappingResultAdapter;
+import me.zort.sqllib.api.mapping.StatementMappingStrategy;
 import me.zort.sqllib.api.options.NamingStrategy;
 import me.zort.sqllib.internal.Defaults;
 import me.zort.sqllib.internal.annotation.JsonField;
@@ -19,8 +20,11 @@ import me.zort.sqllib.internal.impl.DefaultObjectMapper;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.internal.query.*;
 import me.zort.sqllib.internal.query.part.SetStatement;
+import me.zort.sqllib.mapping.DefaultResultAdapter;
+import me.zort.sqllib.mapping.DefaultStatementMappingFactory;
 import me.zort.sqllib.util.Pair;
 import me.zort.sqllib.util.Validator;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -49,6 +53,10 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
     @Getter
     private final SQLDatabaseOptions options;
+    @ApiStatus.Experimental
+    private final transient StatementMappingFactory mappingFactory;
+    @ApiStatus.Experimental
+    private final transient StatementMappingResultAdapter mappingResultAdapter;
     private transient ObjectMapper objectMapper;
 
     /**
@@ -71,8 +79,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         super(connectionFactory);
 
         if (options == null)
-            options = new SQLDatabaseOptions(
-                    DEFAULT_AUTO_RECONNECT,
+            options = new SQLDatabaseOptions(DEFAULT_AUTO_RECONNECT,
                     DEFAULT_DEBUG,
                     DEFAULT_LOG_SQL_ERRORS,
                     DEFAULT_NAMING_STRATEGY,
@@ -81,84 +88,65 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
         this.options = options;
         this.objectMapper = new DefaultObjectMapper(this);
+        this.mappingFactory = new DefaultStatementMappingFactory();
+        this.mappingResultAdapter = new DefaultResultAdapter();
 
         // Default backup value resolvers.
         registerBackupValueResolver(new LinkedOneFieldResolver());
         registerBackupValueResolver(new ConstructorParameterResolver());
     }
 
+    /**
+     * Registers a backup value resolver to the registry.
+     * Backup value resolvers are used when no value is found for mapped
+     * field in {@link ObjectMapper}.
+     *
+     * @param resolver Resolver to register.
+     */
     public void registerBackupValueResolver(@NotNull ObjectMapper.FieldValueResolver resolver) {
         Objects.requireNonNull(resolver, "Resolver cannot be null!");
 
         objectMapper.registerBackupValueResolver(resolver);
     }
 
+    /**
+     * Sets the object mapper to use.
+     * Object mapper maps queries to objects, as specified in {@link SQLDatabaseConnection#query(Query, Class)}.
+     *
+     * @param objectMapper Object mapper to use.
+     */
     public void setObjectMapper(@NotNull ObjectMapper objectMapper) {
         this.objectMapper = Objects.requireNonNull(objectMapper, "Object mapper cannot be null!");
     }
 
     /**
-     * @see SQLDatabaseConnection#save(String, Object)
+     * Constructs a mapping repository based on provided interface.
+     * The interface should follow rules for creating mapping repositories
+     * in this library.
+     *
+     * @param mappingInterface Interface to create mapping repository for.
+     * @return Mapping repository.
+     * @param <T> Type of mapping repository.
      */
-    @Override
-    public QueryResult save(String table, Object obj) { // by default, it creates and upsert request.
-        Pair<String[], UnknownValueWrapper[]> defsValsPair = buildDefsVals(obj);
-        if(defsValsPair == null) {
-            return new QueryResultImpl(false);
-        }
-        String[] defs = defsValsPair.getFirst();
-        UnknownValueWrapper[] vals = defsValsPair.getSecond();
+    @SuppressWarnings("unchecked")
+    @ApiStatus.Experimental
+    public <T> T createGate(Class<T> mappingInterface) {
+        StatementMappingStrategy<T> statementMapping = mappingFactory.create(mappingInterface, this);
+        return (T) Proxy.newProxyInstance(mappingInterface.getClassLoader(),
+                new Class[]{mappingInterface}, (proxy, method, args) -> {
 
-        UpsertQuery upsert = upsert().into(table, defs);
-        for(UnknownValueWrapper wrapper : vals) {
-            upsert.appendVal(wrapper.getObject());
-        }
-        SetStatement<InsertQuery> setStmt = upsert.onDuplicateKey();
-        for(int i = 0; i < defs.length; i++) {
-            setStmt.and(defs[i], vals[i].getObject());
-        }
-        return setStmt.execute();
-    }
+                    // Allow invokation from interfaces or abstract classes only.
+                    Class<?> declaringClass = method.getDeclaringClass();
+                    if ((declaringClass.isInterface() || Modifier.isAbstract(declaringClass.getModifiers()))
+                            && statementMapping.isMappingMethod(method)) {
+                        // Prepare and execute query based on invoked method.
+                        QueryResult result = statementMapping.executeQuery(method, args, mappingResultAdapter.retrieveResultType(method));
+                        // Adapt QueryResult to method return type.
+                        return mappingResultAdapter.adaptResult(method, result);
+                    }
 
-    @Nullable
-    protected Pair<String[], UnknownValueWrapper[]> buildDefsVals(Object obj) {
-        Objects.requireNonNull(obj);
-
-        Class<?> aClass = obj.getClass();
-
-        Map<String, Object> fields = new HashMap<>();
-        for(Field field : aClass.getDeclaredFields()) {
-
-            if(Modifier.isTransient(field.getModifiers())) {
-                // Transient fields are ignored.
-                continue;
-            }
-
-            try {
-                field.setAccessible(true);
-                Object o = field.get(obj);
-                if(field.isAnnotationPresent(JsonField.class)) {
-                    o = options.getGson().toJson(o);
-                } else if(Validator.validateAutoIncrement(field) && field.get(obj) == null) {
-                    // If field is PrimaryKey and autoIncrement true and is null,
-                    // We will skip this to use auto increment strategy on SQL server.
-                    continue;
-                }
-                fields.put(options.getNamingStrategy().fieldNameToColumn(field.getName()), o);
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-                return null;
-            }
-        }
-        // I make entry array for indexing safety.
-        Map.Entry<String, Object>[] entryArray = fields.entrySet().toArray(new Map.Entry[0]);
-        String[] defs = new String[entryArray.length];
-        UnknownValueWrapper[] vals = new UnknownValueWrapper[entryArray.length];
-        for(int i = 0; i < entryArray.length; i++) {
-            defs[i] = entryArray[i].getKey();
-            vals[i] = new UnknownValueWrapper(entryArray[i].getValue());
-        }
-        return new Pair<>(defs, vals);
+                    return method.invoke(this, args);
+                });
     }
 
     /**
@@ -168,6 +156,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     public <T> QueryRowsResult<T> query(Query query, Class<T> typeClass) {
         QueryRowsResult<Row> resultRows = query(query.getAncestor());
         QueryRowsResult<T> result = new QueryRowsResult<>(resultRows.isSuccessful());
+
         for(Row row : resultRows) {
             Optional.ofNullable(objectMapper.assignValues(row, typeClass))
                     .ifPresent(result::add);
@@ -226,6 +215,76 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         }
     }
 
+    /**
+     * @see SQLDatabaseConnection#save(String, Object)
+     */
+    @Override
+    public QueryResult save(String table, Object obj) { // by default, it creates and upsert request.
+        Pair<String[], UnknownValueWrapper[]> data = buildDefsVals(obj);
+
+        if(data == null) {
+            return new QueryResultImpl(false);
+        }
+
+        return save(obj).table(table).execute();
+    }
+
+    public QueryResult insert(String table, Object obj) {
+        Pair<String[], UnknownValueWrapper[]> data = buildDefsVals(obj);
+
+        if (data == null)
+            return new QueryResultImpl(false);
+
+        InsertQuery query = insert().into(table, data.getFirst());
+        for (UnknownValueWrapper valueWrapper : data.getSecond()) {
+            query.appendVal(valueWrapper.getObject());
+        }
+
+        return query.execute();
+    }
+
+    @SuppressWarnings("unchecked")
+    @Nullable
+    protected Pair<String[], UnknownValueWrapper[]> buildDefsVals(Object obj) {
+        Objects.requireNonNull(obj);
+
+        Class<?> aClass = obj.getClass();
+
+        Map<String, Object> fields = new HashMap<>();
+        for(Field field : aClass.getDeclaredFields()) {
+
+            if(Modifier.isTransient(field.getModifiers())) {
+                // Transient fields are ignored.
+                continue;
+            }
+
+            try {
+                field.setAccessible(true);
+                Object o = field.get(obj);
+                if(field.isAnnotationPresent(JsonField.class)) {
+                    o = options.getGson().toJson(o);
+                } else if(Validator.validateAutoIncrement(field) && field.get(obj) == null) {
+                    // If field is PrimaryKey and autoIncrement true and is null,
+                    // We will skip this to use auto increment strategy on SQL server.
+                    continue;
+                }
+                fields.put(options.getNamingStrategy().fieldNameToColumn(field.getName()), o);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+        // I make entry array for indexing safety.
+        Map.Entry<String, Object>[] entryArray = fields.entrySet().toArray(new Map.Entry[0]);
+        String[] defs = new String[entryArray.length];
+        UnknownValueWrapper[] vals = new UnknownValueWrapper[entryArray.length];
+        for(int i = 0; i < entryArray.length; i++) {
+            defs[i] = entryArray[i].getKey();
+            vals[i] = new UnknownValueWrapper(entryArray[i].getValue());
+        }
+        return new Pair<>(defs, vals);
+    }
+
     private boolean handleAutoReconnect() {
         if(options.isAutoReconnect() && !isConnected()) {
             debug("Trying to make a new connection with the database!");
@@ -267,6 +326,29 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
     public DeleteQuery delete() {
         return new DeleteQuery(this);
+    }
+
+    public UpsertQuery save(Object obj) {
+        Pair<String[], UnknownValueWrapper[]> data = buildDefsVals(obj);
+
+        if(data == null) {
+            return null;
+        }
+
+        String[] defs = data.getFirst();
+        UnknownValueWrapper[] vals = data.getSecond();
+
+        UpsertQuery upsert = upsert().into(null, defs);
+        for(UnknownValueWrapper wrapper : vals) {
+            upsert.appendVal(wrapper.getObject());
+        }
+
+        SetStatement<InsertQuery> setStmt = upsert.onDuplicateKey();
+        for(int i = 0; i < defs.length; i++) {
+            setStmt.and(defs[i], vals[i].getObject());
+        }
+
+        return (UpsertQuery) setStmt.getAncestor();
     }
 
     public void debug(String message) {

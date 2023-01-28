@@ -22,6 +22,11 @@ public class UpsertQuery extends InsertQuery {
     }
 
     @Override
+    public UpsertQuery table(String table) {
+        return (UpsertQuery) super.table(table);
+    }
+
+    @Override
     public UpsertQuery values(Object... values) {
         return (UpsertQuery) super.values(values);
     }
