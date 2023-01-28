@@ -17,7 +17,7 @@ Before documentation is done, here is a <a href="https://github.com/ZorTik/Advan
 ## Installation
 You can add AdvancedSQLClient to your build path using Maven or Gradle. You can also shade&relocate it using shade plugin to have it's unique build path.
 
-<a href="https://github.com/ZorTik/AdvancedSQLClient/wiki/Installation">Installation on Wiki</a>
+<a href="https://github.com/ZorTik/AdvancedSQLClient/wiki">Installation & Usage on Wiki</a>
 
 ## Code of Conduct
 This repository contains some basic rules specified in Code of Conduct file.<br>
