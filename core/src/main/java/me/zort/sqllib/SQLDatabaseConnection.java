@@ -34,7 +34,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection {
     }
 
     @ApiStatus.Experimental
-    public abstract <T> T createMapping(Class<T> mappingInterface);
+    public abstract <T> T createGate(Class<T> mappingInterface);
 
     /**
      * Saves this mapping object into database using upsert query.

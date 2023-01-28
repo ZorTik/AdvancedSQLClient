@@ -130,7 +130,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
      */
     @SuppressWarnings("unchecked")
     @ApiStatus.Experimental
-    public <T> T createMapping(Class<T> mappingInterface) {
+    public <T> T createGate(Class<T> mappingInterface) {
         StatementMappingStrategy<T> statementMapping = mappingFactory.create(mappingInterface, this);
         return (T) Proxy.newProxyInstance(mappingInterface.getClassLoader(),
                 new Class[]{mappingInterface}, (proxy, method, args) -> {

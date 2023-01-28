@@ -50,7 +50,7 @@ public class TestCase2 { // Experimental features
     public void test1_Mapping() {
         assertNull(connection.save("users", new User("User1", 1000)).getRejectMessage());
 
-        DatabaseRepository repository = connection.createMapping(DatabaseRepository.class);
+        DatabaseRepository repository = connection.createGate(DatabaseRepository.class);
         assertTrue(repository.selectOne("User1").isPresent());
         assertFalse(repository.selectAll().isEmpty());
         assertNull(repository.deleteAll().getRejectMessage());

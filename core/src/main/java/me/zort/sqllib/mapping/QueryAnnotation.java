@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Represents a query annotation wrapper used in default statement
  * mapping proxy. Query that is wrapped appears on abstract methods
  * of the proxy instance created using:
- * {@link me.zort.sqllib.SQLDatabaseConnection#createMapping(Class)}
+ * {@link me.zort.sqllib.SQLDatabaseConnection#createGate(Class)}
  *
  * @author ZorTik
  */
