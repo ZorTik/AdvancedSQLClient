@@ -5,7 +5,6 @@ import me.zort.sqllib.SQLDatabaseConnectionImpl;
 import me.zort.sqllib.api.SQLConnection;
 import me.zort.sqllib.internal.query.QueryNode;
 import me.zort.sqllib.internal.query.UpsertQuery;
-import me.zort.sqllib.mapping.PlaceholderMapper;
 import me.zort.sqllib.mapping.QueryAnnotation;
 import me.zort.sqllib.mapping.annotation.Save;
 import me.zort.sqllib.mapping.annotation.Table;
@@ -19,9 +18,7 @@ public class SaveQueryBuilder implements QueryAnnotation.QueryBuilder<Save> {
         if (!(connection instanceof SQLDatabaseConnectionImpl))
             throw new IllegalArgumentException("The connection must be an instance of SQLDatabaseConnectionImpl");
 
-        PlaceholderMapper placeholderMapper = new PlaceholderMapper(parameters);
-        QueryAnnotation.Validator.requireTableDefinition(method, placeholderMapper);
-        String table = Table.Util.getFromContext(method, placeholderMapper);
+        String table = Table.Util.getFromContext(method, parameters);
 
         UpsertQuery query = ((SQLDatabaseConnectionImpl) connection).save(getSaveableObject(parameters));
         query.table(table);

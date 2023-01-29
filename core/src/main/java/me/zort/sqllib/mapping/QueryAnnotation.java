@@ -7,6 +7,7 @@ import me.zort.sqllib.api.SQLConnection;
 import me.zort.sqllib.internal.query.QueryNode;
 import me.zort.sqllib.mapping.annotation.*;
 import me.zort.sqllib.mapping.builder.DeleteQueryBuilder;
+import me.zort.sqllib.mapping.builder.InsertQueryBuilder;
 import me.zort.sqllib.mapping.builder.SaveQueryBuilder;
 import me.zort.sqllib.mapping.builder.SelectQueryBuilder;
 import me.zort.sqllib.mapping.exception.SQLMappingException;
@@ -40,6 +41,7 @@ public class QueryAnnotation {
         QUERY_ANNOT.put(Select.class, new QueryAnnotation(true, new SelectQueryBuilder()));
         QUERY_ANNOT.put(Delete.class, new QueryAnnotation(false, new DeleteQueryBuilder()));
         QUERY_ANNOT.put(Save.class, new QueryAnnotation(false, new SaveQueryBuilder()));
+        QUERY_ANNOT.put(Insert.class, new QueryAnnotation(false, new InsertQueryBuilder()));
         // TODO: Populate
     }
 
@@ -66,10 +68,6 @@ public class QueryAnnotation {
     }
 
     public static class Validator {
-        public static void requireTableDefinition(Method method, PlaceholderMapper placeholderMapper) {
-            if (Table.Util.getFromContext(method, placeholderMapper) == null)
-                throw new SQLMappingException("Method " + method.getName() + " requires @Table annotation", method, null);
-        }
         public static void requireWhereDefinition(Method method) {
             if (!method.isAnnotationPresent(Where.class))
                 throw new SQLMappingException("Method " + method.getName() + " requires @Where annotation", method, null);

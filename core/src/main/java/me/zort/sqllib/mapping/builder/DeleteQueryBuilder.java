@@ -19,8 +19,7 @@ public class DeleteQueryBuilder implements QueryAnnotation.QueryBuilder<Delete> 
     @Override
     public QueryNode<?> build(SQLConnection connection, Delete queryAnnotation, Method method, ParameterPair[] parameters) {
         PlaceholderMapper placeholderMapper = new PlaceholderMapper(parameters);
-        QueryAnnotation.Validator.requireTableDefinition(method, placeholderMapper);
-        String table = Table.Util.getFromContext(method, placeholderMapper);
+        String table = Table.Util.getFromContext(method, parameters);
 
         QueryNode<?> node = new DeleteQuery(null, table);
         if (method.isAnnotationPresent(Where.class)) {

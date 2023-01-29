@@ -21,8 +21,7 @@ public class SelectQueryBuilder implements QueryAnnotation.QueryBuilder<Select> 
     @Override
     public QueryNode<?> build(SQLConnection connection, Select queryAnnotation, Method method, ParameterPair[] parameters) {
         PlaceholderMapper placeholderMapper = new PlaceholderMapper(parameters);
-        QueryAnnotation.Validator.requireTableDefinition(method, placeholderMapper);
-        String table = Table.Util.getFromContext(method, placeholderMapper);
+        String table = Table.Util.getFromContext(method, parameters);
 
         QueryNode<?> node = new SelectQuery(null, table, queryAnnotation.value().equals("*")
         ? new ArrayList<>() : Arrays.asList(queryAnnotation.value().replaceAll(" ", "").split(",")));

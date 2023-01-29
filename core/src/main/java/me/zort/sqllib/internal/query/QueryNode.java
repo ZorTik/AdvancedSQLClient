@@ -36,6 +36,15 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
         this.details = new ConcurrentHashMap<>();
     }
 
+    /**
+     * Builds the query string with placeholders containing values
+     * for passing into PreparedStatement.
+     * <p>
+     * Query example: SELECT * FROM table WHERE id = &lt;id&gt;;
+     * Values example: [AnyId]
+     *
+     * @return QueryDetails object.
+     */
     public abstract QueryDetails buildQueryDetails();
 
     @Override
