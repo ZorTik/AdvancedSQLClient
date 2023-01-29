@@ -48,12 +48,14 @@ public class TestCase2 { // Experimental features
     @Timeout(10)
     @Test
     public void test1_Mapping() {
-        assertNull(connection.save("users", new User("User1", 1000)).getRejectMessage());
-
         DatabaseRepository repository = connection.createGate(DatabaseRepository.class);
+        assertNull(repository.save(new User("User1", 1000)).getRejectMessage());
         assertTrue(repository.selectOne("User1").isPresent());
+        assertNull(repository.insertNew("User4", 800).getRejectMessage());
+        assertTrue(repository.selectOne("User4").isPresent());
         assertFalse(repository.selectAll().isEmpty());
         assertNull(repository.deleteAll().getRejectMessage());
+        assertTrue(repository.selectAll().isEmpty());
     }
 
     @Timeout(5)
@@ -67,6 +69,9 @@ public class TestCase2 { // Experimental features
 
         @Save // Upsert
         QueryResult save(User user);
+
+        @Insert(cols = {"nickname", "points"}, vals = {"{nickname}", "{points}"})
+        QueryResult insertNew(@Placeholder("nickname") String nickname, @Placeholder("points") int points);
 
         @Select
         @Where(value = {

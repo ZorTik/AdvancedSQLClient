@@ -170,7 +170,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
                         return mappingResultAdapter.adaptResult(method, result);
                     }
 
-                    return method.invoke(this, args);
+                    throw new UnsupportedOperationException("Method " + method.getName() + " is not supported by this mapping repository!");
                 });
     }
 

@@ -1,6 +1,9 @@
 package me.zort.sqllib.mapping.annotation;
 
 import me.zort.sqllib.mapping.PlaceholderMapper;
+import me.zort.sqllib.mapping.QueryAnnotation;
+import me.zort.sqllib.mapping.exception.SQLMappingException;
+import me.zort.sqllib.util.ParameterPair;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.annotation.ElementType;
@@ -16,13 +19,14 @@ public @interface Table {
 
     class Util {
         @Nullable
-        public static String getFromContext(Method method, PlaceholderMapper mapper) {
+        public static String getFromContext(Method method, ParameterPair[] parameters) {
+            PlaceholderMapper mapper = new PlaceholderMapper(parameters);
             if (method.isAnnotationPresent(Table.class)) {
                 return mapper.assignValues(method.getAnnotation(Table.class).value());
             } else if(method.getDeclaringClass().isAnnotationPresent(Table.class)) {
                 return mapper.assignValues(method.getDeclaringClass().getAnnotation(Table.class).value());
             } else {
-                return null;
+                throw new SQLMappingException("Method " + method.getName() + " requires @Table annotation", method, null);
             }
         }
     }
