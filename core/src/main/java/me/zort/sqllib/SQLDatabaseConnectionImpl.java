@@ -216,6 +216,10 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
      */
     @Override
     public QueryRowsResult<Row> query(Query query) {
+        return doQuery(query, false);
+    }
+
+    private QueryRowsResult<Row> doQuery(Query query, boolean isRetry) {
         Objects.requireNonNull(query);
 
         if(!handleAutoReconnect()) {
@@ -241,6 +245,11 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
             return result;
         } catch (SQLException e) {
+            if (!isRetry && e.getMessage().contains("database connection closed")) {
+                reconnect();
+                return doQuery(query, true);
+            }
+
             logSqlError(e);
             return new QueryRowsResult<>(false, e.getMessage());
         }
@@ -257,6 +266,10 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
      * about success state of the request.
      */
     public QueryResult exec(Query query) {
+        return doExec(query, false);
+    }
+
+    private QueryResult doExec(Query query, boolean isRetry) {
         if(!handleAutoReconnect()) {
             return new QueryResultImpl(false, "Cannot connect to database!");
         }
@@ -264,6 +277,11 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
             stmt.execute();
             return new QueryResultImpl(true);
         } catch (SQLException e) {
+            if (!isRetry && e.getMessage().contains("database connection closed")) {
+                reconnect();
+                return doExec(query, true);
+            }
+
             logSqlError(e);
             return new QueryResultImpl(false, e.getMessage());
         }
@@ -349,11 +367,16 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     @SuppressWarnings("all")
     private boolean handleAutoReconnect() {
         if(options.isAutoReconnect() && !isConnected()) {
-            debug("Trying to make a new connection with the database!");
-            if(!connect()) {
-                debug("Cannot make new connection!");
-                return false;
-            }
+            return reconnect();
+        }
+        return true;
+    }
+
+    private boolean reconnect() {
+        debug("Trying to make a new connection with the database!");
+        if(!connect()) {
+            debug("Cannot make new connection!");
+            return false;
         }
         return true;
     }
