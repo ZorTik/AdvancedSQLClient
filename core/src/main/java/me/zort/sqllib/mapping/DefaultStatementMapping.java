@@ -3,6 +3,7 @@ package me.zort.sqllib.mapping;
 import lombok.RequiredArgsConstructor;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.api.SQLConnection;
+import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.mapping.StatementMappingStrategy;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.internal.query.QueryNode;
@@ -54,6 +55,11 @@ public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
         }
 
         QueryNode<?> node = wrappedAnnotation.getQueryBuilder().build(connection, queryAnnotation, method, parameters);
+
+        if (mapTo != null && wrappedAnnotation.isProducesResult() && QueryRowsResult.class.isAssignableFrom(mapTo)) {
+            return ((SQLDatabaseConnection) connection).query(node);
+        }
+
         if (wrappedAnnotation.isProducesResult() && node instanceof QueryNodeRequest) {
             return mapTo != null
                     ? ((SQLDatabaseConnection) connection).query(node, mapTo)

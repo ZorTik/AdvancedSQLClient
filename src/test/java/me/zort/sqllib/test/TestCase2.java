@@ -6,6 +6,8 @@ import me.zort.sqllib.SQLConnectionBuilder;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.SQLDatabaseOptions;
 import me.zort.sqllib.api.data.QueryResult;
+import me.zort.sqllib.api.data.QueryRowsResult;
+import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.mapping.annotation.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -54,6 +56,8 @@ public class TestCase2 { // Experimental features
         assertNull(repository.insertNew("User4", 800).getRejectMessage());
         assertTrue(repository.selectOne("User4").isPresent());
         assertFalse(repository.selectAll().isEmpty());
+        assertNotEquals(0L, repository.count().get(0).get("COUNT(*)"));
+
         assertNull(repository.deleteAll().getRejectMessage());
         assertTrue(repository.selectAll().isEmpty());
     }
@@ -86,6 +90,9 @@ public class TestCase2 { // Experimental features
 
         @Delete
         QueryResult deleteAll();
+
+        @Query("SELECT COUNT(*) FROM users;")
+        QueryRowsResult<Row> count();
     }
 
     @AllArgsConstructor
