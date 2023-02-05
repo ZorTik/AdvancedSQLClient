@@ -133,11 +133,6 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
     }
 
     @Override
-    public UpsertQuery upsert(@Nullable String table) {
-        throw new IllegalStatementOperationException("Default upsert is not supported by SQLite!");
-    }
-
-    @Override
     public QueryResult exec(Query query) {
         if (query instanceof UpsertQuery && ((UpsertQuery) query).getAssignedSaveObject() != null)
             return save(((UpsertQuery) query).getTable(), ((UpsertQuery) query).getAssignedSaveObject());
