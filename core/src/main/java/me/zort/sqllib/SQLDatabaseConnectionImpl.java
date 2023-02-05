@@ -28,9 +28,12 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.*;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Main database client object implementation.
@@ -157,6 +160,9 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         Objects.requireNonNull(mappingInterface, "Mapping interface cannot be null!");
 
         StatementMappingStrategy<T> statementMapping = mappingFactory.create(mappingInterface, this);
+
+        List<Method> pendingMethods = new CopyOnWriteArrayList<>();
+
         return (T) Proxy.newProxyInstance(mappingInterface.getClassLoader(),
                 new Class[]{mappingInterface}, (proxy, method, args) -> {
 
@@ -168,6 +174,11 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
                         QueryResult result = statementMapping.executeQuery(method, args, mappingResultAdapter.retrieveResultType(method));
                         // Adapt QueryResult to method return type.
                         return mappingResultAdapter.adaptResult(method, result);
+                    }
+
+                    // Default methods are invoked normally.
+                    if (declaringClass.isInterface() && method.isDefault()) {
+                        return JVM.getJVM().invokeDefault(declaringClass, proxy, method, args);
                     }
 
                     throw new UnsupportedOperationException("Method " + method.getName() + " is not supported by this mapping repository!");

@@ -55,11 +55,6 @@ public class UpsertQuery extends InsertQuery {
     }
 
     @Override
-    public String buildQuery() {
-        return super.buildQuery();
-    }
-
-    @Override
     public UpsertQuery then(String part) {
         return (UpsertQuery) super.then(part);
     }
