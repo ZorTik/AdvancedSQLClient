@@ -1,5 +1,7 @@
 package me.zort.sqllib.internal.query;
 
+import lombok.Getter;
+import lombok.Setter;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.internal.query.part.SetStatement;
 import org.jetbrains.annotations.Nullable;
@@ -7,6 +9,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 
 public class UpsertQuery extends InsertQuery {
+
+    @Setter
+    @Getter
+    private Object assignedSaveObject = null; // Can be null, only relevant in SQLite mode.
 
     public UpsertQuery(SQLDatabaseConnection connection) {
         super(connection);

@@ -1,5 +1,6 @@
 package me.zort.sqllib;
 
+import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
@@ -136,4 +137,11 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
         throw new IllegalStatementOperationException("Default upsert is not supported by SQLite!");
     }
 
+    @Override
+    public QueryResult exec(Query query) {
+        if (query instanceof UpsertQuery && ((UpsertQuery) query).getAssignedSaveObject() != null)
+            return save(((UpsertQuery) query).getTable(), ((UpsertQuery) query).getAssignedSaveObject());
+
+        return super.exec(query);
+    }
 }

@@ -20,8 +20,11 @@ public class SaveQueryBuilder implements QueryAnnotation.QueryBuilder<Save> {
 
         String table = Table.Util.getFromContext(method, parameters);
 
-        UpsertQuery query = ((SQLDatabaseConnectionImpl) connection).save(getSaveableObject(parameters));
+        Object saveableObject = getSaveableObject(parameters);
+
+        UpsertQuery query = ((SQLDatabaseConnectionImpl) connection).save(saveableObject);
         query.table(table);
+        query.setAssignedSaveObject(saveableObject);
 
         return query;
     }

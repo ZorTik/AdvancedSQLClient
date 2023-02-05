@@ -1,5 +1,7 @@
 package me.zort.sqllib.mapping.builder;
 
+import lombok.Getter;
+import me.zort.sqllib.api.Executive;
 import me.zort.sqllib.api.SQLConnection;
 import me.zort.sqllib.internal.query.QueryDetails;
 import me.zort.sqllib.internal.query.QueryNode;
@@ -20,7 +22,7 @@ public class NativeQueryBuilder implements QueryAnnotation.QueryBuilder<Annotati
     @Override
     public QueryNode<?> build(SQLConnection connection, Annotation queryAnnotation, Method method, ParameterPair[] parameters) {
         PlaceholderMapper mapper = new PlaceholderMapper(parameters);
-        return new QueryNode<QueryNode<?>>(null, new ArrayList<>(), QueryPriority.GENERAL) {
+        return new LocalQueryNodeExecutive(connection) {
             private int currPhIndex = 0;
             @Override
             public QueryDetails buildQueryDetails() {
@@ -57,6 +59,17 @@ public class NativeQueryBuilder implements QueryAnnotation.QueryBuilder<Annotati
                 return "nq_" + currPhIndex++;
             }
         };
+    }
+
+    private static abstract class LocalQueryNodeExecutive extends QueryNode<QueryNode<?>> implements Executive {
+
+        @Getter
+        private final SQLConnection connection;
+
+        public LocalQueryNodeExecutive(SQLConnection connection) {
+            super(null, new ArrayList<>(), QueryPriority.GENERAL);
+            this.connection = connection;
+        }
     }
 
 }
