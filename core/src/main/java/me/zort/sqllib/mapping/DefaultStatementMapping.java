@@ -8,6 +8,7 @@ import me.zort.sqllib.api.mapping.StatementMappingStrategy;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.internal.query.QueryNode;
 import me.zort.sqllib.internal.query.QueryNodeRequest;
+import me.zort.sqllib.mapping.annotation.Append;
 import me.zort.sqllib.mapping.exception.SQLMappingException;
 import me.zort.sqllib.util.ParameterPair;
 import org.jetbrains.annotations.Nullable;
@@ -55,6 +56,11 @@ public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
         }
 
         QueryNode<?> node = wrappedAnnotation.getQueryBuilder().build(connection, queryAnnotation, method, parameters);
+
+        if (method.isAnnotationPresent(Append.class)) {
+            Append append = method.getAnnotation(Append.class);
+            node.then(new PlaceholderMapper(parameters).assignValues(append.value()));
+        }
 
         if (mapTo != null && wrappedAnnotation.isProducesResult() && QueryRowsResult.class.isAssignableFrom(mapTo)) {
             return ((SQLDatabaseConnection) connection).query(node);
