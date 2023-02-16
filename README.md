@@ -3,7 +3,7 @@
 
 # AdvancedSQLClient
 Ultimate SQL client with intuitive query builders, Json support and more!<br>
-Before documentation is done, here is a <a href="https://github.com/ZorTik/AdvancedSQLClient/blob/master/examples/src/main/java/me/zort/sqllib/Example.java">small example</a>.
+Head to new <a href="https://github.com/ZorTik/AdvancedSQLClient/wiki">wiki</a> for usage tutorial & quickstart!
 
 ![Badge](https://img.shields.io/jitpack/version/com.github.ZorTik/AdvancedSQLClient?style=for-the-badge) ![Badge](https://img.shields.io/github/license/ZorTik/AdvancedSQLClient?style=for-the-badge)
 </div>
@@ -13,6 +13,24 @@ Before documentation is done, here is a <a href="https://github.com/ZorTik/Advan
 <!--<p align="center">
 <img src="https://user-images.githubusercontent.com/67344817/183105393-af39026f-b059-4096-a880-1fe0e93eeeee.png" width="100%"></img>
 </p>-->
+
+```java
+@Table("users")
+public interface UserRepository {
+  @Save
+  QueryResult save(User user);
+  
+  @Select
+  @Where(@Where.Condition(column = "name", value = "{Name}"))
+  User findUser(@Placeholder("Name") String name);
+}
+
+SQLDatabaseConnection connection = ...;
+UserRepository repository = connection.createGate(UserRepository.class);
+if (repository.save(new User("User1")).isSuccessful()) {
+  User user = repository.findUser("User1");
+}
+```
 
 ## Installation
 You can add AdvancedSQLClient to your build path using Maven or Gradle. You can also shade&relocate it using shade plugin to have it's unique build path.
