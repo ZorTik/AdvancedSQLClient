@@ -30,6 +30,8 @@ UserRepository repository = connection.createGate(UserRepository.class);
 if (repository.save(new User("User1")).isSuccessful()) {
   User user = repository.findUser("User1");
 }
+
+// TIP: We support query builders too! Check wiki section.
 ```
 
 ## Installation
