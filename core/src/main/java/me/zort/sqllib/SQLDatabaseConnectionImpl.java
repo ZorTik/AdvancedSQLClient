@@ -1,8 +1,13 @@
 package me.zort.sqllib;
 
 import com.google.gson.Gson;
-import lombok.*;
-import me.zort.sqllib.api.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import me.zort.sqllib.api.ObjectMapper;
+import me.zort.sqllib.api.Query;
+import me.zort.sqllib.api.StatementFactory;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
@@ -10,6 +15,7 @@ import me.zort.sqllib.api.mapping.StatementMappingFactory;
 import me.zort.sqllib.api.mapping.StatementMappingResultAdapter;
 import me.zort.sqllib.api.mapping.StatementMappingStrategy;
 import me.zort.sqllib.api.options.NamingStrategy;
+import me.zort.sqllib.api.repository.SQLTableRepository;
 import me.zort.sqllib.internal.Defaults;
 import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
@@ -28,9 +34,10 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.lang.reflect.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -183,6 +190,19 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
                     throw new UnsupportedOperationException("Method " + method.getName() + " is not supported by this mapping repository!");
                 });
+    }
+
+    @SuppressWarnings("unchecked, rawtypes")
+    @ApiStatus.Experimental
+    public final boolean buildEntitySchema(String tableName, Class<?> entityClass) {
+        Objects.requireNonNull(entityClass, "Entity class cannot be null!");
+
+        SQLTableRepository repository = new SQLTableRepositoryBuilder()
+                .withConnection(this)
+                .withTableName(tableName)
+                .withTypeClass(entityClass)
+                .build();
+        return repository.createTable();
     }
 
     /**
