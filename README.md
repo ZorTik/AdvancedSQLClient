@@ -25,7 +25,6 @@ public interface UserRepository {
   User findUser(@Placeholder("Name") String name);
 }
 
-SQLDatabaseConnection connection = ...;
 UserRepository repository = connection.createGate(UserRepository.class);
 if (repository.save(new User("User1")).isSuccessful()) {
   User user = repository.findUser("User1");
