@@ -68,6 +68,7 @@ public class QueryDetails {
         Map<Integer, Object> valuesUnsorted = new HashMap<>();
 
         int i = 0;
+        String queryCloned = query;
         for (String placeholder : this.values.keySet()) {
             Object value = this.values.get(placeholder);
 
@@ -76,7 +77,7 @@ public class QueryDetails {
             if (Util.count(queryStr, placeholder) != 1)
                 throw new RuntimeException("Placeholder " + placeholder + " is not unique in query " + queryStr);
 
-            valuesUnsorted.put(query.indexOf(placeholder), value);
+            valuesUnsorted.put(queryCloned.indexOf(placeholder), value);
             query = query.replaceAll(placeholder, "?");
 
             i++;

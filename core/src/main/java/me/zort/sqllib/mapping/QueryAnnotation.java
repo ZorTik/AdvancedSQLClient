@@ -6,10 +6,7 @@ import lombok.RequiredArgsConstructor;
 import me.zort.sqllib.api.SQLConnection;
 import me.zort.sqllib.internal.query.QueryNode;
 import me.zort.sqllib.mapping.annotation.*;
-import me.zort.sqllib.mapping.builder.DeleteQueryBuilder;
-import me.zort.sqllib.mapping.builder.InsertQueryBuilder;
-import me.zort.sqllib.mapping.builder.SaveQueryBuilder;
-import me.zort.sqllib.mapping.builder.SelectQueryBuilder;
+import me.zort.sqllib.mapping.builder.*;
 import me.zort.sqllib.mapping.exception.SQLMappingException;
 import me.zort.sqllib.util.ParameterPair;
 import org.jetbrains.annotations.Nullable;
@@ -42,7 +39,8 @@ public class QueryAnnotation {
         QUERY_ANNOT.put(Delete.class, new QueryAnnotation(false, new DeleteQueryBuilder()));
         QUERY_ANNOT.put(Save.class, new QueryAnnotation(false, new SaveQueryBuilder()));
         QUERY_ANNOT.put(Insert.class, new QueryAnnotation(false, new InsertQueryBuilder()));
-        // TODO: Populate
+        QUERY_ANNOT.put(Query.class, new QueryAnnotation(true, new NativeQueryBuilder()));
+        QUERY_ANNOT.put(Exec.class, new QueryAnnotation(false, new NativeQueryBuilder()));
     }
 
     @Nullable

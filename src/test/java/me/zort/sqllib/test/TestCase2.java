@@ -6,6 +6,9 @@ import me.zort.sqllib.SQLConnectionBuilder;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.SQLDatabaseOptions;
 import me.zort.sqllib.api.data.QueryResult;
+import me.zort.sqllib.api.data.QueryRowsResult;
+import me.zort.sqllib.api.data.Row;
+import me.zort.sqllib.internal.annotation.PrimaryKey;
 import me.zort.sqllib.mapping.annotation.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -49,11 +52,17 @@ public class TestCase2 { // Experimental features
     @Test
     public void test1_Mapping() {
         DatabaseRepository repository = connection.createGate(DatabaseRepository.class);
-        assertNull(repository.save(new User("User1", 1000)).getRejectMessage());
+
+        User user1 = new User("User1", 1000);
+
+        assertNull(repository.save(user1).getRejectMessage());
         assertTrue(repository.selectOne("User1").isPresent());
         assertNull(repository.insertNew("User4", 800).getRejectMessage());
         assertTrue(repository.selectOne("User4").isPresent());
         assertFalse(repository.selectAll().isEmpty());
+        assertNotEquals(0L, repository.count().get(0).get("COUNT(*)"));
+        assertTrue(repository.saveUser(user1));
+
         assertNull(repository.deleteAll().getRejectMessage());
         assertTrue(repository.selectAll().isEmpty());
     }
@@ -86,10 +95,19 @@ public class TestCase2 { // Experimental features
 
         @Delete
         QueryResult deleteAll();
+
+        @Query("SELECT COUNT(*) FROM users;")
+        QueryRowsResult<Row> count();
+
+        default boolean saveUser(User user) {
+            System.out.println("Saving user...");
+            return save(user).isSuccessful();
+        }
     }
 
     @AllArgsConstructor
     private static class User {
+        @PrimaryKey
         private final String nickname;
         private final int points;
 

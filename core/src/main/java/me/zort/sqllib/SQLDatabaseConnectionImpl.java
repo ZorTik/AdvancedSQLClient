@@ -1,8 +1,13 @@
 package me.zort.sqllib;
 
 import com.google.gson.Gson;
-import lombok.*;
-import me.zort.sqllib.api.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import me.zort.sqllib.api.ObjectMapper;
+import me.zort.sqllib.api.Query;
+import me.zort.sqllib.api.StatementFactory;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
@@ -10,6 +15,7 @@ import me.zort.sqllib.api.mapping.StatementMappingFactory;
 import me.zort.sqllib.api.mapping.StatementMappingResultAdapter;
 import me.zort.sqllib.api.mapping.StatementMappingStrategy;
 import me.zort.sqllib.api.options.NamingStrategy;
+import me.zort.sqllib.api.repository.SQLTableRepository;
 import me.zort.sqllib.internal.Defaults;
 import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
@@ -28,9 +34,13 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Main database client object implementation.
@@ -157,6 +167,9 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         Objects.requireNonNull(mappingInterface, "Mapping interface cannot be null!");
 
         StatementMappingStrategy<T> statementMapping = mappingFactory.create(mappingInterface, this);
+
+        List<Method> pendingMethods = new CopyOnWriteArrayList<>();
+
         return (T) Proxy.newProxyInstance(mappingInterface.getClassLoader(),
                 new Class[]{mappingInterface}, (proxy, method, args) -> {
 
@@ -170,8 +183,26 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
                         return mappingResultAdapter.adaptResult(method, result);
                     }
 
+                    // Default methods are invoked normally.
+                    if (declaringClass.isInterface() && method.isDefault()) {
+                        return JVM.getJVM().invokeDefault(declaringClass, proxy, method, args);
+                    }
+
                     throw new UnsupportedOperationException("Method " + method.getName() + " is not supported by this mapping repository!");
                 });
+    }
+
+    @SuppressWarnings("unchecked, rawtypes")
+    @ApiStatus.Experimental
+    public final boolean buildEntitySchema(String tableName, Class<?> entityClass) {
+        Objects.requireNonNull(entityClass, "Entity class cannot be null!");
+
+        SQLTableRepository repository = new SQLTableRepositoryBuilder()
+                .withConnection(this)
+                .withTableName(tableName)
+                .withTypeClass(entityClass)
+                .build();
+        return repository.createTable();
     }
 
     /**
@@ -216,6 +247,10 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
      */
     @Override
     public QueryRowsResult<Row> query(Query query) {
+        return doQuery(query, false);
+    }
+
+    private QueryRowsResult<Row> doQuery(Query query, boolean isRetry) {
         Objects.requireNonNull(query);
 
         if(!handleAutoReconnect()) {
@@ -241,6 +276,11 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
             return result;
         } catch (SQLException e) {
+            if (!isRetry && e.getMessage().contains("database connection closed")) {
+                reconnect();
+                return doQuery(query, true);
+            }
+
             logSqlError(e);
             return new QueryRowsResult<>(false, e.getMessage());
         }
@@ -257,6 +297,10 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
      * about success state of the request.
      */
     public QueryResult exec(Query query) {
+        return doExec(query, false);
+    }
+
+    private QueryResult doExec(Query query, boolean isRetry) {
         if(!handleAutoReconnect()) {
             return new QueryResultImpl(false, "Cannot connect to database!");
         }
@@ -264,6 +308,11 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
             stmt.execute();
             return new QueryResultImpl(true);
         } catch (SQLException e) {
+            if (!isRetry && e.getMessage().contains("database connection closed")) {
+                reconnect();
+                return doExec(query, true);
+            }
+
             logSqlError(e);
             return new QueryResultImpl(false, e.getMessage());
         }
@@ -349,11 +398,16 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     @SuppressWarnings("all")
     private boolean handleAutoReconnect() {
         if(options.isAutoReconnect() && !isConnected()) {
-            debug("Trying to make a new connection with the database!");
-            if(!connect()) {
-                debug("Cannot make new connection!");
-                return false;
-            }
+            return reconnect();
+        }
+        return true;
+    }
+
+    private boolean reconnect() {
+        debug("Trying to make a new connection with the database!");
+        if(!connect()) {
+            debug("Cannot make new connection!");
+            return false;
         }
         return true;
     }

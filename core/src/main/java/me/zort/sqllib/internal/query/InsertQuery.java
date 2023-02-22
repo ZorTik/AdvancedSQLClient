@@ -85,6 +85,8 @@ public class InsertQuery extends QueryNode<QueryNode<?>> implements Executive, C
         details.append(" VALUES ");
         insertArray(details, values, true);
 
+        details.append(buildInnerQuery());
+
         return details;
     }
 

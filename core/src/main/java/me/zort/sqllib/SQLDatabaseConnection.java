@@ -66,6 +66,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection {
      */
     @ApiStatus.Experimental
     public abstract <T> T createGate(Class<T> mappingInterface);
+    public abstract boolean buildEntitySchema(String tableName, Class<?> entityClass);
 
     /**
      * Saves this mapping object into database using upsert query.
