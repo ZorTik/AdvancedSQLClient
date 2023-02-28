@@ -14,6 +14,12 @@ Head to new <a href="https://github.com/ZorTik/AdvancedSQLClient/wiki">wiki</a> 
 <img src="https://user-images.githubusercontent.com/67344817/183105393-af39026f-b059-4096-a880-1fe0e93eeeee.png" width="100%"></img>
 </p>-->
 
+## Installation
+You can add AdvancedSQLClient to your build path using Maven or Gradle. You can also shade&relocate it using shade plugin to have it's unique build path.
+
+<a href="https://github.com/ZorTik/AdvancedSQLClient/wiki">Installation & Usage on Wiki</a>
+
+## Example
 ```java
 @Table("users")
 public interface UserRepository {
@@ -32,11 +38,6 @@ if (repository.save(new User("User1")).isSuccessful()) {
 
 // TIP: We support query builders too! Check wiki section.
 ```
-
-## Installation
-You can add AdvancedSQLClient to your build path using Maven or Gradle. You can also shade&relocate it using shade plugin to have it's unique build path.
-
-<a href="https://github.com/ZorTik/AdvancedSQLClient/wiki">Installation & Usage on Wiki</a>
 
 ## Code of Conduct
 This repository contains some basic rules specified in Code of Conduct file.<br>
