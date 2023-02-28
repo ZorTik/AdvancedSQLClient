@@ -20,6 +20,7 @@ import java.sql.SQLException;
  *
  * @author ZorTik
  */
+@SuppressWarnings("unused")
 public abstract class SQLDatabaseConnection implements SQLConnection {
 
     private final SQLConnectionFactory connectionFactory;

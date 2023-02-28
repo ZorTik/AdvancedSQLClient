@@ -2,9 +2,9 @@ package me.zort.sqllib;
 
 import java.sql.Connection;
 
-public final class Logger {
+public final class LocalLogger {
 
-    private Logger() {
+    private LocalLogger() {
     }
 
     public static void debug(Connection connection, String message) {
