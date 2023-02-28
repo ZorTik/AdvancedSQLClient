@@ -5,6 +5,7 @@ import me.zort.sqllib.api.repository.CachingSQLTableRepository;
 import me.zort.sqllib.api.repository.SQLTableRepository;
 import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.internal.annotation.NullableField;
+import me.zort.sqllib.internal.annotation.PrimaryKey;
 import me.zort.sqllib.util.Arrays;
 import me.zort.sqllib.util.Validator;
 import org.jetbrains.annotations.ApiStatus;
@@ -143,8 +144,11 @@ public class SQLTableRepositoryBuilder<T, ID> {
             dbType = "FLOAT";
         }
 
+        if (field.isAnnotationPresent(PrimaryKey.class))
+            dbType += " PRIMARY KEY";
+
         if(Validator.validateAutoIncrement(field))
-            dbType += " PRIMARY KEY " + (isSQLite() ? "AUTOINCREMENT" : "AUTO_INCREMENT");
+            dbType += " " + (isSQLite() ? "AUTOINCREMENT" : "AUTO_INCREMENT");
 
         return dbType;
     }
