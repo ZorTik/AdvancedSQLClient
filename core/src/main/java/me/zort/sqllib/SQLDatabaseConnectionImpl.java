@@ -413,40 +413,6 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         return true;
     }
 
-    // --***-- Query builders --***--
-
-    public SelectQuery select(String... cols) {
-        return new SelectQuery(this, cols);
-    }
-
-    public UpdateQuery update() {
-        return update(null);
-    }
-
-    public UpdateQuery update(@Nullable String table) {
-        return new UpdateQuery(this, table);
-    }
-
-    public InsertQuery insert() {
-        return insert(null);
-    }
-
-    public InsertQuery insert(@Nullable String table) {
-        return new InsertQuery(this, table);
-    }
-
-    public UpsertQuery upsert() {
-        return upsert(null);
-    }
-
-    public UpsertQuery upsert(@Nullable String table) {
-        return new UpsertQuery(this, table);
-    }
-
-    public DeleteQuery delete() {
-        return new DeleteQuery(this);
-    }
-
     public UpsertQuery save(Object obj) {
         Pair<String[], UnknownValueWrapper[]> data = buildDefsVals(obj);
 
