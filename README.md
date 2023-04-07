@@ -1,5 +1,6 @@
 <div align="center">
-<img src="https://user-images.githubusercontent.com/67344817/201498814-84314078-3f88-4930-aec1-d3f437e5c9e8.png" width="130px">
+<img src="https://user-images.githubusercontent.com/67344817/230640267-dc49dac4-9c51-4657-a2d1-eb96c3a6b2a7.png" width="130px">
+<!-- <img src="https://user-images.githubusercontent.com/67344817/201498814-84314078-3f88-4930-aec1-d3f437e5c9e8.png" width="130px"> -->
 
 # AdvancedSQLClient
 Ultimate SQL client with intuitive query builders, Json support and more!<br>
