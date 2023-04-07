@@ -44,4 +44,5 @@ if (repository.save(new User("User1")).isSuccessful()) {
 ## Code of Conduct
 This repository contains some basic rules specified in Code of Conduct file.<br>
 
-<a href="https://github.com/ZorTik/AdvancedSQLClient/blob/master/CODE_OF_CONDUCT.md">Code of Conduct</a>
+<a href="https://github.com/ZorTik/AdvancedSQLClient/blob/master/CODE_OF_CONDUCT.md">Code of Conduct</a><br>
+<a href="https://www.flaticon.com/free-icons/database" title="database icons">Database icons created by Freepik - Flaticon</a>
