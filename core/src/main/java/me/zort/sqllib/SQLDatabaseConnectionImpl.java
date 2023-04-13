@@ -1,10 +1,7 @@
 package me.zort.sqllib;
 
 import com.google.gson.Gson;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import me.zort.sqllib.api.ObjectMapper;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.StatementFactory;
@@ -41,6 +38,7 @@ import java.lang.reflect.Proxy;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Logger;
 
 /**
  * Main database client object implementation.
@@ -69,6 +67,8 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     @ApiStatus.Experimental
     private final transient StatementMappingResultAdapter mappingResultAdapter;
     private transient ObjectMapper objectMapper;
+    @Setter
+    private transient Logger logger;
 
     /**
      * Constructs new instance of this implementation with default
@@ -101,6 +101,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         this.objectMapper = new DefaultObjectMapper(this);
         this.mappingFactory = new DefaultStatementMappingFactory();
         this.mappingResultAdapter = new DefaultResultAdapter();
+        this.logger = Logger.getGlobal();
 
         // Default backup value resolvers.
         registerBackupValueResolver(new LinkedOneFieldResolver());
@@ -412,40 +413,6 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         return true;
     }
 
-    // --***-- Query builders --***--
-
-    public SelectQuery select(String... cols) {
-        return new SelectQuery(this, cols);
-    }
-
-    public UpdateQuery update() {
-        return update(null);
-    }
-
-    public UpdateQuery update(@Nullable String table) {
-        return new UpdateQuery(this, table);
-    }
-
-    public InsertQuery insert() {
-        return insert(null);
-    }
-
-    public InsertQuery insert(@Nullable String table) {
-        return new InsertQuery(this, table);
-    }
-
-    public UpsertQuery upsert() {
-        return upsert(null);
-    }
-
-    public UpsertQuery upsert(@Nullable String table) {
-        return new UpsertQuery(this, table);
-    }
-
-    public DeleteQuery delete() {
-        return new DeleteQuery(this);
-    }
-
     public UpsertQuery save(Object obj) {
         Pair<String[], UnknownValueWrapper[]> data = buildDefsVals(obj);
 
@@ -470,9 +437,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     }
 
     public void debug(String message) {
-        if(options.isDebug()) {
-            System.out.println(message);
-        }
+        if(options.isDebug()) logger.info(message);
     }
 
     @Override
@@ -513,7 +478,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         public PreparedStatement prepare(Connection connection) throws SQLException {
             String queryString = query.getAncestor().buildQuery();
 
-            Logger.debug(connection, "Query: " + queryString);
+            LocalLogger.debug(connection, "Query: " + queryString);
             return connection.prepareStatement(queryString);
         }
     }

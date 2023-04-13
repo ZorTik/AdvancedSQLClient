@@ -1,7 +1,7 @@
 package me.zort.sqllib.internal.query;
 
 import lombok.*;
-import me.zort.sqllib.Logger;
+import me.zort.sqllib.LocalLogger;
 import me.zort.sqllib.util.Pair;
 import me.zort.sqllib.util.Util;
 
@@ -52,8 +52,8 @@ public class QueryDetails {
         Pair<String, Object[]> requirements = buildStatementDetails();
 
         // Shows plain query for prepared statement.
-        Logger.debug(connection, String.format("P-Query: %s", requirements.getFirst()));
-        Logger.debug(connection, String.format("P-Values: %s", Arrays.toString(requirements.getSecond())));
+        LocalLogger.debug(connection, String.format("P-Query: %s", requirements.getFirst()));
+        LocalLogger.debug(connection, String.format("P-Values: %s", Arrays.toString(requirements.getSecond())));
 
         PreparedStatement statement = connection.prepareStatement(requirements.getFirst());
         Object[] values = requirements.getSecond();

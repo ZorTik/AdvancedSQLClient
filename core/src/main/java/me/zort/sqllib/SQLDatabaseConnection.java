@@ -20,6 +20,7 @@ import java.sql.SQLException;
  *
  * @author ZorTik
  */
+@SuppressWarnings("unused")
 public abstract class SQLDatabaseConnection implements SQLConnection {
 
     private final SQLConnectionFactory connectionFactory;
@@ -101,10 +102,6 @@ public abstract class SQLDatabaseConnection implements SQLConnection {
      * @return Collection of row objects.
      */
     public abstract <T> QueryRowsResult<T> query(Query query, Class<T> typeClass);
-
-    /**
-     * @see SQLDatabaseConnection#query(Query, Class)
-     */
     public abstract QueryRowsResult<Row> query(Query query);
 
     /**
@@ -121,14 +118,39 @@ public abstract class SQLDatabaseConnection implements SQLConnection {
     public abstract boolean isLogSqlErrors();
     public abstract boolean isDebug();
 
-    public abstract SelectQuery select(String... cols);
-    public abstract UpdateQuery update();
-    public abstract UpdateQuery update(@Nullable String table);
-    public abstract InsertQuery insert();
-    public abstract InsertQuery insert(@Nullable String table);
-    public abstract UpsertQuery upsert();
-    public abstract UpsertQuery upsert(@Nullable String table);
-    public abstract DeleteQuery delete();
+    // --***-- Query builders --***--
+
+    public SelectQuery select(String... cols) {
+        return new SelectQuery(this, cols);
+    }
+
+    public UpdateQuery update() {
+        return update(null);
+    }
+
+    public UpdateQuery update(@Nullable String table) {
+        return new UpdateQuery(this, table);
+    }
+
+    public InsertQuery insert() {
+        return insert(null);
+    }
+
+    public InsertQuery insert(@Nullable String table) {
+        return new InsertQuery(this, table);
+    }
+
+    public UpsertQuery upsert() {
+        return upsert(null);
+    }
+
+    public UpsertQuery upsert(@Nullable String table) {
+        return new UpsertQuery(this, table);
+    }
+
+    public DeleteQuery delete() {
+        return new DeleteQuery(this);
+    }
 
     @Override
     public boolean connect() {
