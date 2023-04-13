@@ -58,7 +58,7 @@ public final class SQLConnectionPool {
     }
 
     @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    private static class SQLPooledConnection {
+    private static final class SQLPooledConnection {
         private final SQLDatabaseConnection connection;
         private long lastUsed = System.currentTimeMillis();
 
