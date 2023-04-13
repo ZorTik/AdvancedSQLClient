@@ -3,7 +3,6 @@ package me.zort.sqllib.mapping;
 import lombok.RequiredArgsConstructor;
 import me.zort.sqllib.mapping.annotation.Placeholder;
 import me.zort.sqllib.util.ParameterPair;
-import me.zort.sqllib.util.Regex;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,7 +23,7 @@ public class PlaceholderMapper {
                     continue;
 
                 if (placeholderName.equals(pair.getParameter().getAnnotation(Placeholder.class).value())) {
-                    input = input.replaceAll(Regex.skipRegexCharacters(placeholder), String.valueOf(pair.getValue()));
+                    input = input.replace(placeholder, String.valueOf(pair.getValue()));
                 }
             }
         }
