@@ -94,6 +94,7 @@ public class TestCase1 { // Basic operations
                 .where()
                 .isEqual("nickname", "User1"), User.class);
 
+        assertTrue(connection.select().from(TABLE_NAME).where().isEqual("nickname", "User1").obtainOne(User.class).isPresent());
         assertNull(result.getRejectMessage());
         assertEquals(1, result.size());
         assertEquals(user1.getNickname(), result.get(0).getNickname());

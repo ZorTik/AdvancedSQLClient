@@ -66,8 +66,7 @@ public final class SQLConnectionBuilder implements Cloneable {
     }
 
     public @NotNull SQLConnectionBuilder withParam(String key, String value) {
-        Optional.ofNullable(endpoint)
-                .ifPresent(endpoint -> {
+        Optional.ofNullable(endpoint).ifPresent(endpoint -> {
                     jdbc += (jdbc.contains("?") ? "&" : "?");
                     jdbc += key + "=" + value;
                 });
