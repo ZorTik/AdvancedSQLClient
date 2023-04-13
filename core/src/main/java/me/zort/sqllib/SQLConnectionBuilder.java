@@ -8,6 +8,7 @@ import me.zort.sqllib.internal.exception.SQLEndpointNotValidException;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.impl.DefaultSQLEndpoint;
 import me.zort.sqllib.internal.impl.SQLEndpointImpl;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.Connection;
@@ -16,17 +17,17 @@ import java.sql.SQLException;
 import java.util.Objects;
 import java.util.Optional;
 
-public class SQLConnectionBuilder {
+public final class SQLConnectionBuilder implements Cloneable {
 
-    public static SQLConnectionBuilder of(String address, int port, String database, String username, String password) {
+    public static @NotNull SQLConnectionBuilder of(String address, int port, String database, String username, String password) {
         return of(new DefaultSQLEndpoint(address + ":" + port, database, username, password));
     }
 
-    public static SQLConnectionBuilder of(String jdbc, String username, String password) {
+    public static @NotNull SQLConnectionBuilder of(String jdbc, String username, String password) {
         return of(new SQLEndpointImpl(jdbc, username, password));
     }
 
-    public static SQLConnectionBuilder ofSQLite(String path) {
+    public static @NotNull SQLConnectionBuilder ofSQLite(String path) {
         SQLConnectionBuilder builder = of(new SQLEndpointImpl("jdbc:sqlite:" + path, null, null));
         builder.withDriver("org.sqlite.JDBC");
         return builder;
@@ -43,12 +44,12 @@ public class SQLConnectionBuilder {
     private String jdbc;
     private String driver = null;
 
-    public SQLConnectionBuilder(String address, int port, String database, String username, String password) {
-        this(new DefaultSQLEndpoint(address + ":" + port, database, username, password));
-    }
-
     public SQLConnectionBuilder() {
         this(null);
+    }
+
+    public SQLConnectionBuilder(@NotNull String address, int port, @NotNull String database, @Nullable String username, @Nullable String password) {
+        this(new DefaultSQLEndpoint(address + ":" + port, database, username, password));
     }
 
     public SQLConnectionBuilder(@Nullable SQLEndpoint endpoint) {
@@ -58,13 +59,13 @@ public class SQLConnectionBuilder {
                 : null;
     }
 
-    public SQLConnectionBuilder withEndpoint(SQLEndpoint endpoint) {
+    public @NotNull SQLConnectionBuilder withEndpoint(SQLEndpoint endpoint) {
         this.endpoint = endpoint;
         this.jdbc = endpoint.buildJdbc();
         return this;
     }
 
-    public SQLConnectionBuilder withParam(String key, String value) {
+    public @NotNull SQLConnectionBuilder withParam(String key, String value) {
         Optional.ofNullable(endpoint)
                 .ifPresent(endpoint -> {
                     jdbc += (jdbc.contains("?") ? "&" : "?");
@@ -73,20 +74,20 @@ public class SQLConnectionBuilder {
         return this;
     }
 
-    public SQLConnectionBuilder withDriver(String driver) {
+    public @NotNull SQLConnectionBuilder withDriver(String driver) {
         this.driver = driver;
         return this;
     }
 
-    public SQLDatabaseConnection build() {
+    public @NotNull SQLDatabaseConnection build() {
         return build(null);
     }
 
-    public SQLDatabaseConnection build(@Nullable SQLDatabaseOptions options) {
+    public @NotNull SQLDatabaseConnection build(@Nullable SQLDatabaseOptions options) {
         return build(driver, options);
     }
 
-    public SQLDatabaseConnection build(@Nullable String driver, @Nullable SQLDatabaseOptions options) {
+    public @NotNull SQLDatabaseConnection build(@Nullable String driver, @Nullable SQLDatabaseOptions options) {
         Objects.requireNonNull(endpoint, "Endpoint must be set!");
         Objects.requireNonNull(jdbc);
         if(driver == null) {
@@ -98,6 +99,11 @@ public class SQLConnectionBuilder {
         } else {
             return new SQLDatabaseConnectionImpl(connectionFactory, options);
         }
+    }
+
+    @Override
+    protected SQLConnectionBuilder clone() throws CloneNotSupportedException {
+        return (SQLConnectionBuilder) super.clone();
     }
 
     @RequiredArgsConstructor

@@ -478,7 +478,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         public PreparedStatement prepare(Connection connection) throws SQLException {
             String queryString = query.getAncestor().buildQuery();
 
-            LocalLogger.debug(connection, "Query: " + queryString);
+            SQLConnectionRegistry.debug(connection, "Query: " + queryString);
             return connection.prepareStatement(queryString);
         }
     }

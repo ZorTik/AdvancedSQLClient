@@ -8,6 +8,19 @@ public class Regex {
     }
 
     public static String skipRegexCharacters(String input) {
+        boolean thrown = true;
+        while(thrown) {
+            try {
+                input.replaceAll(input, input);
+                thrown = false;
+            } catch(PatternSyntaxException e) {
+                input = _skipRegexCharacters(input);
+            }
+        }
+        return input;
+    }
+
+    private static String _skipRegexCharacters(String input) {
         String s = input;
         StringBuilder stringBuilder = new StringBuilder(s);
         try {

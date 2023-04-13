@@ -79,16 +79,16 @@ public class TestCase2 { // Experimental features
         @Save // Upsert
         QueryResult save(User user);
 
-        @Insert(cols = {"nickname", "points"}, vals = {"{nickname}", "{points}"})
-        QueryResult insertNew(@Placeholder("nickname") String nickname, @Placeholder("points") int points);
+        @Insert(cols = {"nickname", "points"}, vals = {"{name}", "{points}"})
+        QueryResult insertNew(@Placeholder("name") String nickname, @Placeholder("points") int points);
 
         @Select
         @Where(value = {
-                @Where.Condition(column = "nickname", value = "{nickname}"),
+                @Where.Condition(column = "nickname", value = "{name}"),
                 @Where.Condition(column = "points", value = "500", type = Where.Condition.Type.BT)
         })
         @Limit(1)
-        Optional<User> selectOne(@Placeholder("nickname") String nickname);
+        Optional<User> selectOne(@Placeholder("name") String nickname);
 
         @Select
         List<User> selectAll();
