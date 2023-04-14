@@ -71,7 +71,7 @@ public final class SQLConnectionPool {
     public Resource getResource() throws SQLException {
         freeConnections.removeIf(SQLPooledConnection::expired);
         SQLPooledConnection polled = freeConnections.poll();
-        if (polled == null && usedConnections.size() < maxConnections) {
+        if (polled == null && size() < maxConnections) {
             polled = establishObject();
         } else if(polled == null) {
 
@@ -83,7 +83,7 @@ public final class SQLConnectionPool {
             while ((polled = freeConnections.poll()) == null) {
                 if (System.currentTimeMillis() - start > borrowObjectTimeout) {
                     throw new SQLException("Timeout while waiting for a connection.");
-                } else if(usedConnections.size() < maxConnections) {
+                } else if(size() < maxConnections) {
                     polled = establishObject();
                     break;
                 }
@@ -99,6 +99,17 @@ public final class SQLConnectionPool {
 
         SQLException error = polled.connection.getLastError();
         if (error != null) throw error;
+
+        if (polled.connection instanceof SQLDatabaseConnectionImpl) {
+            ((SQLDatabaseConnectionImpl) polled.connection).addErrorHandler(code -> {
+                // Remove the connection from the pool and disconnect
+                // on fatal errors.
+                freeConnections.remove(polled);
+                usedConnections.remove(polled);
+                polled.connection.disconnect();
+            });
+        }
+
         return polled;
     }
 
