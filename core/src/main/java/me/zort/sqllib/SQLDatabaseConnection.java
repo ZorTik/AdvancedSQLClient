@@ -26,12 +26,14 @@ public abstract class SQLDatabaseConnection implements SQLConnection {
     private final SQLConnectionFactory connectionFactory;
     @Getter(onMethod_ = {@Nullable})
     private Connection connection;
+    @Getter(onMethod_ = {@Nullable})
+    private SQLException lastError = null;
 
     public SQLDatabaseConnection(SQLConnectionFactory connectionFactory) {
         this.connectionFactory = connectionFactory;
         this.connection = null;
 
-        SQLConnectionPool.register(this);
+        SQLConnectionRegistry.register(this);
     }
 
     /**
@@ -154,15 +156,15 @@ public abstract class SQLDatabaseConnection implements SQLConnection {
 
     @Override
     public boolean connect() {
-        if(isConnected()) {
-            disconnect();
-        }
+        if(isConnected()) disconnect();
 
         try {
             connection = connectionFactory.connect();
+            lastError = null;
         } catch (SQLException e) {
             logSqlError(e);
             connection = null;
+            lastError = e;
         }
         return isConnected();
     }
@@ -172,8 +174,10 @@ public abstract class SQLDatabaseConnection implements SQLConnection {
         if(isConnected()) {
             try {
                 connection.close();
+                lastError = null;
             } catch (SQLException e) {
                 logSqlError(e);
+                lastError = e;
             }
         }
     }

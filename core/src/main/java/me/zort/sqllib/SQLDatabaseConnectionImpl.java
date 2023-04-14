@@ -40,6 +40,8 @@ import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
 
+import static me.zort.sqllib.util.ExceptionsUtility.runCatching;
+
 /**
  * Main database client object implementation.
  * This class is responsible for handling requests from query
@@ -52,11 +54,11 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
     // --***-- Default Constants --***--
 
-    public static boolean DEFAULT_AUTO_RECONNECT = true;
-    public static boolean DEFAULT_DEBUG = false;
-    public static boolean DEFAULT_LOG_SQL_ERRORS = true;
-    public static NamingStrategy DEFAULT_NAMING_STRATEGY = new DefaultNamingStrategy();
-    public static Gson DEFAULT_GSON = Defaults.DEFAULT_GSON;
+    public static final boolean DEFAULT_AUTO_RECONNECT = true;
+    public static final boolean DEFAULT_DEBUG = false;
+    public static final boolean DEFAULT_LOG_SQL_ERRORS = true;
+    public static final NamingStrategy DEFAULT_NAMING_STRATEGY = new DefaultNamingStrategy();
+    public static final Gson DEFAULT_GSON = Defaults.DEFAULT_GSON;
 
     // --***-- Options & Utilities --***--
 
@@ -66,6 +68,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     private final transient StatementMappingFactory mappingFactory;
     @ApiStatus.Experimental
     private final transient StatementMappingResultAdapter mappingResultAdapter;
+    private final transient List<ErrorStateObserver> errorStateHandlers;
     private transient ObjectMapper objectMapper;
     @Setter
     private transient Logger logger;
@@ -101,6 +104,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         this.objectMapper = new DefaultObjectMapper(this);
         this.mappingFactory = new DefaultStatementMappingFactory();
         this.mappingResultAdapter = new DefaultResultAdapter();
+        this.errorStateHandlers = new CopyOnWriteArrayList<>();
         this.logger = Logger.getGlobal();
 
         // Default backup value resolvers.
@@ -129,6 +133,16 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
      */
     public void setObjectMapper(@NotNull ObjectMapper objectMapper) {
         this.objectMapper = Objects.requireNonNull(objectMapper, "Object mapper cannot be null!");
+    }
+
+    /**
+     * Adds an error state observer to the list of observers to be
+     * notified when a fatal error occurs.
+     *
+     * @param observer Observer to add.
+     */
+    public void addErrorHandler(@NotNull ErrorStateObserver observer) {
+        this.errorStateHandlers.add(observer);
     }
 
     /**
@@ -283,6 +297,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
             }
 
             logSqlError(e);
+            notifyError(ErrorCode.QUERY_FATAL);
             return new QueryRowsResult<>(false, e.getMessage());
         }
     }
@@ -315,6 +330,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
             }
 
             logSqlError(e);
+            notifyError(ErrorCode.QUERY_FATAL);
             return new QueryResultImpl(false, e.getMessage());
         }
     }
@@ -441,13 +457,17 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     }
 
     @Override
-    public boolean isLogSqlErrors() {
+    public final boolean isLogSqlErrors() {
         return options.isLogSqlErrors();
     }
 
     @Override
-    public boolean isDebug() {
+    public final boolean isDebug() {
         return options.isDebug();
+    }
+
+    private void notifyError(int code) {
+        this.errorStateHandlers.forEach(handler -> runCatching(() -> handler.onErrorState(code)));
     }
 
     public final SQLDatabaseOptions cloneOptions() {
@@ -478,7 +498,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         public PreparedStatement prepare(Connection connection) throws SQLException {
             String queryString = query.getAncestor().buildQuery();
 
-            LocalLogger.debug(connection, "Query: " + queryString);
+            SQLConnectionRegistry.debug(connection, "Query: " + queryString);
             return connection.prepareStatement(queryString);
         }
     }
@@ -487,6 +507,14 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     @Data
     public static class UnknownValueWrapper {
         private Object object;
+    }
+
+    public interface ErrorStateObserver {
+        void onErrorState(int code);
+    }
+
+    public static final class ErrorCode {
+        public static final int QUERY_FATAL = 0;
     }
 
 }

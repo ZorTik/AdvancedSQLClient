@@ -3,6 +3,7 @@ package me.zort.sqllib.test;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import me.zort.sqllib.SQLConnectionBuilder;
+import me.zort.sqllib.SQLConnectionPool;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.SQLDatabaseOptions;
 import me.zort.sqllib.api.data.QueryResult;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
+import java.sql.SQLException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestCase1 { // Basic operations
 
     private SQLDatabaseConnection connection;
+    private SQLConnectionBuilder builder;
     private static final String TABLE_NAME = "users";
     private final User user1 = new User("User1", 100);
     private final User user2 = new User("User2", 200);
@@ -51,8 +54,8 @@ public class TestCase1 { // Basic operations
 
         DefaultSQLEndpoint endpoint = new DefaultSQLEndpoint(String.format("%s:3306", host), "test", "test", "test");
 
-        connection = SQLConnectionBuilder.of(endpoint)
-                .withDriver("com.mysql.cj.jdbc.Driver")
+        connection = (builder = SQLConnectionBuilder.of(endpoint)
+                .withDriver("com.mysql.cj.jdbc.Driver"))
                 .build(options);
 
         System.out.println("Connection prepared, connecting...");
@@ -94,6 +97,7 @@ public class TestCase1 { // Basic operations
                 .where()
                 .isEqual("nickname", "User1"), User.class);
 
+        assertTrue(connection.select().from(TABLE_NAME).where().isEqual("nickname", "User1").obtainOne(User.class).isPresent());
         assertNull(result.getRejectMessage());
         assertEquals(1, result.size());
         assertEquals(user1.getNickname(), result.get(0).getNickname());
@@ -146,9 +150,29 @@ public class TestCase1 { // Basic operations
         assertNull(result.getRejectMessage());
     }
 
+    @Timeout(10)
+    @Test
+    public void test6_Pool() {
+        SQLConnectionPool.Options options = new SQLConnectionPool.Options();
+        options.setMaxConnections(10);
+        options.setBorrowObjectTimeout(5000L);
+        options.setBlockWhenExhausted(false);
+        SQLConnectionPool pool = new SQLConnectionPool(builder, options);
+        try (SQLConnectionPool.Resource resource = pool.getResource()) {
+            System.out.println("Got connection from pool");
+            SQLDatabaseConnection connection = resource.getConnection();
+            assertTrue(connection.save(TABLE_NAME, user1).isSuccessful());
+        } catch(SQLException e) {
+            throw new RuntimeException(e);
+        }
+        assertEquals(1, pool.size());
+        pool.close();
+        assertEquals(0, pool.size());
+    }
+
     @Timeout(5)
     @Test
-    public void test6_Close() {
+    public void test7_Close() {
         System.out.println("Closing connection...");
         connection.disconnect();
         System.out.println("Connection closed");
