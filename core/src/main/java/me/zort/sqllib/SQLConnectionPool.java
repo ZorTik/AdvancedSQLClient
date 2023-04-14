@@ -102,6 +102,10 @@ public final class SQLConnectionPool {
         return polled;
     }
 
+    public int size() {
+        return usedConnections.size() + freeConnections.size();
+    }
+
     /**
      * Closes all connections in the pool and
      * clears the caches.
