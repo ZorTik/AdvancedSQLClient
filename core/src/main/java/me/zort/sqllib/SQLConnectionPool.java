@@ -25,11 +25,18 @@ public final class SQLConnectionPool {
 
     @Data
     public static final class Options {
+        // Max number of connections in the pool
         private int maxConnections = 10;
+        // Max wait time for getResource in milliseconds when the pool is exhausted
+        private long borrowObjectTimeout = 5000L;
+        // Block or throw an exception when the pool is exhausted
+        private boolean blockWhenExhausted = true;
     }
 
     private final SQLConnectionBuilder builder;
     private final int maxConnections;
+    private final long borrowObjectTimeout;
+    private final boolean blockWhenExhausted;
 
     // --***-- Pooled connection caches --***--
     private final Queue<SQLPooledConnection> freeConnections = new ConcurrentLinkedQueue<>();
@@ -49,6 +56,8 @@ public final class SQLConnectionPool {
     public SQLConnectionPool(@NotNull SQLConnectionBuilder from, @NotNull Options poolOptions) {
         this.builder = from;
         this.maxConnections = poolOptions.maxConnections;
+        this.borrowObjectTimeout = poolOptions.borrowObjectTimeout;
+        this.blockWhenExhausted = poolOptions.blockWhenExhausted;
     }
 
     /**
@@ -63,16 +72,34 @@ public final class SQLConnectionPool {
         freeConnections.removeIf(SQLPooledConnection::expired);
         SQLPooledConnection polled = freeConnections.poll();
         if (polled == null && usedConnections.size() < maxConnections) {
-            polled = new SQLPooledConnection(builder.build());
-            polled.connection.connect();
-
-            SQLException error = polled.connection.getLastError();
-            if (error != null) throw error;
+            polled = establishObject();
         } else if(polled == null) {
-            throw new IllegalStateException("Connection limit reached!");
+
+            if (!blockWhenExhausted) {
+                throw new SQLException("No connections available.");
+            }
+
+            long start = System.currentTimeMillis();
+            while ((polled = freeConnections.poll()) == null) {
+                if (System.currentTimeMillis() - start > borrowObjectTimeout) {
+                    throw new SQLException("Timeout while waiting for a connection.");
+                } else if(usedConnections.size() < maxConnections) {
+                    polled = establishObject();
+                    break;
+                }
+            }
         }
         usedConnections.add(polled);
         return new Resource(this, polled);
+    }
+
+    private SQLPooledConnection establishObject() throws SQLException {
+        SQLPooledConnection polled = new SQLPooledConnection(builder.build());
+        polled.connection.connect();
+
+        SQLException error = polled.connection.getLastError();
+        if (error != null) throw error;
+        return polled;
     }
 
     /**

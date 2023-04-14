@@ -160,6 +160,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection {
 
         try {
             connection = connectionFactory.connect();
+            lastError = null;
         } catch (SQLException e) {
             logSqlError(e);
             connection = null;
@@ -173,6 +174,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection {
         if(isConnected()) {
             try {
                 connection.close();
+                lastError = null;
             } catch (SQLException e) {
                 logSqlError(e);
                 lastError = e;
