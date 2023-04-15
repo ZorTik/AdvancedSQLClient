@@ -9,6 +9,7 @@ import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.query.*;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
@@ -30,7 +31,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     @Getter(onMethod_ = {@Nullable})
     private SQLException lastError = null;
 
-    public SQLDatabaseConnection(SQLConnectionFactory connectionFactory) {
+    public SQLDatabaseConnection(final @NotNull SQLConnectionFactory connectionFactory) {
         this.connectionFactory = connectionFactory;
         this.connection = null;
 
@@ -156,7 +157,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     }
 
     @Override
-    public boolean connect() {
+    public final boolean connect() {
         if(isConnected()) disconnect();
 
         try {
@@ -171,15 +172,15 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     }
 
     @Override
-    public void disconnect() {
-        if(isConnected()) {
-            try {
-                connection.close();
-                lastError = null;
-            } catch (SQLException e) {
-                logSqlError(e);
-                lastError = e;
-            }
+    public final void disconnect() {
+        if (!isConnected()) return;
+
+        try {
+            connection.close();
+            lastError = null;
+        } catch (SQLException e) {
+            logSqlError(e);
+            lastError = e;
         }
     }
 

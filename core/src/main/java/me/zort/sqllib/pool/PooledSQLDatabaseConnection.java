@@ -3,6 +3,7 @@ package me.zort.sqllib.pool;
 import lombok.Getter;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
@@ -14,7 +15,7 @@ public abstract class PooledSQLDatabaseConnection extends SQLDatabaseConnection 
     @Getter(onMethod_ = {@Nullable})
     private long lastUsed = System.currentTimeMillis();
 
-    public PooledSQLDatabaseConnection(SQLConnectionFactory connectionFactory) {
+    public PooledSQLDatabaseConnection(final @NotNull SQLConnectionFactory connectionFactory) {
         super(connectionFactory);
     }
 
