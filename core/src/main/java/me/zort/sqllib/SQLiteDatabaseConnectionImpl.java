@@ -4,15 +4,14 @@ import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
-import me.zort.sqllib.internal.exception.IllegalStatementOperationException;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.internal.query.InsertQuery;
 import me.zort.sqllib.internal.query.UpdateQuery;
 import me.zort.sqllib.internal.query.UpsertQuery;
 import me.zort.sqllib.internal.query.part.SetStatement;
-import me.zort.sqllib.util.Pair;
 import me.zort.sqllib.util.PrimaryKey;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
@@ -27,11 +26,13 @@ import java.util.Arrays;
  */
 public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
 
-    public SQLiteDatabaseConnectionImpl(SQLConnectionFactory connectionFactory) {
+    @SuppressWarnings("unused")
+    public SQLiteDatabaseConnectionImpl(final @NotNull SQLConnectionFactory connectionFactory) {
         super(connectionFactory);
     }
 
-    public SQLiteDatabaseConnectionImpl(SQLConnectionFactory connectionFactory, SQLDatabaseOptions options) {
+    public SQLiteDatabaseConnectionImpl(final @NotNull SQLConnectionFactory connectionFactory,
+                                        @Nullable SQLDatabaseOptions options) {
         super(connectionFactory, options);
     }
 
@@ -46,8 +47,9 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
      * @param obj The object to save.
      * @return Result of the query.
      */
+    @NotNull
     @Override
-    public QueryResult save(String table, Object obj) {
+    public final QueryResult save(@NotNull String table, @NotNull Object obj) {
         DefsVals defsVals = buildDefsVals(obj);
         if(defsVals == null) {
             return new QueryResultImpl(false);
@@ -114,17 +116,22 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
      * @param update Update query.
      * @return Result of the query.
      */
-    public QueryResult upsert(String table, PrimaryKey primaryKey, InsertQuery insert, UpdateQuery update) {
-        QueryRowsResult<Row> slct = select("*")
+    @NotNull
+    public final QueryResult upsert(final @NotNull String table,
+                                    final @NotNull PrimaryKey primaryKey,
+                                    final @NotNull InsertQuery insert,
+                                    final @NotNull UpdateQuery update) {
+
+        QueryRowsResult<Row> selectResult = select("*")
                 .from(table)
                 .where().isEqual(primaryKey.getColumn(), primaryKey.getValue())
                 .also().limit(1)
                 .obtainAll();
-        if(!slct.isSuccessful()) {
+        if(!selectResult.isSuccessful()) {
             // Not successful, we'll skip other queries.
             return new QueryResultImpl(false);
         }
-        if(slct.isEmpty()) {
+        if(selectResult.isEmpty()) {
             // No results, we'll insert.
             return exec(insert);
         } else {
@@ -132,8 +139,9 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
         }
     }
 
+    @NotNull
     @Override
-    public QueryResult exec(Query query) {
+    public QueryResult exec(final @NotNull Query query) {
         if (query instanceof UpsertQuery && ((UpsertQuery) query).getAssignedSaveObject() != null)
             return save(((UpsertQuery) query).getTable(), ((UpsertQuery) query).getAssignedSaveObject());
 

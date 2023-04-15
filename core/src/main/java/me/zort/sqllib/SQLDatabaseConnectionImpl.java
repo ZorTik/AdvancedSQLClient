@@ -21,12 +21,12 @@ import me.zort.sqllib.internal.fieldResolver.LinkedOneFieldResolver;
 import me.zort.sqllib.internal.impl.DefaultNamingStrategy;
 import me.zort.sqllib.internal.impl.DefaultObjectMapper;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
-import me.zort.sqllib.internal.query.*;
+import me.zort.sqllib.internal.query.InsertQuery;
+import me.zort.sqllib.internal.query.UpsertQuery;
 import me.zort.sqllib.internal.query.part.SetStatement;
 import me.zort.sqllib.mapping.DefaultResultAdapter;
 import me.zort.sqllib.mapping.DefaultStatementMappingFactory;
 import me.zort.sqllib.pool.PooledSQLDatabaseConnection;
-import me.zort.sqllib.util.Pair;
 import me.zort.sqllib.util.Validator;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -65,9 +65,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
 
     @Getter
     private final SQLDatabaseOptions options;
-    @ApiStatus.Experimental
     private final transient StatementMappingFactory mappingFactory;
-    @ApiStatus.Experimental
     private final transient StatementMappingResultAdapter mappingResultAdapter;
     private final transient List<ErrorStateObserver> errorStateHandlers;
     private transient ObjectMapper objectMapper;
@@ -81,7 +79,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      *
      * @see SQLDatabaseConnectionImpl#SQLDatabaseConnectionImpl(SQLConnectionFactory, SQLDatabaseOptions)
      */
-    public SQLDatabaseConnectionImpl(SQLConnectionFactory connectionFactory) {
+    public SQLDatabaseConnectionImpl(final @NotNull SQLConnectionFactory connectionFactory) {
         this(connectionFactory, null);
     }
 
@@ -91,16 +89,12 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      * @param connectionFactory Factory to use while opening connection.
      * @param options Client options to use.
      */
-    public SQLDatabaseConnectionImpl(SQLConnectionFactory connectionFactory, @Nullable SQLDatabaseOptions options) {
+    public SQLDatabaseConnectionImpl(final @NotNull SQLConnectionFactory connectionFactory, @Nullable SQLDatabaseOptions options) {
         super(connectionFactory);
 
         if (options == null)
-            options = new SQLDatabaseOptions(DEFAULT_AUTO_RECONNECT,
-                    DEFAULT_DEBUG,
-                    DEFAULT_LOG_SQL_ERRORS,
-                    DEFAULT_NAMING_STRATEGY,
-                    DEFAULT_GSON
-            );
+            options = new SQLDatabaseOptions(
+                    DEFAULT_AUTO_RECONNECT, DEFAULT_DEBUG, DEFAULT_LOG_SQL_ERRORS, DEFAULT_NAMING_STRATEGY, DEFAULT_GSON);
 
         this.options = options;
         this.objectMapper = new DefaultObjectMapper(this);
@@ -121,7 +115,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      *
      * @param resolver Resolver to register.
      */
-    public void registerBackupValueResolver(@NotNull ObjectMapper.FieldValueResolver resolver) {
+    public void registerBackupValueResolver(final @NotNull ObjectMapper.FieldValueResolver resolver) {
         Objects.requireNonNull(resolver, "Resolver cannot be null!");
 
         objectMapper.registerBackupValueResolver(resolver);
@@ -133,7 +127,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      *
      * @param objectMapper Object mapper to use.
      */
-    public void setObjectMapper(@NotNull ObjectMapper objectMapper) {
+    public void setObjectMapper(final @NotNull ObjectMapper objectMapper) {
         this.objectMapper = Objects.requireNonNull(objectMapper, "Object mapper cannot be null!");
     }
 
@@ -143,7 +137,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      *
      * @param observer Observer to add.
      */
-    public void addErrorHandler(@NotNull ErrorStateObserver observer) {
+    public void addErrorHandler(final @NotNull ErrorStateObserver observer) {
         this.errorStateHandlers.add(observer);
     }
 
@@ -179,8 +173,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      * @param <T> Type of mapping repository.
      */
     @SuppressWarnings("unchecked")
-    @ApiStatus.Experimental
-    public final <T> T createGate(Class<T> mappingInterface) {
+    public final <T> T createGate(final @NotNull Class<T> mappingInterface) {
         Objects.requireNonNull(mappingInterface, "Mapping interface cannot be null!");
 
         StatementMappingStrategy<T> statementMapping = mappingFactory.create(mappingInterface, this);
@@ -211,7 +204,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
 
     @SuppressWarnings("unchecked, rawtypes")
     @ApiStatus.Experimental
-    public final boolean buildEntitySchema(String tableName, Class<?> entityClass) {
+    public final boolean buildEntitySchema(final @NotNull String tableName, final @NotNull Class<?> entityClass) {
         Objects.requireNonNull(entityClass, "Entity class cannot be null!");
 
         SQLTableRepository repository = new SQLTableRepositoryBuilder()
@@ -243,8 +236,9 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      *
      * @return Collection of row objects.
      */
+    @NotNull
     @Override
-    public <T> QueryRowsResult<T> query(Query query, Class<T> typeClass) {
+    public <T> QueryRowsResult<T> query(final @NotNull Query query, final @NotNull Class<T> typeClass) {
         Objects.requireNonNull(query);
         Objects.requireNonNull(typeClass);
 
@@ -263,12 +257,13 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      *
      * @param query The query to use
      */
+    @NotNull
     @Override
-    public QueryRowsResult<Row> query(Query query) {
+    public QueryRowsResult<Row> query(final @NotNull Query query) {
         return query(query, false);
     }
 
-    private QueryRowsResult<Row> query(Query query, boolean isRetry) {
+    private QueryRowsResult<Row> query(final @NotNull Query query, boolean isRetry) {
         Objects.requireNonNull(query);
 
         if(!handleAutoReconnect()) {
@@ -315,11 +310,11 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      * @return Blank rows result that only informs
      * about success state of the request.
      */
-    public QueryResult exec(Query query) {
+    public QueryResult exec(final @NotNull Query query) {
         return exec(query, false);
     }
 
-    private QueryResult exec(Query query, boolean isRetry) {
+    private QueryResult exec(final @NotNull Query query, boolean isRetry) {
         if(!handleAutoReconnect()) {
             return new QueryResultImpl(false, "Cannot connect to database!");
         }
@@ -348,8 +343,9 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      * @param obj The object to save.
      * @return Result of the query.
      */
+    // by default, it creates and upsert request.
     @Override
-    public QueryResult save(String table, Object obj) { // by default, it creates and upsert request.
+    public QueryResult save(final @NotNull String table, final @NotNull Object obj) {
         DefsVals defsVals = buildDefsVals(obj);
 
         if(defsVals == null) {
@@ -359,7 +355,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         return save(obj).table(table).execute();
     }
 
-    public UpsertQuery save(Object obj) {
+    public UpsertQuery save(final @NotNull Object obj) {
         DefsVals defsVals = buildDefsVals(obj);
         if(defsVals == null) return null;
 
@@ -377,7 +373,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         return (UpsertQuery) setStmt.getAncestor();
     }
 
-    public QueryResult insert(String table, Object obj) {
+    public QueryResult insert(final @NotNull String table, final @NotNull Object obj) {
         DefsVals defsVals = buildDefsVals(obj);
         if (defsVals == null) return new QueryResultImpl(false);
 
@@ -513,16 +509,16 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     }
 
     @AllArgsConstructor
-    @Data
-    public static class UnknownValueWrapper {
-        private Object object;
+    @Getter
+    protected static class DefsVals {
+        private final String[] defs;
+        private final UnknownValueWrapper[] vals;
     }
 
     @AllArgsConstructor
-    @Getter
-    public static class DefsVals {
-        private final String[] defs;
-        private final UnknownValueWrapper[] vals;
+    @Data
+    public static class UnknownValueWrapper {
+        private Object object;
     }
 
     public interface ErrorStateObserver {

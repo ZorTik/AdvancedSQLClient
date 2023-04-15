@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import me.zort.sqllib.SQLConnectionBuilder;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.SQLDatabaseConnectionImpl;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.SQLException;
@@ -22,6 +23,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  *
  * @author ZorTik
  */
+@ApiStatus.AvailableSince("0.6.0")
 @RequiredArgsConstructor
 public final class SQLConnectionPool {
 
@@ -47,7 +49,7 @@ public final class SQLConnectionPool {
     private final List<PooledSQLDatabaseConnection> usedConnections = new CopyOnWriteArrayList<>();
 
     @SuppressWarnings("unused")
-    public SQLConnectionPool(@NotNull SQLConnectionBuilder from) {
+    public SQLConnectionPool(final @NotNull SQLConnectionBuilder from) {
         this(from, new Options());
     }
 
@@ -58,7 +60,7 @@ public final class SQLConnectionPool {
      * @param from The builder used to create new connections.
      * @param poolOptions The pool options.
      */
-    public SQLConnectionPool(@NotNull SQLConnectionBuilder from, @NotNull Options poolOptions) {
+    public SQLConnectionPool(final @NotNull SQLConnectionBuilder from, final @NotNull Options poolOptions) {
         this.builder = from;
         this.maxConnections = poolOptions.maxConnections;
         this.borrowObjectTimeout = poolOptions.borrowObjectTimeout;
