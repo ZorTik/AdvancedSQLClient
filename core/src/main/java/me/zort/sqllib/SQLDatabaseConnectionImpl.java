@@ -25,6 +25,7 @@ import me.zort.sqllib.internal.query.*;
 import me.zort.sqllib.internal.query.part.SetStatement;
 import me.zort.sqllib.mapping.DefaultResultAdapter;
 import me.zort.sqllib.mapping.DefaultStatementMappingFactory;
+import me.zort.sqllib.pool.PooledSQLDatabaseConnection;
 import me.zort.sqllib.util.Pair;
 import me.zort.sqllib.util.Validator;
 import org.jetbrains.annotations.ApiStatus;
@@ -50,7 +51,7 @@ import static me.zort.sqllib.util.ExceptionsUtility.runCatching;
  * @author ZorTik
  */
 @SuppressWarnings("unused")
-public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
+public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
 
     // --***-- Default Constants --***--
 
@@ -431,19 +432,14 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
     public UpsertQuery save(Object obj) {
         Pair<String[], UnknownValueWrapper[]> data = buildDefsVals(obj);
-
-        if(data == null) {
-            return null;
-        }
+        if(data == null) return null;
 
         String[] defs = data.getFirst();
         UnknownValueWrapper[] vals = data.getSecond();
-
         UpsertQuery upsert = upsert().into(null, defs);
         for(UnknownValueWrapper wrapper : vals) {
             upsert.appendVal(wrapper.getObject());
         }
-
         SetStatement<InsertQuery> setStmt = upsert.onDuplicateKey();
         for(int i = 0; i < defs.length; i++) {
             setStmt.and(defs[i], vals[i].getObject());

@@ -3,7 +3,8 @@ package me.zort.sqllib.test;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import me.zort.sqllib.SQLConnectionBuilder;
-import me.zort.sqllib.SQLConnectionPool;
+import me.zort.sqllib.SQLDatabaseConnectionImpl;
+import me.zort.sqllib.pool.SQLConnectionPool;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.SQLDatabaseOptions;
 import me.zort.sqllib.api.data.QueryResult;
@@ -158,9 +159,8 @@ public class TestCase1 { // Basic operations
         options.setBorrowObjectTimeout(5000L);
         options.setBlockWhenExhausted(false);
         SQLConnectionPool pool = new SQLConnectionPool(builder, options);
-        try (SQLConnectionPool.Resource resource = pool.getResource()) {
+        try (SQLDatabaseConnection connection = pool.getResource()) {
             System.out.println("Got connection from pool");
-            SQLDatabaseConnection connection = resource.getConnection();
             assertTrue(connection.save(TABLE_NAME, user1).isSuccessful());
         } catch(SQLException e) {
             throw new RuntimeException(e);

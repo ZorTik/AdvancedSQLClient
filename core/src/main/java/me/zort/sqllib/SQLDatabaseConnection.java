@@ -182,6 +182,11 @@ public abstract class SQLDatabaseConnection implements SQLConnection {
         }
     }
 
+    @Override
+    public void close() {
+        disconnect();
+    }
+
     protected void logSqlError(Exception e) {
         if(isLogSqlErrors()) {
             e.printStackTrace();
