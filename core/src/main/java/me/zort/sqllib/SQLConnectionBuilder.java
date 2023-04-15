@@ -15,7 +15,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Objects;
-import java.util.Optional;
 
 public final class SQLConnectionBuilder implements Cloneable {
 
@@ -113,7 +112,7 @@ public final class SQLConnectionBuilder implements Cloneable {
 
         @Nullable
         @Override
-        public Connection connect() {
+        public Connection connect() throws SQLException {
             try {
                 Class.forName(driver);
             } catch (ClassNotFoundException e) {
@@ -122,12 +121,7 @@ public final class SQLConnectionBuilder implements Cloneable {
             String jdbc = builder.jdbc;
             String usr = builder.endpoint.getUsername();
             String pwd = builder.endpoint.getPassword();
-            try {
-                return DriverManager.getConnection(jdbc, usr, pwd);
-            } catch (SQLException e) {
-                e.printStackTrace();
-                return null;
-            }
+            return DriverManager.getConnection(jdbc, usr, pwd);
         }
 
     }

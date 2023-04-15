@@ -25,6 +25,7 @@ import me.zort.sqllib.internal.query.*;
 import me.zort.sqllib.internal.query.part.SetStatement;
 import me.zort.sqllib.mapping.DefaultResultAdapter;
 import me.zort.sqllib.mapping.DefaultStatementMappingFactory;
+import me.zort.sqllib.pool.PooledSQLDatabaseConnection;
 import me.zort.sqllib.util.Pair;
 import me.zort.sqllib.util.Validator;
 import org.jetbrains.annotations.ApiStatus;
@@ -50,7 +51,7 @@ import static me.zort.sqllib.util.ExceptionsUtility.runCatching;
  * @author ZorTik
  */
 @SuppressWarnings("unused")
-public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
+public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
 
     // --***-- Default Constants --***--
 
@@ -72,6 +73,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     private transient ObjectMapper objectMapper;
     @Setter
     private transient Logger logger;
+    private int errorCount = 0;
 
     /**
      * Constructs new instance of this implementation with default
@@ -222,6 +224,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
     /**
      * Performs new query and returns the result. This result is never null.
+     * This method also maps the result to the specified type using {@link ObjectMapper}.
      * See: {@link QueryRowsResult#isSuccessful()}
      *
      * Examples:
@@ -258,14 +261,14 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     /**
      * Performs new query and returns the result. This result is never null.
      *
-     * @see SQLDatabaseConnection#query(Query, Class)
+     * @param query The query to use
      */
     @Override
     public QueryRowsResult<Row> query(Query query) {
-        return doQuery(query, false);
+        return query(query, false);
     }
 
-    private QueryRowsResult<Row> doQuery(Query query, boolean isRetry) {
+    private QueryRowsResult<Row> query(Query query, boolean isRetry) {
         Objects.requireNonNull(query);
 
         if(!handleAutoReconnect()) {
@@ -293,7 +296,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         } catch (SQLException e) {
             if (!isRetry && e.getMessage().contains("database connection closed")) {
                 reconnect();
-                return doQuery(query, true);
+                return query(query, true);
             }
 
             logSqlError(e);
@@ -313,10 +316,10 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
      * about success state of the request.
      */
     public QueryResult exec(Query query) {
-        return doExec(query, false);
+        return exec(query, false);
     }
 
-    private QueryResult doExec(Query query, boolean isRetry) {
+    private QueryResult exec(Query query, boolean isRetry) {
         if(!handleAutoReconnect()) {
             return new QueryResultImpl(false, "Cannot connect to database!");
         }
@@ -326,7 +329,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         } catch (SQLException e) {
             if (!isRetry && e.getMessage().contains("database connection closed")) {
                 reconnect();
-                return doExec(query, true);
+                return exec(query, true);
             }
 
             logSqlError(e);
@@ -347,23 +350,39 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
      */
     @Override
     public QueryResult save(String table, Object obj) { // by default, it creates and upsert request.
-        Pair<String[], UnknownValueWrapper[]> data = buildDefsVals(obj);
+        DefsVals defsVals = buildDefsVals(obj);
 
-        if(data == null) {
+        if(defsVals == null) {
             return new QueryResultImpl(false);
         }
 
         return save(obj).table(table).execute();
     }
 
+    public UpsertQuery save(Object obj) {
+        DefsVals defsVals = buildDefsVals(obj);
+        if(defsVals == null) return null;
+
+        String[] defs = defsVals.getDefs();
+        UnknownValueWrapper[] vals = defsVals.getVals();
+        UpsertQuery upsert = upsert().into(null, defs);
+        for(UnknownValueWrapper wrapper : vals) {
+            upsert.appendVal(wrapper.getObject());
+        }
+        SetStatement<InsertQuery> setStmt = upsert.onDuplicateKey();
+        for(int i = 0; i < defs.length; i++) {
+            setStmt.and(defs[i], vals[i].getObject());
+        }
+
+        return (UpsertQuery) setStmt.getAncestor();
+    }
+
     public QueryResult insert(String table, Object obj) {
-        Pair<String[], UnknownValueWrapper[]> data = buildDefsVals(obj);
+        DefsVals defsVals = buildDefsVals(obj);
+        if (defsVals == null) return new QueryResultImpl(false);
 
-        if (data == null)
-            return new QueryResultImpl(false);
-
-        InsertQuery query = insert().into(table, data.getFirst());
-        for (UnknownValueWrapper valueWrapper : data.getSecond()) {
+        InsertQuery query = insert().into(table, defsVals.getDefs());
+        for (UnknownValueWrapper valueWrapper : defsVals.getVals()) {
             query.appendVal(valueWrapper.getObject());
         }
 
@@ -372,7 +391,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
 
     @SuppressWarnings("unchecked")
     @Nullable
-    protected Pair<String[], UnknownValueWrapper[]> buildDefsVals(Object obj) {
+    protected DefsVals buildDefsVals(Object obj) {
         Objects.requireNonNull(obj);
 
         Class<?> aClass = obj.getClass();
@@ -409,7 +428,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
             defs[i] = entryArray[i].getKey();
             vals[i] = new UnknownValueWrapper(entryArray[i].getValue());
         }
-        return new Pair<>(defs, vals);
+        return new DefsVals(defs, vals);
     }
 
     @SuppressWarnings("all")
@@ -429,31 +448,20 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
         return true;
     }
 
-    public UpsertQuery save(Object obj) {
-        Pair<String[], UnknownValueWrapper[]> data = buildDefsVals(obj);
-
-        if(data == null) {
-            return null;
-        }
-
-        String[] defs = data.getFirst();
-        UnknownValueWrapper[] vals = data.getSecond();
-
-        UpsertQuery upsert = upsert().into(null, defs);
-        for(UnknownValueWrapper wrapper : vals) {
-            upsert.appendVal(wrapper.getObject());
-        }
-
-        SetStatement<InsertQuery> setStmt = upsert.onDuplicateKey();
-        for(int i = 0; i < defs.length; i++) {
-            setStmt.and(defs[i], vals[i].getObject());
-        }
-
-        return (UpsertQuery) setStmt.getAncestor();
-    }
-
     public void debug(String message) {
         if(options.isDebug()) logger.info(message);
+    }
+
+    @Override
+    public void close() {
+        if (errorCount > 0 && getAssignedPool() != null) {
+            // If there was any error and this connection is part of a pool,
+            // we won't return object to the pool, but disconnect.
+            disconnect();
+            return;
+        }
+
+        super.close();
     }
 
     @Override
@@ -467,6 +475,7 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     }
 
     private void notifyError(int code) {
+        errorCount++;
         this.errorStateHandlers.forEach(handler -> runCatching(() -> handler.onErrorState(code)));
     }
 
@@ -507,6 +516,13 @@ public class SQLDatabaseConnectionImpl extends SQLDatabaseConnection {
     @Data
     public static class UnknownValueWrapper {
         private Object object;
+    }
+
+    @AllArgsConstructor
+    @Getter
+    public static class DefsVals {
+        private final String[] defs;
+        private final UnknownValueWrapper[] vals;
     }
 
     public interface ErrorStateObserver {

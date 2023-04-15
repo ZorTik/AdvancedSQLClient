@@ -1,8 +1,10 @@
-package me.zort.sqllib;
+package me.zort.sqllib.pool;
 
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import me.zort.sqllib.SQLConnectionBuilder;
+import me.zort.sqllib.SQLDatabaseConnection;
+import me.zort.sqllib.SQLDatabaseConnectionImpl;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.SQLException;
@@ -38,10 +40,13 @@ public final class SQLConnectionPool {
     private final long borrowObjectTimeout;
     private final boolean blockWhenExhausted;
 
-    // --***-- Pooled connection caches --***--
-    private final Queue<SQLPooledConnection> freeConnections = new ConcurrentLinkedQueue<>();
-    private final List<SQLPooledConnection> usedConnections = new CopyOnWriteArrayList<>();
+    private int errorCount = 0;
 
+    // --***-- Pooled connection caches --***--
+    private final Queue<PooledSQLDatabaseConnection> freeConnections = new ConcurrentLinkedQueue<>();
+    private final List<PooledSQLDatabaseConnection> usedConnections = new CopyOnWriteArrayList<>();
+
+    @SuppressWarnings("unused")
     public SQLConnectionPool(@NotNull SQLConnectionBuilder from) {
         this(from, new Options());
     }
@@ -68,9 +73,9 @@ public final class SQLConnectionPool {
      * @throws SQLException Connection error.
      */
     @NotNull
-    public Resource getResource() throws SQLException {
-        freeConnections.removeIf(SQLPooledConnection::expired);
-        SQLPooledConnection polled = freeConnections.poll();
+    public SQLDatabaseConnection getResource() throws SQLException {
+        freeConnections.removeIf(this::expired);
+        PooledSQLDatabaseConnection polled = freeConnections.poll();
         if (polled == null && size() < maxConnections) {
             polled = establishObject();
         } else if(polled == null) {
@@ -90,31 +95,47 @@ public final class SQLConnectionPool {
             }
         }
         usedConnections.add(polled);
-        return new Resource(this, polled);
+        return polled;
     }
 
-    private SQLPooledConnection establishObject() throws SQLException {
-        SQLPooledConnection polled = new SQLPooledConnection(builder.build());
-        polled.connection.connect();
+    private PooledSQLDatabaseConnection establishObject() throws SQLException {
+        SQLDatabaseConnection polled_ = builder.build();
+        if (!(polled_ instanceof PooledSQLDatabaseConnection)) {
+            throw new SQLException("Builder does not produce a pooled connection.");
+        }
+        PooledSQLDatabaseConnection polled = (PooledSQLDatabaseConnection) polled_;
+        polled.setAssignedPool(this);
+        polled.connect();
 
-        SQLException error = polled.connection.getLastError();
+        SQLException error = polled.getLastError();
         if (error != null) throw error;
 
-        if (polled.connection instanceof SQLDatabaseConnectionImpl) {
-            ((SQLDatabaseConnectionImpl) polled.connection).addErrorHandler(code -> {
+        if (polled instanceof SQLDatabaseConnectionImpl) {
+            ((SQLDatabaseConnectionImpl) polled).addErrorHandler(code -> {
+                errorCount++;
                 // Remove the connection from the pool and disconnect
                 // on fatal errors.
                 freeConnections.remove(polled);
                 usedConnections.remove(polled);
-                polled.connection.disconnect();
+                polled.disconnect();
             });
         }
 
         return polled;
     }
 
+    void releaseObject(PooledSQLDatabaseConnection connection) {
+        connection.setLastUsed(System.currentTimeMillis());
+        freeConnections.add(connection);
+        usedConnections.remove(connection);
+    }
+
     public int size() {
         return usedConnections.size() + freeConnections.size();
+    }
+
+    public int errorCount() {
+        return errorCount;
     }
 
     /**
@@ -122,38 +143,14 @@ public final class SQLConnectionPool {
      * clears the caches.
      */
     public void close() {
-        usedConnections.forEach(c -> c.connection.disconnect());
-        freeConnections.forEach(c -> c.connection.disconnect());
+        usedConnections.forEach(SQLDatabaseConnection::disconnect);
+        freeConnections.forEach(SQLDatabaseConnection::disconnect);
         usedConnections.clear();
         freeConnections.clear();
     }
 
-    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    private static final class SQLPooledConnection {
-        private final SQLDatabaseConnection connection;
-        private long lastUsed = System.currentTimeMillis();
-
-        public boolean expired() {
-            return System.currentTimeMillis() - lastUsed > 1000 * 60 * 5;
-        }
-    }
-
-    @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
-    public static final class Resource implements AutoCloseable {
-
-        private final SQLConnectionPool pool;
-        private final SQLPooledConnection connection;
-
-        public SQLDatabaseConnection getConnection() {
-            return connection.connection;
-        }
-
-        @Override
-        public void close() {
-            connection.lastUsed = System.currentTimeMillis();
-            pool.freeConnections.add(connection);
-            pool.usedConnections.remove(connection);
-        }
+    private boolean expired(PooledSQLDatabaseConnection connection) {
+        return System.currentTimeMillis() - connection.getLastUsed() > 1000 * 60 * 5;
     }
 
 }

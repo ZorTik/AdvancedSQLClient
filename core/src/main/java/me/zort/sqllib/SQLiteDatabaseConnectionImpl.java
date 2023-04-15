@@ -48,12 +48,12 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
      */
     @Override
     public QueryResult save(String table, Object obj) {
-        Pair<String[], UnknownValueWrapper[]> defsValsPair = buildDefsVals(obj);
-        if(defsValsPair == null) {
+        DefsVals defsVals = buildDefsVals(obj);
+        if(defsVals == null) {
             return new QueryResultImpl(false);
         }
-        String[] defs = defsValsPair.getFirst();
-        UnknownValueWrapper[] vals = defsValsPair.getSecond();
+        String[] defs = defsVals.getDefs();
+        UnknownValueWrapper[] vals = defsVals.getVals();
 
         debug("Saving object into table " + table + " with definitions " + Arrays.toString(defs) + " and values " + Arrays.toString(vals));
 
