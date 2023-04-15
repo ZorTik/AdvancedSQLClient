@@ -5,7 +5,9 @@ import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class PooledSQLDatabaseConnection extends SQLDatabaseConnection {
+import java.io.Closeable;
+
+public abstract class PooledSQLDatabaseConnection extends SQLDatabaseConnection implements Closeable {
 
     private SQLConnectionPool assignedPool = null;
     @Getter(onMethod_ = {@Nullable})

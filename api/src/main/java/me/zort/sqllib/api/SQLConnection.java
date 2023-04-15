@@ -2,7 +2,6 @@ package me.zort.sqllib.api;
 
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Closeable;
 import java.sql.Connection;
 
 /**
@@ -12,8 +11,7 @@ import java.sql.Connection;
  *
  * @author ZorTik
  */
-@SuppressWarnings("closeable")
-public interface SQLConnection extends Closeable {
+public interface SQLConnection {
 
     /**
      * Tries to connect to remote SQL server.
@@ -26,9 +24,7 @@ public interface SQLConnection extends Closeable {
     /**
      * Tries to disconnect from remote SQL server.
      */
-    @Deprecated
     void disconnect();
-    void close();
 
     /**
      * Returns current running connection with

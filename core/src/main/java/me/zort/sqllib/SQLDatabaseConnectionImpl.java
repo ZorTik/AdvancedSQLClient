@@ -263,10 +263,10 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      */
     @Override
     public QueryRowsResult<Row> query(Query query) {
-        return doQuery(query, false);
+        return query(query, false);
     }
 
-    private QueryRowsResult<Row> doQuery(Query query, boolean isRetry) {
+    private QueryRowsResult<Row> query(Query query, boolean isRetry) {
         Objects.requireNonNull(query);
 
         if(!handleAutoReconnect()) {
@@ -294,7 +294,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         } catch (SQLException e) {
             if (!isRetry && e.getMessage().contains("database connection closed")) {
                 reconnect();
-                return doQuery(query, true);
+                return query(query, true);
             }
 
             logSqlError(e);
@@ -314,10 +314,10 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      * about success state of the request.
      */
     public QueryResult exec(Query query) {
-        return doExec(query, false);
+        return exec(query, false);
     }
 
-    private QueryResult doExec(Query query, boolean isRetry) {
+    private QueryResult exec(Query query, boolean isRetry) {
         if(!handleAutoReconnect()) {
             return new QueryResultImpl(false, "Cannot connect to database!");
         }
@@ -327,7 +327,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         } catch (SQLException e) {
             if (!isRetry && e.getMessage().contains("database connection closed")) {
                 reconnect();
-                return doExec(query, true);
+                return exec(query, true);
             }
 
             logSqlError(e);
@@ -359,9 +359,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
 
     public QueryResult insert(String table, Object obj) {
         Pair<String[], UnknownValueWrapper[]> data = buildDefsVals(obj);
-
-        if (data == null)
-            return new QueryResultImpl(false);
+        if (data == null) return new QueryResultImpl(false);
 
         InsertQuery query = insert().into(table, data.getFirst());
         for (UnknownValueWrapper valueWrapper : data.getSecond()) {

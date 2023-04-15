@@ -11,6 +11,7 @@ import me.zort.sqllib.internal.query.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -21,7 +22,7 @@ import java.sql.SQLException;
  * @author ZorTik
  */
 @SuppressWarnings("unused")
-public abstract class SQLDatabaseConnection implements SQLConnection {
+public abstract class SQLDatabaseConnection implements SQLConnection, Closeable {
 
     private final SQLConnectionFactory connectionFactory;
     @Getter(onMethod_ = {@Nullable})

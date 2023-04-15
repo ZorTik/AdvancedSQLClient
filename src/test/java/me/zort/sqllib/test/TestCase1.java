@@ -170,6 +170,7 @@ public class TestCase1 { // Basic operations
         assertEquals(0, pool.size());
     }
 
+
     @Timeout(5)
     @Test
     public void test7_Close() {
