@@ -40,6 +40,8 @@ public final class SQLConnectionPool {
     private final long borrowObjectTimeout;
     private final boolean blockWhenExhausted;
 
+    private int errorCount = 0;
+
     // --***-- Pooled connection caches --***--
     private final Queue<PooledSQLDatabaseConnection> freeConnections = new ConcurrentLinkedQueue<>();
     private final List<PooledSQLDatabaseConnection> usedConnections = new CopyOnWriteArrayList<>();
@@ -110,6 +112,7 @@ public final class SQLConnectionPool {
 
         if (polled instanceof SQLDatabaseConnectionImpl) {
             ((SQLDatabaseConnectionImpl) polled).addErrorHandler(code -> {
+                errorCount++;
                 // Remove the connection from the pool and disconnect
                 // on fatal errors.
                 freeConnections.remove(polled);
@@ -129,6 +132,10 @@ public final class SQLConnectionPool {
 
     public int size() {
         return usedConnections.size() + freeConnections.size();
+    }
+
+    public int errorCount() {
+        return errorCount;
     }
 
     /**

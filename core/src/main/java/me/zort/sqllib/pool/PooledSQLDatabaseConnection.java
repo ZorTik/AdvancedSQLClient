@@ -9,6 +9,7 @@ import java.io.Closeable;
 
 public abstract class PooledSQLDatabaseConnection extends SQLDatabaseConnection implements Closeable {
 
+    @Getter(onMethod_ = {@Nullable})
     private SQLConnectionPool assignedPool = null;
     @Getter(onMethod_ = {@Nullable})
     private long lastUsed = System.currentTimeMillis();
