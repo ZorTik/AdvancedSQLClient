@@ -33,6 +33,9 @@ public class SaveQueryBuilder implements QueryAnnotation.QueryBuilder<Save> {
 
     private static Object getSaveableObject(ParameterPair[] parameters) {
         for (ParameterPair parameter : parameters) {
+            if (parameter.getValue() == null)
+                continue;
+
             Class<?> aClass = parameter.getValue().getClass();
             if (!Primitives.isWrapperType(Primitives.wrap(aClass)))
                 return parameter.getValue();

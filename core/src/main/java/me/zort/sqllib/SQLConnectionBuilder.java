@@ -58,13 +58,13 @@ public final class SQLConnectionBuilder implements Cloneable {
                 : null;
     }
 
-    public @NotNull SQLConnectionBuilder withEndpoint(SQLEndpoint endpoint) {
+    public @NotNull SQLConnectionBuilder withEndpoint(final SQLEndpoint endpoint) {
         this.endpoint = endpoint;
         this.jdbc = endpoint.buildJdbc();
         return this;
     }
 
-    public @NotNull SQLConnectionBuilder withParam(String key, String value) {
+    public @NotNull SQLConnectionBuilder withParam(final @NotNull String key, final @NotNull String value) {
         if (endpoint != null) {
             jdbc += (jdbc.contains("?") ? "&" : "?");
             jdbc += key + "=" + value;
@@ -72,7 +72,7 @@ public final class SQLConnectionBuilder implements Cloneable {
         return this;
     }
 
-    public @NotNull SQLConnectionBuilder withDriver(String driver) {
+    public @NotNull SQLConnectionBuilder withDriver(final @Nullable String driver) {
         this.driver = driver;
         return this;
     }

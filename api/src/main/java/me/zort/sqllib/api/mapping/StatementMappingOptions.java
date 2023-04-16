@@ -12,6 +12,7 @@ public interface StatementMappingOptions {
     String getTable();
 
     class Builder {
+        // Default values
         private String table = null;
 
         public @NotNull Builder table(final @Nullable String table) {
@@ -20,13 +21,13 @@ public interface StatementMappingOptions {
         }
 
         public @NotNull StatementMappingOptions build() {
-            return new LocalOptions(table);
+            return new LocalOptionsImplementation(table);
         }
     }
 
     @AllArgsConstructor(access = AccessLevel.PRIVATE)
     @Getter
-    class LocalOptions implements StatementMappingOptions {
+    class LocalOptionsImplementation implements StatementMappingOptions {
         private String table;
     }
 

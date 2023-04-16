@@ -1,6 +1,5 @@
 package me.zort.sqllib.internal.fieldResolver;
 
-import me.zort.sqllib.SQLDatabaseConnectionImpl;
 import me.zort.sqllib.api.ObjectMapper;
 import me.zort.sqllib.api.SQLConnection;
 import me.zort.sqllib.api.data.Row;

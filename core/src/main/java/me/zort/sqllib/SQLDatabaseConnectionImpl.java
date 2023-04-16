@@ -92,7 +92,6 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      */
     public SQLDatabaseConnectionImpl(final @NotNull SQLConnectionFactory connectionFactory, @Nullable SQLDatabaseOptions options) {
         super(connectionFactory);
-
         if (options == null)
             options = new SQLDatabaseOptions(
                     DEFAULT_AUTO_RECONNECT, DEFAULT_DEBUG, DEFAULT_LOG_SQL_ERRORS, DEFAULT_NAMING_STRATEGY, DEFAULT_GSON);
