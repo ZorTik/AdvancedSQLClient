@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.api.SQLConnection;
 import me.zort.sqllib.api.data.QueryRowsResult;
+import me.zort.sqllib.api.mapping.StatementMappingOptions;
 import me.zort.sqllib.api.mapping.StatementMappingStrategy;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.internal.query.QueryNode;
@@ -31,7 +32,7 @@ public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
 
     @SuppressWarnings("unchecked")
     @Override
-    public QueryResult executeQuery(Method method, Object[] args, @Nullable Class<?> mapTo) {
+    public QueryResult executeQuery(StatementMappingOptions options, Method method, Object[] args, @Nullable Class<?> mapTo) {
         ParameterPair[] parameters = new ParameterPair[method.getParameters().length];
         int i = 0;
         for (Parameter parameter : method.getParameters()) {
@@ -41,7 +42,6 @@ public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
 
         Annotation queryAnnotation = null;
         QueryAnnotation wrappedAnnotation = null;
-
         for (Annotation annotation : method.getAnnotations()) {
             if (QueryAnnotation.isQueryAnnotation(annotation)) {
                 queryAnnotation = annotation;
@@ -55,8 +55,11 @@ public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
             throw new SQLMappingException("Connection is not a SQLDatabaseConnection!", method, args);
         }
 
-        QueryNode<?> node = wrappedAnnotation.getQueryBuilder().build(connection, queryAnnotation, method, parameters);
-
+        QueryNode<?> node = wrappedAnnotation.getQueryBuilder().build(
+                new QueryAnnotation.DefaultMappingDetails(connection, options),
+                queryAnnotation,
+                method,
+                parameters);
         if (method.isAnnotationPresent(Append.class)) {
             Append append = method.getAnnotation(Append.class);
             node.then(new PlaceholderMapper(parameters).assignValues(append.value()));

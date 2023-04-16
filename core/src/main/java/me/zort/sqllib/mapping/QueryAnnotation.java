@@ -1,9 +1,11 @@
 package me.zort.sqllib.mapping;
 
 import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import me.zort.sqllib.api.SQLConnection;
+import me.zort.sqllib.api.mapping.StatementMappingOptions;
 import me.zort.sqllib.internal.query.QueryNode;
 import me.zort.sqllib.mapping.annotation.*;
 import me.zort.sqllib.mapping.builder.*;
@@ -62,7 +64,14 @@ public class QueryAnnotation {
      */
     public interface QueryBuilder<T extends Annotation> {
 
-        QueryNode<?> build(SQLConnection connection, T queryAnnotation, Method method, ParameterPair[] parameters);
+        QueryNode<?> build(DefaultMappingDetails details, T queryAnnotation, Method method, ParameterPair[] parameters);
+    }
+
+    @AllArgsConstructor
+    @Getter
+    public static class DefaultMappingDetails {
+        private final SQLConnection connection;
+        private final StatementMappingOptions options;
     }
 
     public static class Validator {
