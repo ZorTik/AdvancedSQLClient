@@ -20,7 +20,8 @@ import java.util.Map;
 
 public class NativeQueryBuilder implements QueryAnnotation.QueryBuilder<Annotation> {
     @Override
-    public QueryNode<?> build(SQLConnection connection, Annotation queryAnnotation, Method method, ParameterPair[] parameters) {
+    public QueryNode<?> build(QueryAnnotation.DefaultMappingDetails details, Annotation queryAnnotation, Method method, ParameterPair[] parameters) {
+        SQLConnection connection = details.getConnection();
         PlaceholderMapper mapper = new PlaceholderMapper(parameters);
         return new LocalQueryNodeExecutive(connection) {
             private int currPhIndex = 0;

@@ -6,6 +6,7 @@ import me.zort.sqllib.api.SQLConnection;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
+import me.zort.sqllib.api.mapping.StatementMappingOptions;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.query.*;
 import org.jetbrains.annotations.ApiStatus;
@@ -69,8 +70,8 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
      * @return Mapping repository.
      * @param <T> Type of mapping repository.
      */
-    @ApiStatus.Experimental
     public abstract <T> T createGate(Class<T> mappingInterface);
+    public abstract <T> T createGate(Class<T> mappingInterface, @NotNull StatementMappingOptions options);
     public abstract boolean buildEntitySchema(String tableName, Class<?> entityClass);
 
     /**

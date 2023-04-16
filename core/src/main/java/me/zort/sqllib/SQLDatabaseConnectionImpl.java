@@ -9,6 +9,7 @@ import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.mapping.StatementMappingFactory;
+import me.zort.sqllib.api.mapping.StatementMappingOptions;
 import me.zort.sqllib.api.mapping.StatementMappingResultAdapter;
 import me.zort.sqllib.api.mapping.StatementMappingStrategy;
 import me.zort.sqllib.api.options.NamingStrategy;
@@ -145,6 +146,22 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      * Constructs a mapping repository based on provided interface.
      * The interface should follow rules for creating mapping repositories
      * in this library.
+     *
+     * @param mappingInterface Interface to create mapping repository for.
+     * @return Mapping repository.
+     * @param <T> Type of mapping repository.
+     *
+     * @see SQLDatabaseConnection#createGate(Class, StatementMappingOptions)
+     */
+    @Override
+    public <T> T createGate(Class<T> mappingInterface) {
+        return createGate(mappingInterface, new StatementMappingOptions.Builder().build());
+    }
+
+    /**
+     * Constructs a mapping repository based on provided interface.
+     * The interface should follow rules for creating mapping repositories
+     * in this library.
      * <p>
      * Example:
      * <pre>
@@ -173,11 +190,11 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      * @param <T> Type of mapping repository.
      */
     @SuppressWarnings("unchecked")
-    public final <T> T createGate(final @NotNull Class<T> mappingInterface) {
+    public final <T> T createGate(final @NotNull Class<T> mappingInterface, final @NotNull StatementMappingOptions options) {
         Objects.requireNonNull(mappingInterface, "Mapping interface cannot be null!");
+        Objects.requireNonNull(options, "Options cannot be null!");
 
         StatementMappingStrategy<T> statementMapping = mappingFactory.create(mappingInterface, this);
-
         List<Method> pendingMethods = new CopyOnWriteArrayList<>();
 
         return (T) Proxy.newProxyInstance(mappingInterface.getClassLoader(),
@@ -188,7 +205,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
                     if ((declaringClass.isInterface() || Modifier.isAbstract(declaringClass.getModifiers()))
                             && statementMapping.isMappingMethod(method)) {
                         // Prepare and execute query based on invoked method.
-                        QueryResult result = statementMapping.executeQuery(method, args, mappingResultAdapter.retrieveResultType(method));
+                        QueryResult result = statementMapping.executeQuery(options, method, args, mappingResultAdapter.retrieveResultType(method));
                         // Adapt QueryResult to method return type.
                         return mappingResultAdapter.adaptResult(method, result);
                     }
@@ -470,6 +487,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         return options.isDebug();
     }
 
+    @SuppressWarnings("all")
     private void notifyError(int code) {
         errorCount++;
         this.errorStateHandlers.forEach(handler -> runCatching(() -> handler.onErrorState(code)));

@@ -19,12 +19,13 @@ public interface StatementMappingStrategy<T> {
      * proxy instance. MapTo is used as type of entity to be mapped in the
      * request. If there is no mapping required, MapTo can be null.
      *
+     * @param options The mapping options.
      * @param method The method that was executed in the proxy.
      * @param args The arguments passed.
      * @param mapTo The type of entity that needs to be mapped.
      * @return The QueryResult of the executed query.
      */
-    QueryResult executeQuery(Method method, Object[] args, @Nullable Class<?> mapTo);
+    QueryResult executeQuery(StatementMappingOptions options, Method method, Object[] args, @Nullable Class<?> mapTo);
 
     /**
      * Checks if the method is eligible for mapping. If this returns false,

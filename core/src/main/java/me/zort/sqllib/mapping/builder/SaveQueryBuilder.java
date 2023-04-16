@@ -14,11 +14,13 @@ import java.lang.reflect.Method;
 
 public class SaveQueryBuilder implements QueryAnnotation.QueryBuilder<Save> {
     @Override
-    public QueryNode<?> build(SQLConnection connection, Save queryAnnotation, Method method, ParameterPair[] parameters) {
+    public QueryNode<?> build(QueryAnnotation.DefaultMappingDetails details, Save queryAnnotation, Method method, ParameterPair[] parameters) {
+        SQLConnection connection = details.getConnection();
         if (!(connection instanceof SQLDatabaseConnectionImpl))
             throw new IllegalArgumentException("The connection must be an instance of SQLDatabaseConnectionImpl");
 
-        String table = Table.Util.getFromContext(method, parameters);
+        String table = details.getOptions().getTable();
+        if (table == null) table = Table.Util.getFromContext(method, parameters);
 
         Object saveableObject = getSaveableObject(parameters);
 

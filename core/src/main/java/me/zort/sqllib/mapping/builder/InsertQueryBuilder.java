@@ -14,11 +14,13 @@ import java.lang.reflect.Method;
 
 public class InsertQueryBuilder implements QueryAnnotation.QueryBuilder<Insert> {
     @Override
-    public QueryNode<?> build(SQLConnection connection, Insert queryAnnotation, Method method, ParameterPair[] parameters) {
+    public QueryNode<?> build(QueryAnnotation.DefaultMappingDetails details, Insert queryAnnotation, Method method, ParameterPair[] parameters) {
+        SQLConnection connection = details.getConnection();
         if (!(connection instanceof SQLDatabaseConnection))
             throw new IllegalArgumentException("The connection must be a SQLDatabaseConnection");
 
-        String table = Table.Util.getFromContext(method, parameters);
+        String table = details.getOptions().getTable();
+        if (table == null) table = Table.Util.getFromContext(method, parameters);
         InsertQuery query = ((SQLDatabaseConnection) connection).insert();
         query.into(table, queryAnnotation.cols());
 
