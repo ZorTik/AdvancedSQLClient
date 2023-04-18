@@ -8,7 +8,7 @@ import me.zort.sqllib.api.mapping.StatementMappingOptions;
 import me.zort.sqllib.api.mapping.StatementMappingStrategy;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.internal.query.QueryNode;
-import me.zort.sqllib.internal.query.QueryNodeRequest;
+import me.zort.sqllib.internal.query.ResultSetAware;
 import me.zort.sqllib.mapping.annotation.Append;
 import me.zort.sqllib.mapping.exception.SQLMappingException;
 import me.zort.sqllib.util.ParameterPair;
@@ -69,7 +69,7 @@ public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
             return ((SQLDatabaseConnection) connection).query(node);
         }
 
-        if (wrappedAnnotation.isProducesResult() && node instanceof QueryNodeRequest) {
+        if (wrappedAnnotation.isProducesResult() && node instanceof ResultSetAware) {
             return mapTo != null
                     ? ((SQLDatabaseConnection) connection).query(node, mapTo)
                     : ((SQLDatabaseConnection) connection).query(node);

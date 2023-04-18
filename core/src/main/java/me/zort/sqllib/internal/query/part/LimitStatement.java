@@ -2,13 +2,13 @@ package me.zort.sqllib.internal.query.part;
 
 import me.zort.sqllib.internal.query.QueryDetails;
 import me.zort.sqllib.internal.query.QueryNode;
-import me.zort.sqllib.internal.query.QueryNodeRequest;
+import me.zort.sqllib.internal.query.ResultSetAware;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.List;
 
-public class LimitStatement<P extends QueryNode<?>> extends QueryNodeRequest<P> {
+public class LimitStatement<P extends QueryNode<?>> extends QueryNode<P> implements ResultSetAware {
 
     private final int limit;
 
