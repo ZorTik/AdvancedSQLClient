@@ -1,6 +1,2 @@
 version: "1.0"
 linter: jetbrains/qodana-jvm-community:2022.3
-exclude:
-  - name: Examples
-    paths:
-      - examples/src/main/java/me/zort/sqllib/QuickStart.java
