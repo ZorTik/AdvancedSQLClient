@@ -1,5 +1,6 @@
 package me.zort.sqllib;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.SQLConnection;
@@ -8,7 +9,9 @@ import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.mapping.StatementMappingOptions;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
+import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.internal.query.*;
+import me.zort.sqllib.internal.query.part.SetStatement;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -74,18 +77,6 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     public abstract boolean buildEntitySchema(String tableName, Class<?> entityClass);
 
     /**
-     * Saves this mapping object into database using upsert query.
-     * <p>
-     * All mapping strategies are described in:
-     * {@link SQLDatabaseConnection#query(Query, Class)}.
-     *
-     * @param table Table to save into.
-     * @param obj The object to save.
-     * @return Result of the query.
-     */
-    public abstract QueryResult save(String table, Object obj);
-
-    /**
      * Performs new query and returns the result. This result is never null.
      * See: {@link QueryRowsResult#isSuccessful()}
      *
@@ -121,8 +112,58 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
      */
     public abstract QueryResult exec(Query query);
     public abstract QueryResult exec(String query);
+    protected abstract DefsVals buildDefsVals(Object obj);
     public abstract boolean isLogSqlErrors();
     public abstract boolean isDebug();
+
+    /**
+     * Saves this mapping object into database using upsert query.
+     * <p>
+     * All mapping strategies are described in:
+     * {@link SQLDatabaseConnection#query(Query, Class)}.
+     *
+     * @param table Table to save into.
+     * @param obj The object to save.
+     * @return Result of the query.
+     */
+    // by default, it creates and upsert request.
+    public QueryResult save(final @NotNull String table, final @NotNull Object obj) {
+        DefsVals defsVals = buildDefsVals(obj);
+
+        if(defsVals == null) return new QueryResultImpl(false);
+
+        return save(obj).table(table).execute();
+    }
+
+    public UpsertQuery save(final @NotNull Object obj) {
+        DefsVals defsVals = buildDefsVals(obj);
+        if(defsVals == null) return null;
+
+        String[] defs = defsVals.getDefs();
+        SQLDatabaseConnectionImpl.UnknownValueWrapper[] vals = defsVals.getVals();
+        UpsertQuery upsert = upsert().into(null, defs);
+        for(SQLDatabaseConnectionImpl.UnknownValueWrapper wrapper : vals) {
+            upsert.appendVal(wrapper.getObject());
+        }
+        SetStatement<InsertQuery> setStmt = upsert.onDuplicateKey();
+        for(int i = 0; i < defs.length; i++) {
+            setStmt.and(defs[i], vals[i].getObject());
+        }
+
+        return (UpsertQuery) setStmt.getAncestor();
+    }
+
+    public QueryResult insert(final @NotNull String table, final @NotNull Object obj) {
+        DefsVals defsVals = buildDefsVals(obj);
+        if (defsVals == null) return new QueryResultImpl(false);
+
+        InsertQuery query = insert().into(table, defsVals.getDefs());
+        for (SQLDatabaseConnectionImpl.UnknownValueWrapper valueWrapper : defsVals.getVals()) {
+            query.appendVal(valueWrapper.getObject());
+        }
+
+        return query.execute();
+    }
 
     // --***-- Query builders --***--
 
@@ -161,7 +202,6 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     @Override
     public final boolean connect() {
         if(isConnected()) disconnect();
-
         try {
             connection = connectionFactory.connect();
             lastError = null;
@@ -176,7 +216,6 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     @Override
     public final void disconnect() {
         if (!isConnected()) return;
-
         try {
             connection.close();
             lastError = null;
@@ -195,4 +234,10 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
         if(isLogSqlErrors()) e.printStackTrace();
     }
 
+    @AllArgsConstructor
+    @Getter
+    protected static class DefsVals {
+        private final String[] defs;
+        private final SQLDatabaseConnectionImpl.UnknownValueWrapper[] vals;
+    }
 }

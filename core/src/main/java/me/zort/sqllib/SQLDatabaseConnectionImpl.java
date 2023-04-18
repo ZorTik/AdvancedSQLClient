@@ -21,9 +21,6 @@ import me.zort.sqllib.internal.fieldResolver.LinkedOneFieldResolver;
 import me.zort.sqllib.internal.impl.DefaultNamingStrategy;
 import me.zort.sqllib.internal.impl.DefaultObjectMapper;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
-import me.zort.sqllib.internal.query.InsertQuery;
-import me.zort.sqllib.internal.query.UpsertQuery;
-import me.zort.sqllib.internal.query.part.SetStatement;
 import me.zort.sqllib.mapping.DefaultResultAdapter;
 import me.zort.sqllib.mapping.DefaultStatementMappingFactory;
 import me.zort.sqllib.pool.PooledSQLDatabaseConnection;
@@ -279,25 +276,20 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         return query(() -> query);
     }
 
-    private QueryRowsResult<Row> query(final @NotNull Query query, boolean isRetry) {
+    @NotNull
+    QueryRowsResult<Row> query(final @NotNull Query query, boolean isRetry) {
         Objects.requireNonNull(query);
-
-        if(!handleAutoReconnect()) {
-            return new QueryRowsResult<>(false, "Cannot connect to database!");
-        }
+        if(!handleAutoReconnect()) return new QueryRowsResult<>(false, "Cannot connect to database!");
 
         try(PreparedStatement stmt = buildStatement(query);
             ResultSet resultSet = stmt.executeQuery()) {
             QueryRowsResult<Row> result = new QueryRowsResult<>(true);
-
             while(resultSet.next()) {
                 ResultSetMetaData meta = resultSet.getMetaData();
                 Row row = new Row();
                 for(int i = 1; i <= meta.getColumnCount(); i++) {
                     Object obj = resultSet.getObject(i);
-                    if(obj instanceof String) {
-                        obj = ((String) obj).replaceAll("''", "'");
-                    }
+                    if(obj instanceof String) obj = ((String) obj).replaceAll("''", "'");
                     row.put(meta.getColumnName(i), obj);
                 }
                 result.add(row);
@@ -351,58 +343,6 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
             notifyError(ErrorCode.QUERY_FATAL);
             return new QueryResultImpl(false, e.getMessage());
         }
-    }
-
-    /**
-     * Saves this mapping object into database using upsert query.
-     * <p>
-     * All mapping strategies are described in:
-     * {@link SQLDatabaseConnection#query(Query, Class)}.
-     *
-     * @param table Table to save into.
-     * @param obj The object to save.
-     * @return Result of the query.
-     */
-    // by default, it creates and upsert request.
-    @Override
-    public QueryResult save(final @NotNull String table, final @NotNull Object obj) {
-        DefsVals defsVals = buildDefsVals(obj);
-
-        if(defsVals == null) {
-            return new QueryResultImpl(false);
-        }
-
-        return save(obj).table(table).execute();
-    }
-
-    public UpsertQuery save(final @NotNull Object obj) {
-        DefsVals defsVals = buildDefsVals(obj);
-        if(defsVals == null) return null;
-
-        String[] defs = defsVals.getDefs();
-        UnknownValueWrapper[] vals = defsVals.getVals();
-        UpsertQuery upsert = upsert().into(null, defs);
-        for(UnknownValueWrapper wrapper : vals) {
-            upsert.appendVal(wrapper.getObject());
-        }
-        SetStatement<InsertQuery> setStmt = upsert.onDuplicateKey();
-        for(int i = 0; i < defs.length; i++) {
-            setStmt.and(defs[i], vals[i].getObject());
-        }
-
-        return (UpsertQuery) setStmt.getAncestor();
-    }
-
-    public QueryResult insert(final @NotNull String table, final @NotNull Object obj) {
-        DefsVals defsVals = buildDefsVals(obj);
-        if (defsVals == null) return new QueryResultImpl(false);
-
-        InsertQuery query = insert().into(table, defsVals.getDefs());
-        for (UnknownValueWrapper valueWrapper : defsVals.getVals()) {
-            query.appendVal(valueWrapper.getObject());
-        }
-
-        return query.execute();
     }
 
     @SuppressWarnings("unchecked")
@@ -527,13 +467,6 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
             SQLConnectionRegistry.debug(connection, "Query: " + queryString);
             return connection.prepareStatement(queryString);
         }
-    }
-
-    @AllArgsConstructor
-    @Getter
-    protected static class DefsVals {
-        private final String[] defs;
-        private final UnknownValueWrapper[] vals;
     }
 
     @AllArgsConstructor
