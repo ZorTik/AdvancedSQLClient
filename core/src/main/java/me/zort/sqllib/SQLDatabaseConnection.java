@@ -107,6 +107,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
      */
     public abstract <T> QueryRowsResult<T> query(Query query, Class<T> typeClass);
     public abstract QueryRowsResult<Row> query(Query query);
+    public abstract QueryRowsResult<Row> query(String query);
 
     /**
      * Executes given query and returns execution result.
@@ -119,6 +120,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
      * about success state of the request.
      */
     public abstract QueryResult exec(Query query);
+    public abstract QueryResult exec(String query);
     public abstract boolean isLogSqlErrors();
     public abstract boolean isDebug();
 

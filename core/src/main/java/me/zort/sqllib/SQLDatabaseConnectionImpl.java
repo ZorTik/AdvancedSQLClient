@@ -217,7 +217,6 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
                 });
     }
 
-    @SuppressWarnings("unchecked, rawtypes")
     @ApiStatus.Experimental
     public final boolean buildEntitySchema(final @NotNull String tableName, final @NotNull Class<?> entityClass) {
         Objects.requireNonNull(entityClass, "Entity class cannot be null!");
@@ -276,6 +275,10 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         return query(query, false);
     }
 
+    public QueryRowsResult<Row> query(final @NotNull String query) {
+        return query(() -> query);
+    }
+
     private QueryRowsResult<Row> query(final @NotNull Query query, boolean isRetry) {
         Objects.requireNonNull(query);
 
@@ -325,6 +328,10 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      */
     public QueryResult exec(final @NotNull Query query) {
         return exec(query, false);
+    }
+
+    public QueryResult exec(final @NotNull String query) {
+        return exec(() -> query);
     }
 
     private QueryResult exec(final @NotNull Query query, boolean isRetry) {
