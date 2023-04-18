@@ -9,7 +9,6 @@ import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.mapping.StatementMappingOptions;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.query.*;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

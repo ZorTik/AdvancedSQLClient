@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import me.zort.sqllib.SQLConnectionBuilder;
 import me.zort.sqllib.SQLDatabaseConnectionImpl;
+import me.zort.sqllib.internal.annotation.NullableField;
+import me.zort.sqllib.internal.annotation.PrimaryKey;
 import me.zort.sqllib.pool.SQLConnectionPool;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.SQLDatabaseOptions;
@@ -67,7 +69,8 @@ public class TestCase1 { // Basic operations
 
         System.out.println("Connection established, preparing tables...");
 
-        assertNull(connection.exec(() -> "CREATE TABLE IF NOT EXISTS users (nickname VARCHAR(64) PRIMARY KEY NOT NULL, points INT NOT NULL);").getRejectMessage());
+        assertTrue(connection.buildEntitySchema("users", User.class));
+        //assertNull(connection.exec(() -> "CREATE TABLE IF NOT EXISTS users (nickname VARCHAR(64) PRIMARY KEY NOT NULL, points INT NOT NULL);").getRejectMessage());
         assertNull(connection.exec(() -> "TRUNCATE TABLE users;").getRejectMessage());
 
         System.out.println("Tables prepared, test cases ready");
@@ -194,7 +197,10 @@ public class TestCase1 { // Basic operations
 
     @AllArgsConstructor
     private static class User {
+        @PrimaryKey
+        @NullableField(nullable = false)
         private final String nickname;
+        @NullableField(nullable = false)
         private final int points;
 
         public String getNickname() {
