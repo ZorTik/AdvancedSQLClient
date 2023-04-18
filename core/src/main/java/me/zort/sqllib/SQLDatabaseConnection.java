@@ -191,9 +191,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     }
 
     protected void logSqlError(Exception e) {
-        if(isLogSqlErrors()) {
-            e.printStackTrace();
-        }
+        if(isLogSqlErrors()) e.printStackTrace();
     }
 
 }

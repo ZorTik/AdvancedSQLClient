@@ -47,9 +47,7 @@ public class InsertQuery extends QueryNode<QueryNode<?>> implements Executive, C
     // Used internally
     public InsertQuery appendVal(Object val) {
         String[] newValues = new String[values.length + 1];
-        for(int i = 0; i < values.length; i++) {
-            newValues[i] = values[i];
-        }
+        System.arraycopy(values, 0, newValues, 0, values.length);
         newValues[values.length] = handleVal(val);
         this.values = newValues;
         return this;
