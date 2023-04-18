@@ -25,6 +25,7 @@ public final class SQLDatabaseOptions {
      *
      * @param connection The connection to load options from.
      */
+    @SuppressWarnings("unused")
     public void load(final @NotNull SQLDatabaseConnectionImpl connection) {
         SQLDatabaseOptions options = connection.getOptions();
         this.autoReconnect = options.autoReconnect;

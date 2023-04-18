@@ -13,7 +13,6 @@ import me.zort.sqllib.api.mapping.StatementMappingOptions;
 import me.zort.sqllib.api.mapping.StatementMappingResultAdapter;
 import me.zort.sqllib.api.mapping.StatementMappingStrategy;
 import me.zort.sqllib.api.options.NamingStrategy;
-import me.zort.sqllib.api.repository.SQLTableRepository;
 import me.zort.sqllib.internal.Defaults;
 import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
@@ -218,17 +217,14 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
                 });
     }
 
-    @SuppressWarnings("unchecked, rawtypes")
     @ApiStatus.Experimental
     public final boolean buildEntitySchema(final @NotNull String tableName, final @NotNull Class<?> entityClass) {
         Objects.requireNonNull(entityClass, "Entity class cannot be null!");
 
-        SQLTableRepository repository = new SQLTableRepositoryBuilder()
-                .withConnection(this)
-                .withTableName(tableName)
-                .withTypeClass(entityClass)
-                .build();
-        return repository.createTable();
+        ObjectTableConverter converter = new ObjectTableConverter(this, tableName, entityClass);
+        String query = converter.buildTableQuery();
+
+        return exec(() -> query).isSuccessful();
     }
 
     /**
@@ -277,6 +273,10 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     @Override
     public QueryRowsResult<Row> query(final @NotNull Query query) {
         return query(query, false);
+    }
+
+    public QueryRowsResult<Row> query(final @NotNull String query) {
+        return query(() -> query);
     }
 
     private QueryRowsResult<Row> query(final @NotNull Query query, boolean isRetry) {
@@ -328,6 +328,10 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      */
     public QueryResult exec(final @NotNull Query query) {
         return exec(query, false);
+    }
+
+    public QueryResult exec(final @NotNull String query) {
+        return exec(() -> query);
     }
 
     private QueryResult exec(final @NotNull Query query, boolean isRetry) {

@@ -53,7 +53,6 @@ public class DefaultObjectMapper implements ObjectMapper {
                             c.setAccessible(true);
                             instance = (T) c.newInstance(vals);
                         } catch(Exception ignored) {
-                            continue;
                         }
                     }
                 }
@@ -72,7 +71,6 @@ public class DefaultObjectMapper implements ObjectMapper {
                             field.getName(),
                             typeClass.getName()));
                 } catch(Exception ignored) {
-                    continue;
                 }
             }
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {

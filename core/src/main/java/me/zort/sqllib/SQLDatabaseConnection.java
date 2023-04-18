@@ -9,7 +9,6 @@ import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.mapping.StatementMappingOptions;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.query.*;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -108,6 +107,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
      */
     public abstract <T> QueryRowsResult<T> query(Query query, Class<T> typeClass);
     public abstract QueryRowsResult<Row> query(Query query);
+    public abstract QueryRowsResult<Row> query(String query);
 
     /**
      * Executes given query and returns execution result.
@@ -120,6 +120,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
      * about success state of the request.
      */
     public abstract QueryResult exec(Query query);
+    public abstract QueryResult exec(String query);
     public abstract boolean isLogSqlErrors();
     public abstract boolean isDebug();
 
@@ -191,9 +192,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     }
 
     protected void logSqlError(Exception e) {
-        if(isLogSqlErrors()) {
-            e.printStackTrace();
-        }
+        if(isLogSqlErrors()) e.printStackTrace();
     }
 
 }
