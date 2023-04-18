@@ -62,7 +62,7 @@ public class QuickStart {
         connection.disconnect();
     }
 
-    class User {
+    static class User {
         @PrimaryKey
         private String firstname;
         private String lastname;
