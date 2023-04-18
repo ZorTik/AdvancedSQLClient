@@ -5,6 +5,8 @@ import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.SQLDatabaseConnectionImpl;
 import me.zort.sqllib.api.*;
 import me.zort.sqllib.api.data.QueryResult;
+import me.zort.sqllib.api.data.QueryRowsResult;
+import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.internal.exception.InvalidConnectionInstanceException;
 import me.zort.sqllib.internal.exception.NoLinkedConnectionException;
 import org.jetbrains.annotations.Nullable;
@@ -16,6 +18,13 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+/**
+ * Represents a query builder node, a part of a
+ * query builder flow.
+ *
+ * @param <P> Parent node type.
+ * @author ZorTik
+ */
 @Getter
 public abstract class QueryNode<P extends QueryNode<?>> implements Query, StatementFactory<PreparedStatement> {
 
@@ -128,6 +137,38 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
 
     public QueryResult execute() {
         return invokeToConnection(connection -> connection.exec(getAncestor()));
+    }
+
+    public Optional<Row> obtainOne() {
+        QueryRowsResult<Row> resultList = obtainAll();
+
+        return resultList.isEmpty()
+                ? Optional.empty()
+                : Optional.ofNullable(resultList.get(0));
+    }
+
+    public <T> Optional<T> obtainOne(Class<T> mapTo) {
+        QueryRowsResult<T> resultList = obtainAll(mapTo);
+
+        return resultList.isEmpty()
+                ? Optional.empty()
+                : Optional.ofNullable(resultList.get(0));
+    }
+
+    public QueryRowsResult<Row> obtainAll() {
+        requireResultSetAware();
+        return invokeToConnection(connection -> connection.query(getAncestor()));
+    }
+
+    public <T> QueryRowsResult<T> obtainAll(Class<T> mapTo) {
+        requireResultSetAware();
+        return invokeToConnection(connection -> connection.query(getAncestor(), mapTo));
+    }
+
+    private void requireResultSetAware() {
+        if (!(this instanceof ResultSetAware)) {
+            throw new IllegalStateException("This query node is not ResultSetAware! (Did you mean execute()?)");
+        }
     }
 
     public QueryNode<?> getAncestor() {
