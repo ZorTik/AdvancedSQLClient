@@ -75,7 +75,7 @@ public class QuickStart {
 
     public void saveUser() {
         User user = new User("John", "Doe");
-        QueryResult result = connection.save("users", user);
+        QueryResult result = connection.save("users", user).execute();
     }
 
     public void loadUser() {

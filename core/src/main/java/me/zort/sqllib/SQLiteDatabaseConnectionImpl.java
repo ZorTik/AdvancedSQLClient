@@ -5,10 +5,7 @@ import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
-import me.zort.sqllib.internal.impl.QueryResultImpl;
-import me.zort.sqllib.internal.query.InsertQuery;
-import me.zort.sqllib.internal.query.UpdateQuery;
-import me.zort.sqllib.internal.query.UpsertQuery;
+import me.zort.sqllib.internal.query.*;
 import me.zort.sqllib.internal.query.part.SetStatement;
 import me.zort.sqllib.util.PrimaryKey;
 import org.jetbrains.annotations.NotNull;
@@ -25,6 +22,7 @@ import java.util.Arrays;
  * @author ZorTik
  */
 public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
+    private final SQLiteDatabaseConnectionImpl identity = this;
 
     @SuppressWarnings("unused")
     public SQLiteDatabaseConnectionImpl(final @NotNull SQLConnectionFactory connectionFactory) {
@@ -49,11 +47,9 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
      */
     @NotNull
     @Override
-    public final QueryResult save(@NotNull String table, @NotNull Object obj) {
+    public final UpsertQuery save(@NotNull String table, @NotNull Object obj) {
         DefsVals defsVals = buildDefsVals(obj);
-        if(defsVals == null) {
-            return new QueryResultImpl(false);
-        }
+        if(defsVals == null) throw new IllegalArgumentException("Cannot create save query! (defsVals == null)");
         String[] defs = defsVals.getDefs();
         UnknownValueWrapper[] vals = defsVals.getVals();
 
@@ -91,7 +87,7 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
         if(primaryKey == null) {
             debug("No primary key found for object " + obj.getClass().getName() + ", so we can't build update condition.");
             debug("Performing insert query instead: " + insert.buildQuery());
-            return insert.execute();
+            return new UpsertQueryDecorator(insert);
         }
 
         SetStatement<UpdateQuery> setStmt = update().table(table).set();
@@ -101,23 +97,22 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
         UpdateQuery update = setStmt.also()
                 .where().isEqual(primaryKey.getColumn(), primaryKey.getValue())
                 .also();
-        return upsert(table, primaryKey, insert, update);
+        return new UpsertQueryDecorator(upsert(table, primaryKey, insert, update));
     }
 
     /**
-     * Simulates upsert query for SQLite.
-     * It selects rows with limit 1 to check whether there is a row present
-     * matching the current request and then it performs either insert or
-     * update according to the result.
+     * Builds an upsert query for defined table and primary key.
+     * This returns either a provided insert or update query depending
+     * on upsert situation.
      *
      * @param table Table to upsert into.
-     * @param primaryKey Primary key of the object.
-     * @param insert Insert query.
-     * @param update Update query.
-     * @return Result of the query.
+     * @param primaryKey Primary key to use.
+     * @param insert Insert query to use.
+     * @param update Update query to use.
+     * @return Either insert or update query.
      */
-    @NotNull
-    public final QueryResult upsert(final @NotNull String table,
+    @Nullable
+    public final QueryNode<?> upsert(final @NotNull String table,
                                     final @NotNull PrimaryKey primaryKey,
                                     final @NotNull InsertQuery insert,
                                     final @NotNull UpdateQuery update) {
@@ -129,22 +124,50 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
                 .obtainAll();
         if(!selectResult.isSuccessful()) {
             // Not successful, we'll skip other queries.
-            return new QueryResultImpl(false);
+            return null;
         }
-        if(selectResult.isEmpty()) {
-            // No results, we'll insert.
-            return exec(insert);
-        } else {
-            return exec(update);
-        }
+        return selectResult.isEmpty() ? insert : update;
     }
 
     @NotNull
     @Override
-    public QueryResult exec(final @NotNull Query query) {
+    public QueryResult exec(@NotNull Query query) {
         if (query instanceof UpsertQuery && ((UpsertQuery) query).getAssignedSaveObject() != null)
-            return save(((UpsertQuery) query).getTable(), ((UpsertQuery) query).getAssignedSaveObject());
+            query = save(((UpsertQuery) query).getTable(), ((UpsertQuery) query).getAssignedSaveObject());
 
         return super.exec(query);
+    }
+
+    class UpsertQueryDecorator extends UpsertQuery {
+        private final QueryNode<?> query;
+
+        public UpsertQueryDecorator(QueryNode<?> query) {
+            super(identity);
+            this.query = query;
+        }
+
+        @Override
+        public QueryDetails buildQueryDetails() {
+            return query.buildQueryDetails();
+        }
+
+        @Override
+        public UpsertQuery into(String table, String... defs) {
+            notAvailable();
+            return null;
+        }
+        @Override
+        public UpsertQuery table(String table) {
+            notAvailable();
+            return null;
+        }
+        @Override
+        public UpsertQuery values(Object... values) {
+            notAvailable();
+            return null;
+        }
+        private void notAvailable() {
+            throw new UnsupportedOperationException("You can't modify upsert query in SQLite mode!");
+        }
     }
 }

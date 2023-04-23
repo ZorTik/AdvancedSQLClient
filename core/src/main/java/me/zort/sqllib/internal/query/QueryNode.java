@@ -166,7 +166,7 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
     }
 
     private void requireResultSetAware() {
-        if (!(this instanceof ResultSetAware)) {
+        if (!generatesResultSet()) {
             throw new IllegalStateException("This query node is not ResultSetAware! (Did you mean execute()?)");
         }
     }
@@ -177,6 +177,10 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
             current = current.getParent();
         }
         return current;
+    }
+
+    public boolean generatesResultSet() {
+        return this instanceof ResultSetAware;
     }
 
     private void debug(String message) {

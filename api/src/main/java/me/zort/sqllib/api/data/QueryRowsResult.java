@@ -2,10 +2,10 @@ package me.zort.sqllib.api.data;
 
 import lombok.Getter;
 
-import java.util.ArrayList;
+import java.util.LinkedList;
 
 @Getter
-public class QueryRowsResult<T> extends ArrayList<T> implements QueryResult {
+public class QueryRowsResult<T> extends LinkedList<T> implements QueryResult {
 
     private final boolean successful;
     private String rejectMessage = null;

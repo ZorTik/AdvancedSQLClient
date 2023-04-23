@@ -35,14 +35,20 @@ public final class SQLConnectionPool {
         private long borrowObjectTimeout = 5000L;
         // Block or throw an exception when the pool is exhausted
         private boolean blockWhenExhausted = true;
+        // Drop invalid connections
+        private boolean checkConnectionValidity = true;
+        // Time in seconds to wait while checking the validity of a connection
+        private int checkConnectionValidityTimeout = 3;
     }
 
     private final SQLConnectionBuilder builder;
     private final int maxConnections;
     private final long borrowObjectTimeout;
     private final boolean blockWhenExhausted;
+    private final boolean checkConnectionValidity;
+    private final int checkConnectionValidityTimeout;
 
-    private int errorCount = 0;
+    private volatile int errorCount = 0;
 
     // --***-- Pooled connection caches --***--
     private final Queue<PooledSQLDatabaseConnection> freeConnections = new ConcurrentLinkedQueue<>();
@@ -65,6 +71,8 @@ public final class SQLConnectionPool {
         this.maxConnections = poolOptions.maxConnections;
         this.borrowObjectTimeout = poolOptions.borrowObjectTimeout;
         this.blockWhenExhausted = poolOptions.blockWhenExhausted;
+        this.checkConnectionValidity = poolOptions.checkConnectionValidity;
+        this.checkConnectionValidityTimeout = poolOptions.checkConnectionValidityTimeout;
     }
 
     /**
@@ -77,7 +85,11 @@ public final class SQLConnectionPool {
     @NotNull
     public SQLDatabaseConnection getResource() throws SQLException {
         freeConnections.removeIf(this::expired);
-        PooledSQLDatabaseConnection polled = freeConnections.poll();
+        PooledSQLDatabaseConnection polled;
+        do {
+            polled = freeConnections.poll();
+        } while(checkConnectionValidity && polled != null && !checkValidity(polled));
+
         if (polled == null && size() < maxConnections) {
             polled = establishObject();
         } else if(polled == null) {
@@ -102,9 +114,9 @@ public final class SQLConnectionPool {
 
     private PooledSQLDatabaseConnection establishObject() throws SQLException {
         SQLDatabaseConnection polled_ = builder.build();
-        if (!(polled_ instanceof PooledSQLDatabaseConnection)) {
+        if (!(polled_ instanceof PooledSQLDatabaseConnection))
             throw new SQLException("Builder does not produce a pooled connection.");
-        }
+
         PooledSQLDatabaseConnection polled = (PooledSQLDatabaseConnection) polled_;
         polled.setAssignedPool(this);
         polled.connect();
@@ -112,24 +124,31 @@ public final class SQLConnectionPool {
         SQLException error = polled.getLastError();
         if (error != null) throw error;
 
-        if (polled instanceof SQLDatabaseConnectionImpl) {
-            ((SQLDatabaseConnectionImpl) polled).addErrorHandler(code -> {
-                errorCount++;
-                // Remove the connection from the pool and disconnect
-                // on fatal errors.
-                freeConnections.remove(polled);
-                usedConnections.remove(polled);
-                polled.disconnect();
-            });
-        }
+        if (polled instanceof SQLDatabaseConnectionImpl)
+            ((SQLDatabaseConnectionImpl) polled).addErrorHandler(code -> handleConnectionError(polled));
 
         return polled;
+    }
+
+    synchronized void handleConnectionError(PooledSQLDatabaseConnection polled) {
+        errorCount++;
+        // Remove the connection from the pool and disconnect
+        // on fatal errors.
+        freeConnections.remove(polled);
+        usedConnections.remove(polled);
+        polled.disconnect();
     }
 
     void releaseObject(PooledSQLDatabaseConnection connection) {
         connection.setLastUsed(System.currentTimeMillis());
         freeConnections.add(connection);
         usedConnections.remove(connection);
+    }
+
+    private boolean checkValidity(SQLDatabaseConnection connection) throws SQLException {
+        if (!connection.isConnected()) return false;
+        assert connection.getConnection() != null;
+        return connection.getConnection().isValid(checkConnectionValidityTimeout);
     }
 
     public int size() {

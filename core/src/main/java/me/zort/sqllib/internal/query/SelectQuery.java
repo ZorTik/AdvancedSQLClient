@@ -19,6 +19,10 @@ public class SelectQuery extends QueryNode<QueryNode<?>> implements Executive, C
     @Getter
     private final SQLDatabaseConnection connection;
 
+    public SelectQuery() {
+        this(null);
+    }
+
     public SelectQuery(@Nullable SQLDatabaseConnection connection, String... cols) {
         this(connection, null, Arrays.asList(cols));
     }
