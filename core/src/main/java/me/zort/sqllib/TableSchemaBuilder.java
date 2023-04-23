@@ -13,7 +13,7 @@ import java.lang.reflect.Modifier;
 import java.util.Objects;
 
 @RequiredArgsConstructor
-final class ObjectTableConverter {
+final class TableSchemaBuilder {
 
     private final SQLDatabaseConnection connection;
     private final String tableName;

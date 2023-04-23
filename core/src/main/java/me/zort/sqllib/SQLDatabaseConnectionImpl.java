@@ -24,6 +24,7 @@ import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.mapping.DefaultResultAdapter;
 import me.zort.sqllib.mapping.DefaultStatementMappingFactory;
 import me.zort.sqllib.pool.PooledSQLDatabaseConnection;
+import me.zort.sqllib.transaction.Transaction;
 import me.zort.sqllib.util.Validator;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -50,6 +51,10 @@ import static me.zort.sqllib.util.ExceptionsUtility.runCatching;
 @SuppressWarnings("unused")
 public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
 
+    @NotNull static SQLDatabaseOptions defaultOptions() {
+        return new SQLDatabaseOptions(DEFAULT_AUTO_RECONNECT, DEFAULT_DEBUG, DEFAULT_LOG_SQL_ERRORS, DEFAULT_NAMING_STRATEGY, DEFAULT_GSON);
+    }
+
     // --***-- Default Constants --***--
 
     public static final boolean DEFAULT_AUTO_RECONNECT = true;
@@ -68,6 +73,8 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     private transient ObjectMapper objectMapper;
     @Setter
     private transient Logger logger;
+    @Getter(onMethod_ = {@Nullable, @ApiStatus.Experimental})
+    private transient Transaction transaction;
     private int errorCount = 0;
 
     /**
@@ -88,15 +95,14 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      */
     public SQLDatabaseConnectionImpl(final @NotNull SQLConnectionFactory connectionFactory, @Nullable SQLDatabaseOptions options) {
         super(connectionFactory);
-        if (options == null)
-            options = new SQLDatabaseOptions(
-                    DEFAULT_AUTO_RECONNECT, DEFAULT_DEBUG, DEFAULT_LOG_SQL_ERRORS, DEFAULT_NAMING_STRATEGY, DEFAULT_GSON);
+        if (options == null) options = defaultOptions();
 
         this.options = options;
         this.objectMapper = new DefaultObjectMapper(this);
         this.mappingFactory = new DefaultStatementMappingFactory();
         this.mappingResultAdapter = new DefaultResultAdapter();
         this.errorStateHandlers = new CopyOnWriteArrayList<>();
+        this.transaction = null;
         this.logger = Logger.getGlobal();
 
         // Default backup value resolvers.
@@ -138,7 +144,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     }
 
     /**
-     * Constructs a mapping repository based on provided interface.
+     * Constructs a mapping proxy based on provided interface.
      * The interface should follow rules for creating mapping repositories
      * in this library.
      *
@@ -146,11 +152,21 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      * @return Mapping repository.
      * @param <T> Type of mapping repository.
      *
-     * @see SQLDatabaseConnection#createGate(Class, StatementMappingOptions)
+     * @see SQLDatabaseConnection#createProxy(Class, StatementMappingOptions)
      */
+    public <T> T createProxy(Class<T> mappingInterface) {
+        return createProxy(mappingInterface, new StatementMappingOptions.Builder().build());
+    }
+
+    /**
+     * Replaced with {@link SQLDatabaseConnection#createProxy(Class)}.
+     *
+     * @deprecated Will be removed in future releases.
+     */
+    @Deprecated
     @Override
     public <T> T createGate(Class<T> mappingInterface) {
-        return createGate(mappingInterface, new StatementMappingOptions.Builder().build());
+        return createProxy(mappingInterface);
     }
 
     /**
@@ -185,7 +201,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      * @param <T> Type of mapping repository.
      */
     @SuppressWarnings("unchecked")
-    public final <T> T createGate(final @NotNull Class<T> mappingInterface, final @NotNull StatementMappingOptions options) {
+    public final <T> T createProxy(final @NotNull Class<T> mappingInterface, final @NotNull StatementMappingOptions options) {
         Objects.requireNonNull(mappingInterface, "Mapping interface cannot be null!");
         Objects.requireNonNull(options, "Options cannot be null!");
 
@@ -218,7 +234,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     public final boolean buildEntitySchema(final @NotNull String tableName, final @NotNull Class<?> entityClass) {
         Objects.requireNonNull(entityClass, "Entity class cannot be null!");
 
-        ObjectTableConverter converter = new ObjectTableConverter(this, tableName, entityClass);
+        TableSchemaBuilder converter = new TableSchemaBuilder(this, tableName, entityClass);
         String query = converter.buildTableQuery();
 
         return exec(() -> query).isSuccessful();
@@ -276,10 +292,10 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         return query(() -> query);
     }
 
-    @NotNull
-    QueryRowsResult<Row> query(final @NotNull Query query, boolean isRetry) {
+    @NotNull QueryRowsResult<Row> query(final @NotNull Query query, boolean isRetry) {
         Objects.requireNonNull(query);
-        if(!handleAutoReconnect()) return new QueryRowsResult<>(false, "Cannot connect to database!");
+        if(!handleAutoReconnect())
+            return new QueryRowsResult<>(false, "Cannot connect to database!");
 
         try(PreparedStatement stmt = buildStatement(query);
             ResultSet resultSet = stmt.executeQuery()) {
@@ -304,6 +320,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
 
             logSqlError(e);
             notifyError(ErrorCode.QUERY_FATAL);
+            query.errorSignal(e);
             return new QueryRowsResult<>(false, e.getMessage());
         }
     }
@@ -326,7 +343,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         return exec(() -> query);
     }
 
-    private QueryResult exec(final @NotNull Query query, boolean isRetry) {
+    @NotNull QueryResult exec(final @NotNull Query query, boolean isRetry) {
         if(!handleAutoReconnect()) {
             return new QueryResultImpl(false, "Cannot connect to database!");
         }
@@ -341,13 +358,14 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
 
             logSqlError(e);
             notifyError(ErrorCode.QUERY_FATAL);
+            query.errorSignal(e);
             return new QueryResultImpl(false, e.getMessage());
         }
     }
 
     @SuppressWarnings("unchecked")
     @Nullable
-    protected DefsVals buildDefsVals(Object obj) {
+    protected final DefsVals buildDefsVals(Object obj) {
         Objects.requireNonNull(obj);
 
         Class<?> aClass = obj.getClass();
@@ -385,6 +403,34 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
             vals[i] = new UnknownValueWrapper(entryArray[i].getValue());
         }
         return new DefsVals(defs, vals);
+    }
+
+    @ApiStatus.Experimental
+    @SneakyThrows(SQLException.class)
+    public final Transaction beginTransaction() {
+        Connection rawConnection = getConnection();
+        if (transaction != null && transaction.isActive()) {
+            throw new IllegalStateException("There is already an active transaction!");
+        } else if(rawConnection == null) {
+            throw new IllegalStateException("Connection is not established!");
+        }
+        rawConnection.setAutoCommit(false);
+        return transaction = new Transaction(this);
+    }
+
+    @ApiStatus.Experimental
+    @SneakyThrows
+    public final void closeTransaction() {
+        Transaction transaction = getTransaction();
+        if (transaction != null && transaction.isActive()) transaction.commit();
+        this.transaction = null;
+    }
+
+    public final void rollback() throws SQLException {
+        if (transaction == null || !transaction.isActive()) {
+            throw new IllegalStateException("There is no active transaction!");
+        }
+        transaction.rollback();
     }
 
     @SuppressWarnings("all")
@@ -430,6 +476,11 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         return options.isDebug();
     }
 
+    @Override
+    public final boolean isTransactionActive() {
+        return transaction != null && transaction.isActive();
+    }
+
     @SuppressWarnings("all")
     private void notifyError(int code) {
         errorCount++;
@@ -456,7 +507,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     }
 
     @RequiredArgsConstructor
-    private static class DefaultStatementFactory implements StatementFactory<PreparedStatement> {
+    static class DefaultStatementFactory implements StatementFactory<PreparedStatement> {
 
         private final Query query;
 
@@ -467,12 +518,6 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
             SQLConnectionRegistry.debug(connection, "Query: " + queryString);
             return connection.prepareStatement(queryString);
         }
-    }
-
-    @AllArgsConstructor
-    @Data
-    public static class UnknownValueWrapper {
-        private Object object;
     }
 
     public interface ErrorStateObserver {

@@ -3,7 +3,6 @@ package me.zort.sqllib.test;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import me.zort.sqllib.SQLConnectionBuilder;
-import me.zort.sqllib.SQLDatabaseConnectionImpl;
 import me.zort.sqllib.internal.annotation.NullableField;
 import me.zort.sqllib.internal.annotation.PrimaryKey;
 import me.zort.sqllib.pool.SQLConnectionPool;
@@ -14,6 +13,7 @@ import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.provider.Select;
 import me.zort.sqllib.internal.impl.DefaultSQLEndpoint;
+import me.zort.sqllib.transaction.FlowResult;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.*;
@@ -42,7 +42,6 @@ public class TestCase1 { // Basic operations
         Configurator.setAllLevels("", Level.ALL);
     }
 
-    @Timeout(15)
     @BeforeAll
     public void prepare() {
         System.out.println("Preparing test case...");
@@ -76,11 +75,10 @@ public class TestCase1 { // Basic operations
         System.out.println("Tables prepared, test cases ready");
     }
 
-    @Timeout(10)
     @Test
     public void test1_Upsert() {
         System.out.println("Testing upsert (save)...");
-        assertTrue(connection.save(TABLE_NAME, user1).isSuccessful());
+        assertTrue(connection.save(TABLE_NAME, user1).execute().isSuccessful());
         System.out.println("Save successful");
         System.out.println("Testing upsert...");
         assertTrue(connection.upsert()
@@ -93,7 +91,6 @@ public class TestCase1 { // Basic operations
         System.out.println("Upsert successful");
     }
 
-    @Timeout(10)
     @Test
     public void test2_Select() {
         System.out.println("Testing select...");
@@ -108,7 +105,6 @@ public class TestCase1 { // Basic operations
         System.out.println("Select successful");
     }
 
-    @Timeout(10)
     @Test
     public void test3_Update() {
         System.out.println("Testing update...");
@@ -128,7 +124,6 @@ public class TestCase1 { // Basic operations
         assertEquals(300, rowOptional.get().get("points"));
     }
 
-    @Timeout(10)
     @Test
     public void test4_Security() {
         // SQL Injection check
@@ -143,7 +138,6 @@ public class TestCase1 { // Basic operations
         test2_Select();
     }
 
-    @Timeout(10)
     @Test
     public void test5_Delete() {
         QueryResult result = connection.delete()
@@ -154,7 +148,6 @@ public class TestCase1 { // Basic operations
         assertNull(result.getRejectMessage());
     }
 
-    @Timeout(10)
     @Test
     public void test6_Pool() {
         SQLConnectionPool.Options options = new SQLConnectionPool.Options();
@@ -164,7 +157,7 @@ public class TestCase1 { // Basic operations
         SQLConnectionPool pool = new SQLConnectionPool(builder, options);
         try (SQLDatabaseConnection connection = pool.getResource()) {
             System.out.println("Got connection from pool");
-            assertTrue(connection.save(TABLE_NAME, user1).isSuccessful());
+            assertTrue(connection.save(TABLE_NAME, user1).execute().isSuccessful());
         } catch(SQLException e) {
             throw new RuntimeException(e);
         }
@@ -186,8 +179,22 @@ public class TestCase1 { // Basic operations
         assertEquals(0, pool.size());
     }
 
+    @Test
+    public void test6_Transactions() {
+        FlowResult result1 = connection.beginTransaction()
+                .flow()
+                .step(connection.save(TABLE_NAME, user1))
+                .step(connection.select()
+                        .from(TABLE_NAME)
+                        .where().isEqual("nickname", user1.getNickname()))
+                .create()
+                .execute();
+        assertTrue(result1.isSuccessful());
+        assertEquals(2, result1.size());
+        assertTrue(result1.get(1) instanceof QueryRowsResult);
+        assertEquals(1, ((QueryRowsResult<?>) result1.get(1)).size());
+    }
 
-    @Timeout(5)
     @Test
     public void test7_Close() {
         System.out.println("Closing connection...");

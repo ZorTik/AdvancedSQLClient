@@ -22,6 +22,10 @@ public class InsertQuery extends QueryNode<QueryNode<?>> implements Executive, C
     @Getter
     private final SQLDatabaseConnection connection;
 
+    public InsertQuery() {
+        this(null);
+    }
+
     public InsertQuery(@Nullable SQLDatabaseConnection connection) {
         this(connection, null);
     }

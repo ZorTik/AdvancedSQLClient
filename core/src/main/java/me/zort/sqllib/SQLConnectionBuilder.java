@@ -8,6 +8,7 @@ import me.zort.sqllib.internal.exception.SQLEndpointNotValidException;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.impl.DefaultSQLEndpoint;
 import me.zort.sqllib.internal.impl.SQLEndpointImpl;
+import me.zort.sqllib.pool.SQLConnectionPool;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -16,6 +17,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Objects;
 
+@SuppressWarnings("unused")
 public final class SQLConnectionBuilder implements Cloneable {
 
     public static @NotNull SQLConnectionBuilder of(String address, int port, String database, String username, String password) {
@@ -27,15 +29,11 @@ public final class SQLConnectionBuilder implements Cloneable {
     }
 
     public static @NotNull SQLConnectionBuilder ofSQLite(String path) {
-        SQLConnectionBuilder builder = of(new SQLEndpointImpl("jdbc:sqlite:" + path, null, null));
-        builder.withDriver("org.sqlite.JDBC");
-        return builder;
+        return of(new SQLEndpointImpl("jdbc:sqlite:" + path, null, null)).withDriver("org.sqlite.JDBC");
     }
 
     public static SQLConnectionBuilder of(SQLEndpoint endpoint) {
-        if(!endpoint.isValid()) {
-            throw new SQLEndpointNotValidException(endpoint);
-        }
+        if(!endpoint.isValid()) throw new SQLEndpointNotValidException(endpoint);
         return new SQLConnectionBuilder(endpoint);
     }
 
@@ -53,9 +51,7 @@ public final class SQLConnectionBuilder implements Cloneable {
 
     public SQLConnectionBuilder(@Nullable SQLEndpoint endpoint) {
         this.endpoint = endpoint;
-        this.jdbc = endpoint != null
-                ? endpoint.buildJdbc()
-                : null;
+        this.jdbc = endpoint != null ? endpoint.buildJdbc() : null;
     }
 
     public @NotNull SQLConnectionBuilder withEndpoint(final SQLEndpoint endpoint) {
@@ -65,10 +61,7 @@ public final class SQLConnectionBuilder implements Cloneable {
     }
 
     public @NotNull SQLConnectionBuilder withParam(final @NotNull String key, final @NotNull String value) {
-        if (endpoint != null) {
-            jdbc += (jdbc.contains("?") ? "&" : "?");
-            jdbc += key + "=" + value;
-        }
+        if (endpoint != null) jdbc += (jdbc.contains("?") ? "&" : "?") + (key + "=" + value);
         return this;
     }
 
@@ -92,11 +85,13 @@ public final class SQLConnectionBuilder implements Cloneable {
             driver = Constants.DEFAULT_DRIVER;
         }
         SQLConnectionFactory connectionFactory = new BuilderSQLConnectionFactory(this, driver);
-        if(jdbc.contains("jdbc:sqlite")) {
-            return new SQLiteDatabaseConnectionImpl(connectionFactory, options);
-        } else {
-            return new SQLDatabaseConnectionImpl(connectionFactory, options);
-        }
+        return jdbc.contains("jdbc:sqlite")
+                ? new SQLiteDatabaseConnectionImpl(connectionFactory, options)
+                : new SQLDatabaseConnectionImpl(connectionFactory, options);
+    }
+
+    public @NotNull SQLConnectionPool createPool(final @NotNull SQLConnectionPool.Options options) {
+        return new SQLConnectionPool(this, options);
     }
 
     @Override

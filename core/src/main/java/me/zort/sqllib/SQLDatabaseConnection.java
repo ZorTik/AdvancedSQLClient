@@ -1,6 +1,7 @@
 package me.zort.sqllib;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.SQLConnection;
@@ -12,6 +13,8 @@ import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.internal.query.*;
 import me.zort.sqllib.internal.query.part.SetStatement;
+import me.zort.sqllib.transaction.Transaction;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -40,6 +43,12 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
 
         SQLConnectionRegistry.register(this);
     }
+
+    /**
+     * @deprecated Use {@link SQLDatabaseConnection#createProxy(Class)} instead.
+     */
+    @Deprecated
+    public abstract <T> T createGate(Class<T> mappingInterface);
 
     /**
      * Constructs a mapping repository based on provided interface.
@@ -72,8 +81,8 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
      * @return Mapping repository.
      * @param <T> Type of mapping repository.
      */
-    public abstract <T> T createGate(Class<T> mappingInterface);
-    public abstract <T> T createGate(Class<T> mappingInterface, @NotNull StatementMappingOptions options);
+    public abstract <T> T createProxy(Class<T> mappingInterface);
+    public abstract <T> T createProxy(Class<T> mappingInterface, @NotNull StatementMappingOptions options);
     public abstract boolean buildEntitySchema(String tableName, Class<?> entityClass);
 
     /**
@@ -112,27 +121,21 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
      */
     public abstract QueryResult exec(Query query);
     public abstract QueryResult exec(String query);
+    @ApiStatus.Experimental
+    public abstract Transaction beginTransaction();
+    @ApiStatus.Experimental
+    public abstract void closeTransaction();
+    @ApiStatus.Experimental
+    @Nullable
+    public abstract Transaction getTransaction();
+    public abstract boolean isTransactionActive();
     protected abstract DefsVals buildDefsVals(Object obj);
     public abstract boolean isLogSqlErrors();
     public abstract boolean isDebug();
 
-    /**
-     * Saves this mapping object into database using upsert query.
-     * <p>
-     * All mapping strategies are described in:
-     * {@link SQLDatabaseConnection#query(Query, Class)}.
-     *
-     * @param table Table to save into.
-     * @param obj The object to save.
-     * @return Result of the query.
-     */
-    // by default, it creates and upsert request.
-    public QueryResult save(final @NotNull String table, final @NotNull Object obj) {
-        DefsVals defsVals = buildDefsVals(obj);
-
-        if(defsVals == null) return new QueryResultImpl(false);
-
-        return save(obj).table(table).execute();
+    public UpsertQuery save(final @NotNull String table, final @NotNull Object obj) {
+        if(buildDefsVals(obj) == null) throw new IllegalArgumentException("Cannot create save query! (defsVals == null)");
+        return save(obj).table(table);
     }
 
     public UpsertQuery save(final @NotNull Object obj) {
@@ -239,5 +242,11 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     protected static class DefsVals {
         private final String[] defs;
         private final SQLDatabaseConnectionImpl.UnknownValueWrapper[] vals;
+    }
+
+    @AllArgsConstructor
+    @Data
+    public static class UnknownValueWrapper {
+        private Object object;
     }
 }
