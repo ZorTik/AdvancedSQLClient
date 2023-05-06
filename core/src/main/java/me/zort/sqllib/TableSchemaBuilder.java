@@ -2,6 +2,7 @@ package me.zort.sqllib;
 
 import com.google.gson.internal.Primitives;
 import lombok.RequiredArgsConstructor;
+import me.zort.sqllib.api.ISQLDatabaseOptions;
 import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.internal.annotation.NullableField;
 import me.zort.sqllib.internal.annotation.PrimaryKey;
@@ -38,7 +39,7 @@ final class TableSchemaBuilder {
         }
         debug("Building defs from type class: " + typeClass.getName());
 
-        SQLDatabaseOptions options = ((SQLDatabaseConnectionImpl) connection).getOptions();
+        ISQLDatabaseOptions options = ((SQLDatabaseConnectionImpl) connection).getOptions();
         String[] defs = new String[0];
 
         for (Field field : typeClass.getDeclaredFields()) {

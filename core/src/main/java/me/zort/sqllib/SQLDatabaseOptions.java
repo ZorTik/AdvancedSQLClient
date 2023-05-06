@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import me.zort.sqllib.api.ISQLDatabaseOptions;
 import me.zort.sqllib.api.options.NamingStrategy;
 import me.zort.sqllib.internal.Defaults;
 import me.zort.sqllib.internal.impl.DefaultNamingStrategy;
@@ -12,7 +13,7 @@ import org.jetbrains.annotations.NotNull;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public final class SQLDatabaseOptions {
+public final class SQLDatabaseOptions implements ISQLDatabaseOptions {
 
     private boolean autoReconnect = true;
     private boolean debug = false;
@@ -27,12 +28,12 @@ public final class SQLDatabaseOptions {
      */
     @SuppressWarnings("unused")
     public void load(final @NotNull SQLDatabaseConnectionImpl connection) {
-        SQLDatabaseOptions options = connection.getOptions();
-        this.autoReconnect = options.autoReconnect;
-        this.debug = options.debug;
-        this.logSqlErrors = options.logSqlErrors;
-        this.namingStrategy = options.namingStrategy;
-        this.gson = options.gson;
+        ISQLDatabaseOptions options = connection.getOptions();
+        this.autoReconnect = options.isAutoReconnect();
+        this.debug = options.isDebug();
+        this.logSqlErrors = options.isLogSqlErrors();
+        this.namingStrategy = options.getNamingStrategy();
+        this.gson = options.getGson();
     }
 
 }

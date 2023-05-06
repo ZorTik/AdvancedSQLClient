@@ -2,9 +2,11 @@ package me.zort.sqllib;
 
 import com.google.gson.Gson;
 import lombok.*;
+import me.zort.sqllib.api.ISQLDatabaseOptions;
 import me.zort.sqllib.api.ObjectMapper;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.StatementFactory;
+import me.zort.sqllib.api.cache.CacheManager;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
@@ -66,11 +68,12 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     // --***-- Options & Utilities --***--
 
     @Getter
-    private final SQLDatabaseOptions options;
+    private final ISQLDatabaseOptions options;
     private final transient StatementMappingFactory mappingFactory;
     private final transient StatementMappingResultAdapter mappingResultAdapter;
     private final transient List<ErrorStateObserver> errorStateHandlers;
     private transient ObjectMapper objectMapper;
+    private transient CacheManager cacheManager;
     @Setter
     private transient Logger logger;
     @Getter(onMethod_ = {@Nullable, @ApiStatus.Experimental})
@@ -81,7 +84,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      * Constructs new instance of this implementation with default
      * options.
      *
-     * @see SQLDatabaseConnectionImpl#SQLDatabaseConnectionImpl(SQLConnectionFactory, SQLDatabaseOptions)
+     * @see SQLDatabaseConnectionImpl#SQLDatabaseConnectionImpl(SQLConnectionFactory, ISQLDatabaseOptions)
      */
     public SQLDatabaseConnectionImpl(final @NotNull SQLConnectionFactory connectionFactory) {
         this(connectionFactory, null);
@@ -93,7 +96,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      * @param connectionFactory Factory to use while opening connection.
      * @param options Client options to use.
      */
-    public SQLDatabaseConnectionImpl(final @NotNull SQLConnectionFactory connectionFactory, @Nullable SQLDatabaseOptions options) {
+    public SQLDatabaseConnectionImpl(final @NotNull SQLConnectionFactory connectionFactory, @Nullable ISQLDatabaseOptions options) {
         super(connectionFactory);
         if (options == null) options = defaultOptions();
 
@@ -104,6 +107,8 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         this.errorStateHandlers = new CopyOnWriteArrayList<>();
         this.transaction = null;
         this.logger = Logger.getGlobal();
+
+        enableCaching(CacheManager.noCache());
 
         // Default backup value resolvers.
         registerBackupValueResolver(new LinkedOneFieldResolver());
@@ -141,6 +146,17 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      */
     public void addErrorHandler(final @NotNull ErrorStateObserver observer) {
         this.errorStateHandlers.add(observer);
+    }
+
+    /**
+     * Enabled caching for this connection.
+     *
+     * @param cacheManager Cache manager to use.
+     */
+    @ApiStatus.Experimental
+    @Override
+    public void enableCaching(CacheManager cacheManager) {
+        this.cacheManager = cacheManager;
     }
 
     /**
@@ -292,10 +308,15 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         return query(() -> query);
     }
 
-    @NotNull QueryRowsResult<Row> query(final @NotNull Query query, boolean isRetry) {
+    @SuppressWarnings("unchecked")
+    @NotNull
+    QueryRowsResult<Row> query(final @NotNull Query query, boolean isRetry) {
         Objects.requireNonNull(query);
         if(!handleAutoReconnect())
             return new QueryRowsResult<>(false, "Cannot connect to database!");
+
+        QueryResult cachedResult = cacheManager.get(query, false);
+        if (cachedResult instanceof QueryRowsResult) return (QueryRowsResult<Row>) cachedResult;
 
         try(PreparedStatement stmt = buildStatement(query);
             ResultSet resultSet = stmt.executeQuery()) {
@@ -310,6 +331,8 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
                 }
                 result.add(row);
             }
+
+            cacheManager.set(query, result);
 
             return result;
         } catch (SQLException e) {
@@ -347,9 +370,15 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         if(!handleAutoReconnect()) {
             return new QueryResultImpl(false, "Cannot connect to database!");
         }
+
+        QueryResult cachedResult = cacheManager.get(query, true);
+        if (cachedResult != null) return cachedResult;
+
         try(PreparedStatement stmt = buildStatement(query)) {
             stmt.execute();
-            return new QueryResultImpl(true);
+            QueryResultImpl result = new QueryResultImpl(true);
+            cacheManager.set(query, result);
+            return result;
         } catch (SQLException e) {
             if (!isRetry && e.getMessage().contains("database connection closed")) {
                 reconnect();

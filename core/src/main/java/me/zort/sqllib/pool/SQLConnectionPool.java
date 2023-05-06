@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import me.zort.sqllib.SQLConnectionBuilder;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.SQLDatabaseConnectionImpl;
+import me.zort.sqllib.api.ISQLConnectionBuilder;
+import me.zort.sqllib.api.ISQLDatabaseOptions;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
@@ -39,14 +41,16 @@ public final class SQLConnectionPool {
         private boolean checkConnectionValidity = true;
         // Time in seconds to wait while checking the validity of a connection
         private int checkConnectionValidityTimeout = 3;
+        private ISQLDatabaseOptions connectionOptions = null;
     }
 
-    private final SQLConnectionBuilder builder;
+    private final ISQLConnectionBuilder<? extends SQLDatabaseConnection> builder;
     private final int maxConnections;
     private final long borrowObjectTimeout;
     private final boolean blockWhenExhausted;
     private final boolean checkConnectionValidity;
     private final int checkConnectionValidityTimeout;
+    private final ISQLDatabaseOptions connectionOptions;
 
     private volatile int errorCount = 0;
 
@@ -55,7 +59,7 @@ public final class SQLConnectionPool {
     private final List<PooledSQLDatabaseConnection> usedConnections = new CopyOnWriteArrayList<>();
 
     @SuppressWarnings("unused")
-    public SQLConnectionPool(final @NotNull SQLConnectionBuilder from) {
+    public SQLConnectionPool(final @NotNull ISQLConnectionBuilder<? extends SQLDatabaseConnection> from) {
         this(from, new Options());
     }
 
@@ -66,13 +70,15 @@ public final class SQLConnectionPool {
      * @param from The builder used to create new connections.
      * @param poolOptions The pool options.
      */
-    public SQLConnectionPool(final @NotNull SQLConnectionBuilder from, final @NotNull Options poolOptions) {
+    public SQLConnectionPool(final @NotNull ISQLConnectionBuilder<? extends SQLDatabaseConnection> from,
+                             final @NotNull Options poolOptions) {
         this.builder = from;
         this.maxConnections = poolOptions.maxConnections;
         this.borrowObjectTimeout = poolOptions.borrowObjectTimeout;
         this.blockWhenExhausted = poolOptions.blockWhenExhausted;
         this.checkConnectionValidity = poolOptions.checkConnectionValidity;
         this.checkConnectionValidityTimeout = poolOptions.checkConnectionValidityTimeout;
+        this.connectionOptions = poolOptions.connectionOptions;
     }
 
     /**
@@ -113,7 +119,7 @@ public final class SQLConnectionPool {
     }
 
     private PooledSQLDatabaseConnection establishObject() throws SQLException {
-        SQLDatabaseConnection polled_ = builder.build();
+        SQLDatabaseConnection polled_ = builder.build(connectionOptions);
         if (!(polled_ instanceof PooledSQLDatabaseConnection))
             throw new SQLException("Builder does not produce a pooled connection.");
 
