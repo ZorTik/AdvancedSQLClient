@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.Getter;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.SQLConnection;
+import me.zort.sqllib.api.cache.CacheManager;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
@@ -128,6 +129,13 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     @ApiStatus.Experimental
     @Nullable
     public abstract Transaction getTransaction();
+    /**
+     * Enabled caching for this connection.
+     *
+     * @param cacheManager Cache manager to use.
+     */
+    @ApiStatus.Experimental
+    public abstract void enableCaching(CacheManager cacheManager);
     public abstract boolean isTransactionActive();
     protected abstract DefsVals buildDefsVals(Object obj);
     public abstract boolean isLogSqlErrors();
@@ -141,19 +149,18 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     public UpsertQuery save(final @NotNull Object obj) {
         DefsVals defsVals = buildDefsVals(obj);
         if(defsVals == null) return null;
-
         String[] defs = defsVals.getDefs();
         SQLDatabaseConnectionImpl.UnknownValueWrapper[] vals = defsVals.getVals();
-        UpsertQuery upsert = upsert().into(null, defs);
+        UpsertQuery upsertQuery = upsert().into(null, defs);
         for(SQLDatabaseConnectionImpl.UnknownValueWrapper wrapper : vals) {
-            upsert.appendVal(wrapper.getObject());
+            upsertQuery.appendVal(wrapper.getObject());
         }
-        SetStatement<InsertQuery> setStmt = upsert.onDuplicateKey();
+        SetStatement<InsertQuery> setStatement = upsertQuery.onDuplicateKey();
         for(int i = 0; i < defs.length; i++) {
-            setStmt.and(defs[i], vals[i].getObject());
+            setStatement.and(defs[i], vals[i].getObject());
         }
 
-        return (UpsertQuery) setStmt.getAncestor();
+        return (UpsertQuery) setStatement.getAncestor();
     }
 
     public QueryResult insert(final @NotNull String table, final @NotNull Object obj) {

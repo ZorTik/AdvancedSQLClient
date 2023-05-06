@@ -31,8 +31,8 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
     @Getter(onMethod_ = {@Nullable})
     private final transient P parent;
     private final List<QueryNode<?>> children;
-    private final int priority;
     private final Map<String, QueryDetails> details;
+    private final int priority;
 
     public QueryNode(@Nullable P parent, List<QueryNode<?>> initial, QueryPriority priority) {
         this(parent, initial, priority.getPrior());
@@ -75,7 +75,7 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
 
     public QueryDetails buildInnerQuery() {
         List<QueryNode<?>> children = new ArrayList<>(this.children);
-        Collections.sort(children, Comparator.comparingInt(QueryNode::getPriority));
+        children.sort(Comparator.comparingInt(QueryNode::getPriority));
 
         QueryDetails details = new QueryDetails("", new HashMap<>());
 
@@ -115,14 +115,18 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
         return result;
     }
 
-    @SuppressWarnings("unchecked")
     public QueryNode<?> then(String part) {
         int maxPriority = children.stream()
                 .map(QueryNode::getPriority)
                 .max(Comparator.naturalOrder())
                 .orElse(0);
 
-        then(new LocalQueryNode(this, maxPriority + 1, part));
+        then(new QueryNode<QueryNode<?>>(parent, Collections.emptyList(), maxPriority + 1) {
+            @Override
+            public QueryDetails buildQueryDetails() {
+                return new QueryDetails(part, new HashMap<>());
+            }
+        });
         return this;
     }
 
@@ -187,21 +191,6 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
         if (getAncestor() instanceof Executive
         && ((Executive) getAncestor()).getConnection() instanceof SQLDatabaseConnectionImpl) {
             ((SQLDatabaseConnectionImpl) ((Executive) getAncestor()).getConnection()).debug(message);
-        }
-    }
-
-    private static class LocalQueryNode extends QueryNode {
-
-        private final String queryPartString;
-
-        public LocalQueryNode(@Nullable QueryNode parent, int priority, String queryPartString) {
-            super(parent, Collections.emptyList(), priority);
-            this.queryPartString = queryPartString;
-        }
-
-        @Override
-        public QueryDetails buildQueryDetails() {
-            return new QueryDetails(queryPartString, new HashMap<>());
         }
     }
 

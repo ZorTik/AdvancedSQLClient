@@ -1,5 +1,6 @@
 package me.zort.sqllib;
 
+import me.zort.sqllib.api.ISQLDatabaseOptions;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
@@ -29,8 +30,7 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
         super(connectionFactory);
     }
 
-    public SQLiteDatabaseConnectionImpl(final @NotNull SQLConnectionFactory connectionFactory,
-                                        @Nullable SQLDatabaseOptions options) {
+    public SQLiteDatabaseConnectionImpl(final @NotNull SQLConnectionFactory connectionFactory, @Nullable ISQLDatabaseOptions options) {
         super(connectionFactory, options);
     }
 

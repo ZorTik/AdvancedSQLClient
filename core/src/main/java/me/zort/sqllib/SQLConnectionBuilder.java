@@ -1,6 +1,8 @@
 package me.zort.sqllib;
 
 import lombok.RequiredArgsConstructor;
+import me.zort.sqllib.api.ISQLConnectionBuilder;
+import me.zort.sqllib.api.ISQLDatabaseOptions;
 import me.zort.sqllib.api.SQLEndpoint;
 import me.zort.sqllib.internal.Constants;
 import me.zort.sqllib.internal.exception.SQLDriverNotFoundException;
@@ -18,7 +20,7 @@ import java.sql.SQLException;
 import java.util.Objects;
 
 @SuppressWarnings("unused")
-public final class SQLConnectionBuilder implements Cloneable {
+public final class SQLConnectionBuilder implements ISQLConnectionBuilder<SQLDatabaseConnection>, Cloneable {
 
     public static @NotNull SQLConnectionBuilder of(String address, int port, String database, String username, String password) {
         return of(new DefaultSQLEndpoint(address + ":" + port, database, username, password));
@@ -74,11 +76,11 @@ public final class SQLConnectionBuilder implements Cloneable {
         return build(null);
     }
 
-    public @NotNull SQLDatabaseConnection build(@Nullable SQLDatabaseOptions options) {
+    public @NotNull SQLDatabaseConnection build(@Nullable ISQLDatabaseOptions options) {
         return build(driver, options);
     }
 
-    public @NotNull SQLDatabaseConnection build(@Nullable String driver, @Nullable SQLDatabaseOptions options) {
+    public @NotNull SQLDatabaseConnection build(@Nullable String driver, @Nullable ISQLDatabaseOptions options) {
         Objects.requireNonNull(endpoint, "Endpoint must be set!");
         Objects.requireNonNull(jdbc);
         if(driver == null) {

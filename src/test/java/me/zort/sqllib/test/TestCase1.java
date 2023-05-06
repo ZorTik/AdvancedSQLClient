@@ -33,7 +33,7 @@ public class TestCase1 { // Basic operations
 
     private SQLDatabaseConnection connection;
     private SQLConnectionBuilder builder;
-    private static final String TABLE_NAME = "users";
+    private static final String table = "users";
     private final User user1 = new User("User1", 100);
     private final User user2 = new User("User2", 200);
 
@@ -78,11 +78,11 @@ public class TestCase1 { // Basic operations
     @Test
     public void test1_Upsert() {
         System.out.println("Testing upsert (save)...");
-        assertTrue(connection.save(TABLE_NAME, user1).execute().isSuccessful());
+        assertTrue(connection.save(table, user1).execute().isSuccessful());
         System.out.println("Save successful");
         System.out.println("Testing upsert...");
         assertTrue(connection.upsert()
-                .into(TABLE_NAME, "nickname", "points")
+                .into(table, "nickname", "points")
                 .values(user2.getNickname(), user2.getPoints())
                 .onDuplicateKey()
                 .and("nickname", user2.getNickname())
@@ -94,11 +94,11 @@ public class TestCase1 { // Basic operations
     @Test
     public void test2_Select() {
         System.out.println("Testing select...");
-        QueryRowsResult<User> result = connection.query(Select.of().from(TABLE_NAME)
+        QueryRowsResult<User> result = connection.query(Select.of().from(table)
                 .where()
                 .isEqual("nickname", "User1"), User.class);
 
-        assertTrue(connection.select().from(TABLE_NAME).where().isEqual("nickname", "User1").obtainOne(User.class).isPresent());
+        assertTrue(connection.select().from(table).where().isEqual("nickname", "User1").obtainOne(User.class).isPresent());
         assertNull(result.getRejectMessage());
         assertEquals(1, result.size());
         assertEquals(user1.getNickname(), result.get(0).getNickname());
@@ -109,13 +109,13 @@ public class TestCase1 { // Basic operations
     public void test3_Update() {
         System.out.println("Testing update...");
         assertNull(connection.update()
-                .table(TABLE_NAME)
+                .table(table)
                 .set("points", 300)
                 .where()
                 .isEqual("nickname", user1.getNickname())
                 .execute().getRejectMessage());
         Optional<Row> rowOptional = connection.select("points")
-                .from(TABLE_NAME)
+                .from(table)
                 .where()
                 .isEqual("nickname", user1.getNickname())
                 .obtainOne();
@@ -128,7 +128,7 @@ public class TestCase1 { // Basic operations
     public void test4_Security() {
         // SQL Injection check
         Optional<Row> rowOptional = connection.select()
-                .from(TABLE_NAME)
+                .from(table)
                 .where()
                 .isEqual("nickname", "asdfmnaskfopdmko' or '1' = '1").obtainOne();
 
@@ -141,7 +141,7 @@ public class TestCase1 { // Basic operations
     @Test
     public void test5_Delete() {
         QueryResult result = connection.delete()
-                .from(TABLE_NAME)
+                .from(table)
                 .where()
                 .isEqual("nickname", "User1").execute();
 
@@ -157,7 +157,7 @@ public class TestCase1 { // Basic operations
         SQLConnectionPool pool = new SQLConnectionPool(builder, options);
         try (SQLDatabaseConnection connection = pool.getResource()) {
             System.out.println("Got connection from pool");
-            assertTrue(connection.save(TABLE_NAME, user1).execute().isSuccessful());
+            assertTrue(connection.save(table, user1).execute().isSuccessful());
         } catch(SQLException e) {
             throw new RuntimeException(e);
         }
@@ -183,9 +183,9 @@ public class TestCase1 { // Basic operations
     public void test6_Transactions() {
         FlowResult result1 = connection.beginTransaction()
                 .flow()
-                .step(connection.save(TABLE_NAME, user1))
+                .step(connection.save(table, user1))
                 .step(connection.select()
-                        .from(TABLE_NAME)
+                        .from(table)
                         .where().isEqual("nickname", user1.getNickname()))
                 .create()
                 .execute();
