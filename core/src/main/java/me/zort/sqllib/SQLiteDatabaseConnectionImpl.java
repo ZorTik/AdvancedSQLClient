@@ -138,7 +138,7 @@ public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
         return super.exec(query);
     }
 
-    class UpsertQueryDecorator extends UpsertQuery {
+    final class UpsertQueryDecorator extends UpsertQuery {
         private final QueryNode<?> query;
 
         public UpsertQueryDecorator(QueryNode<?> query) {

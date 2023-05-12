@@ -19,6 +19,7 @@ public interface StatementMappingFactory {
      * @return The StatementMapping.
      * @param <T> The interface class type.
      */
-    <T> StatementMappingStrategy<T> create(Class<T> interfaceClass, SQLConnection connection);
+    <T> StatementMappingStrategy<T> strategy(Class<T> interfaceClass, SQLConnection connection);
+    StatementMappingResultAdapter resultAdapter();
 
 }
