@@ -9,6 +9,7 @@ import me.zort.sqllib.api.cache.CacheManager;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
+import me.zort.sqllib.api.mapping.StatementMappingFactory;
 import me.zort.sqllib.api.mapping.StatementMappingOptions;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
@@ -44,6 +45,13 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
 
         SQLConnectionRegistry.register(this);
     }
+
+    /**
+     * Sets a mapping to use when using {@link SQLDatabaseConnection#createProxy(Class, StatementMappingOptions)}.
+     *
+     * @param mappingFactory Mapping factory to use.
+     */
+    public abstract void setProxyMapping(final @NotNull StatementMappingFactory mappingFactory);
 
     /**
      * @deprecated Use {@link SQLDatabaseConnection#createProxy(Class)} instead.

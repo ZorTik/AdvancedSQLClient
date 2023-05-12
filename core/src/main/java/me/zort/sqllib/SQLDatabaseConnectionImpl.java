@@ -69,9 +69,8 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
 
     @Getter
     private final ISQLDatabaseOptions options;
-    private final transient StatementMappingFactory mappingFactory;
-    private final transient StatementMappingResultAdapter mappingResultAdapter;
     private final transient List<ErrorStateObserver> errorStateHandlers;
+    private transient StatementMappingFactory mappingFactory;
     private transient ObjectMapper objectMapper;
     private transient CacheManager cacheManager;
     @Setter
@@ -103,7 +102,6 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         this.options = options;
         this.objectMapper = new DefaultObjectMapper(this);
         this.mappingFactory = new DefaultStatementMappingFactory();
-        this.mappingResultAdapter = new DefaultResultAdapter();
         this.errorStateHandlers = new CopyOnWriteArrayList<>();
         this.transaction = null;
         this.logger = Logger.getGlobal();
@@ -136,6 +134,15 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      */
     public void setObjectMapper(final @NotNull ObjectMapper objectMapper) {
         this.objectMapper = Objects.requireNonNull(objectMapper, "Object mapper cannot be null!");
+    }
+
+    /**
+     * Sets a mapping to use when using {@link SQLDatabaseConnection#createProxy(Class, StatementMappingOptions)}.
+     *
+     * @param mappingFactory Mapping factory to use.
+     */
+    public void setProxyMapping(final @NotNull StatementMappingFactory mappingFactory) {
+        this.mappingFactory = Objects.requireNonNull(mappingFactory, "Mapping factory cannot be null!");
     }
 
     /**
@@ -221,7 +228,8 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         Objects.requireNonNull(mappingInterface, "Mapping interface cannot be null!");
         Objects.requireNonNull(options, "Options cannot be null!");
 
-        StatementMappingStrategy<T> statementMapping = mappingFactory.create(mappingInterface, this);
+        StatementMappingStrategy<T> statementMapping = mappingFactory.strategy(mappingInterface, this);
+        StatementMappingResultAdapter mappingResultAdapter = mappingFactory.resultAdapter();
         List<Method> pendingMethods = new CopyOnWriteArrayList<>();
 
         return (T) Proxy.newProxyInstance(mappingInterface.getClassLoader(),
