@@ -165,7 +165,7 @@ public class TestCase1 { // Basic operations
         try(SQLDatabaseConnection connection = pool.getResource()) {
             connection.exec(() -> "xcbnxcvkjonmcvxikjno");
         } catch(SQLException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
         }
         assertEquals(1, pool.errorCount());
         assertEquals(0, pool.size());

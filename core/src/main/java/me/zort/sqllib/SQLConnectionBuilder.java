@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import me.zort.sqllib.api.ISQLConnectionBuilder;
 import me.zort.sqllib.api.ISQLDatabaseOptions;
 import me.zort.sqllib.api.SQLEndpoint;
-import me.zort.sqllib.internal.Constants;
+import me.zort.sqllib.api.cache.CacheManager;
 import me.zort.sqllib.internal.exception.SQLDriverNotFoundException;
 import me.zort.sqllib.internal.exception.SQLEndpointNotValidException;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
@@ -34,7 +34,7 @@ public final class SQLConnectionBuilder implements ISQLConnectionBuilder<SQLData
         return of(new SQLEndpointImpl("jdbc:sqlite:" + path, null, null)).withDriver("org.sqlite.JDBC");
     }
 
-    public static SQLConnectionBuilder of(SQLEndpoint endpoint) {
+    public static @NotNull SQLConnectionBuilder of(SQLEndpoint endpoint) {
         if(!endpoint.isValid()) throw new SQLEndpointNotValidException(endpoint);
         return new SQLConnectionBuilder(endpoint);
     }
@@ -42,6 +42,7 @@ public final class SQLConnectionBuilder implements ISQLConnectionBuilder<SQLData
     private SQLEndpoint endpoint;
     private String jdbc;
     private String driver = null;
+    private CacheManager cacheManager = null;
 
     public SQLConnectionBuilder() {
         this(null);
@@ -72,6 +73,11 @@ public final class SQLConnectionBuilder implements ISQLConnectionBuilder<SQLData
         return this;
     }
 
+    public @NotNull SQLConnectionBuilder withCacheManager(final @Nullable CacheManager cacheManager) {
+        this.cacheManager = cacheManager;
+        return this;
+    }
+
     public @NotNull SQLDatabaseConnection build() {
         return build(null);
     }
@@ -81,12 +87,16 @@ public final class SQLConnectionBuilder implements ISQLConnectionBuilder<SQLData
     }
 
     public @NotNull SQLDatabaseConnection build(@Nullable String driver, @Nullable ISQLDatabaseOptions options) {
+        SQLDatabaseConnection connection = buildConnection(driver, options);
+        if(cacheManager != null) connection.enableCaching(cacheManager);
+        return connection;
+    }
+
+    private @NotNull SQLDatabaseConnection buildConnection(@Nullable String driver, @Nullable ISQLDatabaseOptions options) {
         Objects.requireNonNull(endpoint, "Endpoint must be set!");
         Objects.requireNonNull(jdbc);
-        if(driver == null) {
-            driver = Constants.DEFAULT_DRIVER;
-        }
-        SQLConnectionFactory connectionFactory = new BuilderSQLConnectionFactory(this, driver);
+        if (driver == null) driver = SQLDatabaseConnectionImpl.DEFAULT_DRIVER;
+        SQLConnectionFactory connectionFactory = new LocalConnectionFactory(driver);
         return jdbc.contains("jdbc:sqlite")
                 ? new SQLiteDatabaseConnectionImpl(connectionFactory, options)
                 : new SQLDatabaseConnectionImpl(connectionFactory, options);
@@ -102,22 +112,20 @@ public final class SQLConnectionBuilder implements ISQLConnectionBuilder<SQLData
     }
 
     @RequiredArgsConstructor
-    public static class BuilderSQLConnectionFactory implements SQLConnectionFactory {
+    class LocalConnectionFactory implements SQLConnectionFactory {
 
-        private final SQLConnectionBuilder builder;
-        private final String driver;
+        private final String localDriver;
 
         @Nullable
         @Override
         public Connection connect() throws SQLException {
             try {
-                Class.forName(driver);
+                Class.forName(localDriver);
             } catch (ClassNotFoundException e) {
-                throw new SQLDriverNotFoundException(driver, e);
+                throw new SQLDriverNotFoundException(localDriver, e);
             }
-            String jdbc = builder.jdbc;
-            String usr = builder.endpoint.getUsername();
-            String pwd = builder.endpoint.getPassword();
+            String usr = endpoint.getUsername();
+            String pwd = endpoint.getPassword();
             return DriverManager.getConnection(jdbc, usr, pwd);
         }
 

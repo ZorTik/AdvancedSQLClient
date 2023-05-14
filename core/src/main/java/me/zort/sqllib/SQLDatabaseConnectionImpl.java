@@ -1,7 +1,10 @@
 package me.zort.sqllib;
 
 import com.google.gson.Gson;
-import lombok.*;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import lombok.SneakyThrows;
 import me.zort.sqllib.api.ISQLDatabaseOptions;
 import me.zort.sqllib.api.ObjectMapper;
 import me.zort.sqllib.api.Query;
@@ -20,10 +23,8 @@ import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.fieldResolver.ConstructorParameterResolver;
 import me.zort.sqllib.internal.fieldResolver.LinkedOneFieldResolver;
-import me.zort.sqllib.internal.impl.DefaultNamingStrategy;
 import me.zort.sqllib.internal.impl.DefaultObjectMapper;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
-import me.zort.sqllib.mapping.DefaultResultAdapter;
 import me.zort.sqllib.mapping.DefaultStatementMappingFactory;
 import me.zort.sqllib.pool.PooledSQLDatabaseConnection;
 import me.zort.sqllib.transaction.Transaction;
@@ -59,10 +60,11 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
 
     // --***-- Default Constants --***--
 
-    public static final boolean DEFAULT_AUTO_RECONNECT = true;
-    public static final boolean DEFAULT_DEBUG = false;
-    public static final boolean DEFAULT_LOG_SQL_ERRORS = true;
-    public static final NamingStrategy DEFAULT_NAMING_STRATEGY = new DefaultNamingStrategy();
+    public static final String DEFAULT_DRIVER = Defaults.DEFAULT_DRIVER;
+    public static final boolean DEFAULT_AUTO_RECONNECT = Defaults.DEFAULT_AUTO_RECONNECT;
+    public static final boolean DEFAULT_DEBUG = Defaults.DEFAULT_DEBUG;
+    public static final boolean DEFAULT_LOG_SQL_ERRORS = Defaults.DEFAULT_LOG_SQL_ERRORS;
+    public static final NamingStrategy DEFAULT_NAMING_STRATEGY = Defaults.DEFAULT_NAMING_STRATEGY;
     public static final Gson DEFAULT_GSON = Defaults.DEFAULT_GSON;
 
     // --***-- Options & Utilities --***--
@@ -97,9 +99,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      */
     public SQLDatabaseConnectionImpl(final @NotNull SQLConnectionFactory connectionFactory, @Nullable ISQLDatabaseOptions options) {
         super(connectionFactory);
-        if (options == null) options = defaultOptions();
-
-        this.options = options;
+        this.options = options == null ? defaultOptions() : options;
         this.objectMapper = new DefaultObjectMapper(this);
         this.mappingFactory = new DefaultStatementMappingFactory();
         this.errorStateHandlers = new CopyOnWriteArrayList<>();
