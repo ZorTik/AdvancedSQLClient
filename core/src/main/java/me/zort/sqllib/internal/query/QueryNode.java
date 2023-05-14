@@ -194,4 +194,19 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
         }
     }
 
+    public String toString() {
+        return "QueryNode{details=" + buildQueryDetails().toString() + "}";
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof QueryNode)) return false;
+        QueryNode<?> other = (QueryNode<?>) obj;
+        return toString().equals(other.toString());
+    }
+
+    @Override
+    public int hashCode() {
+        return toString().hashCode();
+    }
 }

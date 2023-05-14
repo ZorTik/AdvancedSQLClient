@@ -1,5 +1,6 @@
 package me.zort.sqllib.internal.query;
 
+import com.google.gson.Gson;
 import lombok.*;
 import me.zort.sqllib.SQLConnectionRegistry;
 import me.zort.sqllib.util.Pair;
@@ -127,6 +128,10 @@ public class QueryDetails {
 
     public int length() {
         return queryStr.length();
+    }
+
+    public String toString() {
+        return "QueryDetails{str=" + queryStr + ", values=" + new Gson().toJson(values) + "}";
     }
 
     @RequiredArgsConstructor
