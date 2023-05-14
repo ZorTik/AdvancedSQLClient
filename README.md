@@ -21,7 +21,7 @@ You can add AdvancedSQLClient to your build path using Maven or Gradle. You can 
 
 <a href="https://github.com/ZorTik/AdvancedSQLClient/wiki">Installation & Usage on Wiki</a>
 
-## Example
+## Examples
 ```java
 @Table("users")
 public interface UserRepository {
@@ -39,6 +39,12 @@ if (repository.save(new User("User1")).isSuccessful()) {
 }
 
 // TIP: We support query builders too! Check wiki section.
+```
+```java
+QueryResult result = connection.insert()
+        .into("users", "firstname", "lastname")
+        .values("John", "Doe")
+        .execute();
 ```
 
 ## Code of Conduct
