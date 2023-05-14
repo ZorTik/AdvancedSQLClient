@@ -5,7 +5,6 @@ import me.zort.sqllib.api.ISQLConnectionBuilder;
 import me.zort.sqllib.api.ISQLDatabaseOptions;
 import me.zort.sqllib.api.SQLEndpoint;
 import me.zort.sqllib.api.cache.CacheManager;
-import me.zort.sqllib.internal.Constants;
 import me.zort.sqllib.internal.exception.SQLDriverNotFoundException;
 import me.zort.sqllib.internal.exception.SQLEndpointNotValidException;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
@@ -96,7 +95,7 @@ public final class SQLConnectionBuilder implements ISQLConnectionBuilder<SQLData
     private @NotNull SQLDatabaseConnection buildConnection(@Nullable String driver, @Nullable ISQLDatabaseOptions options) {
         Objects.requireNonNull(endpoint, "Endpoint must be set!");
         Objects.requireNonNull(jdbc);
-        if (driver == null) driver = Constants.DEFAULT_DRIVER;
+        if (driver == null) driver = SQLDatabaseConnectionImpl.DEFAULT_DRIVER;
         SQLConnectionFactory connectionFactory = new LocalConnectionFactory(driver);
         return jdbc.contains("jdbc:sqlite")
                 ? new SQLiteDatabaseConnectionImpl(connectionFactory, options)
