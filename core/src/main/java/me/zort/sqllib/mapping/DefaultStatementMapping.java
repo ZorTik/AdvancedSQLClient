@@ -40,14 +40,8 @@ public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
             i++;
         }
 
-        Annotation queryAnnotation = null;
-        QueryAnnotation wrappedAnnotation = null;
-        for (Annotation annotation : method.getAnnotations()) {
-            if (QueryAnnotation.isQueryAnnotation(annotation)) {
-                queryAnnotation = annotation;
-                wrappedAnnotation = QueryAnnotation.wrap(annotation);
-            }
-        }
+        Annotation queryAnnotation = filterQueryAnnotation(method, args);
+        QueryAnnotation wrappedAnnotation = QueryAnnotation.wrap(queryAnnotation);
 
         if (wrappedAnnotation == null) {
             throw new SQLMappingException("No query builder found for method " + method.getName() + "! Is query annotation present?", method, args);
@@ -56,10 +50,8 @@ public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
         }
 
         QueryNode<?> node = wrappedAnnotation.getQueryBuilder().build(
-                new QueryAnnotation.DefaultMappingDetails(connection, options),
-                queryAnnotation,
-                method,
-                parameters);
+                new QueryAnnotation.DefaultMappingDetails(connection, options), queryAnnotation,
+                method, parameters);
         if (method.isAnnotationPresent(Append.class)) {
             Append append = method.getAnnotation(Append.class);
             node.then(new PlaceholderMapper(parameters).assignValues(append.value()));
@@ -76,6 +68,20 @@ public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
         } else {
             return ((SQLDatabaseConnection) connection).exec(node);
         }
+    }
+
+    private static Annotation filterQueryAnnotation(Method method, Object[] args) {
+        Annotation queryAnnotation = null;
+        for (Annotation annotation : method.getAnnotations()) {
+            boolean isQueryAnnot = QueryAnnotation.isQueryAnnotation(annotation);
+            if (isQueryAnnot && queryAnnotation == null) {
+                queryAnnotation = annotation;
+            } else if (isQueryAnnot) {
+                String errMessage = String.format("Multiple query annotations (Select/Insert/...) found on method %s!", method.getName());
+                throw new SQLMappingException(errMessage, method, args);
+            }
+        }
+        return queryAnnotation;
     }
 
     @Override

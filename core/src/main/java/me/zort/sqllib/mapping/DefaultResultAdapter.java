@@ -14,24 +14,15 @@ public class DefaultResultAdapter implements StatementMappingResultAdapter {
     @Override
     public Object adaptResult(Method method, QueryResult result) {
         Class<?> returnType = method.getReturnType();
-
         if(returnType.equals(QueryResult.class)) {
             return result;
         } else if (isVoid(returnType) || !(result instanceof QueryRowsResult)) {
             return null;
         }
-
         QueryRowsResult<?> rows = (QueryRowsResult<?>) result;
-
-        if (List.class.isAssignableFrom(returnType)) {
-            return rows;
-        }
-
+        if (List.class.isAssignableFrom(returnType)) return rows;
         Object obj = rows.isEmpty() ? null : rows.get(0);
-
-        if (Optional.class.isAssignableFrom(returnType))
-            return Optional.ofNullable(obj);
-
+        if (Optional.class.isAssignableFrom(returnType)) return Optional.ofNullable(obj);
         return obj;
     }
 
