@@ -45,8 +45,13 @@ public class QueryAnnotation {
         QUERY_ANNOT.put(Exec.class, new QueryAnnotation(false, new NativeQueryBuilder()));
     }
 
+    public static <T extends Annotation> void register(Class<T> annotation, boolean producesResult, QueryBuilder<T> builder) {
+        QUERY_ANNOT.put(annotation, new QueryAnnotation(producesResult, builder));
+    }
+
     @Nullable
     public static QueryAnnotation wrap(Annotation annotation) {
+        if (annotation == null) return null;
         return isQueryAnnotation(annotation) ? QUERY_ANNOT.get(annotation.annotationType()) : null;
     }
 
