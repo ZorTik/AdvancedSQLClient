@@ -88,6 +88,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     private transient Logger logger;
     @Getter(onMethod_ = {@Nullable, @ApiStatus.Experimental})
     private transient Transaction transaction;
+    private transient SchemaSynchronizer<SQLDatabaseConnection> schemaSynchronizer;
     private int errorCount = 0;
 
     /**
@@ -114,8 +115,9 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         this.errorStateHandlers = new CopyOnWriteArrayList<>();
         this.transaction = null;
         this.logger = Logger.getGlobal();
-        this.mappingRegistry = new MappingRegistryImpl(this, new SQLSchemaSynchronizer());
+        this.mappingRegistry = new MappingRegistryImpl(this);
 
+        setSchemaSynchronizer(new SQLSchemaSynchronizer());
         enableCaching(CacheManager.noCache());
 
         // Default backup value resolvers.
@@ -205,7 +207,8 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     @ApiStatus.Experimental
     @Override
     public boolean synchronizeModel(TableSchema entitySchema, String table) {
-        return getSchemaSynchronizer().synchronize(this, entitySchema, getSchemaBuilder(table).buildTableSchema()).isSuccessful();
+        return getSchemaSynchronizer().synchronize(this, entitySchema,
+                getSchemaBuilder(table).buildTableSchema()).isSuccessful();
     }
 
     /**
@@ -221,7 +224,9 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     @ApiStatus.Experimental
     @Override
     public boolean synchronizeModel(Class<?> entity, String table) {
-        return synchronizeModel(new EntitySchemaBuilder(table, entity, getOptions().getNamingStrategy(), this instanceof SQLiteDatabaseConnectionImpl).buildTableSchema(), table);
+        return synchronizeModel(new EntitySchemaBuilder(table, entity,
+                getOptions().getNamingStrategy(),
+                this instanceof SQLiteDatabaseConnectionImpl).buildTableSchema(), table);
     }
 
     /**
@@ -232,13 +237,13 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     @ApiStatus.Experimental
     @Override
     public void setSchemaSynchronizer(SchemaSynchronizer<SQLDatabaseConnection> synchronizer) {
-        mappingRegistry.setSynchronizer(synchronizer);
+        this.schemaSynchronizer = synchronizer;
     }
 
     @ApiStatus.Experimental
     @Override
     public SchemaSynchronizer<SQLDatabaseConnection> getSchemaSynchronizer() {
-        return mappingRegistry.getSynchronizer();
+        return schemaSynchronizer;
     }
 
     @ApiStatus.Experimental
