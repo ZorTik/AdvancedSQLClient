@@ -19,8 +19,8 @@ public @interface Table {
 
     class Util {
         @Nullable
-        public static String getFromContext(Method method, ParameterPair[] parameters) {
-            PlaceholderMapper mapper = new PlaceholderMapper(parameters);
+        public static String getFromContext(Method method, @Nullable ParameterPair[] parameters) {
+            PlaceholderMapper mapper = new PlaceholderMapper(parameters != null ? parameters : new ParameterPair[0]);
             if (method.isAnnotationPresent(Table.class)) {
                 return mapper.assignValues(method.getAnnotation(Table.class).value());
             } else if(method.getDeclaringClass().isAnnotationPresent(Table.class)) {
