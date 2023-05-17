@@ -4,12 +4,16 @@ import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import me.zort.sqllib.SQLConnectionBuilder;
 import me.zort.sqllib.SQLDatabaseConnection;
+import me.zort.sqllib.SQLDatabaseConnectionImpl;
 import me.zort.sqllib.SQLDatabaseOptions;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
+import me.zort.sqllib.api.model.TableSchema;
 import me.zort.sqllib.internal.annotation.PrimaryKey;
 import me.zort.sqllib.mapping.annotation.*;
+import me.zort.sqllib.model.DatabaseSchemaBuilder;
+import me.zort.sqllib.model.EntitySchemaBuilder;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -44,7 +48,7 @@ public class TestCase2 { // Experimental features
         assertTrue(connection.connect());
         assertTrue(connection.isConnected());
 
-        assertNull(connection.exec(() -> "CREATE TABLE IF NOT EXISTS users (nickname VARCHAR(64) PRIMARY KEY NOT NULL, points INT NOT NULL);").getRejectMessage());
+        assertTrue(connection.buildEntitySchema("users", User.class));
         assertNull(connection.exec(() -> "TRUNCATE TABLE users;").getRejectMessage());
     }
 
@@ -69,7 +73,21 @@ public class TestCase2 { // Experimental features
 
     @Timeout(5)
     @Test
-    public void test2_Close() {
+    public void test2_Synchronization() {
+        TableSchema schema = new EntitySchemaBuilder("users", User.class, ((SQLDatabaseConnectionImpl) connection).getOptions().getNamingStrategy(), false).buildTableSchema();
+        assertEquals(2, schema.getDefinitions().length);
+        assertEquals("nickname VARCHAR(255) PRIMARY KEY", schema.getDefinitions()[0]);
+        assertEquals("points INTEGER", schema.getDefinitions()[1]);
+
+        TableSchema dbSchema = connection.getSchemaBuilder("users").buildTableSchema();
+        assertEquals(2, dbSchema.getDefinitions().length);
+        assertEquals("nickname VARCHAR(255) PRIMARY KEY", dbSchema.getDefinitions()[0]);
+        assertEquals("points INTEGER", dbSchema.getDefinitions()[1]);
+    }
+
+    @Timeout(5)
+    @Test
+    public void test3_Close() {
         connection.disconnect();
     }
 

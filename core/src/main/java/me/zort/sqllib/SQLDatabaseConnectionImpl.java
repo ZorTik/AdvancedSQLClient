@@ -13,10 +13,13 @@ import me.zort.sqllib.api.cache.CacheManager;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
+import me.zort.sqllib.api.mapping.MappingProxyInstance;
 import me.zort.sqllib.api.mapping.StatementMappingFactory;
 import me.zort.sqllib.api.mapping.StatementMappingOptions;
-import me.zort.sqllib.api.mapping.StatementMappingResultAdapter;
-import me.zort.sqllib.api.mapping.StatementMappingStrategy;
+import me.zort.sqllib.api.mapping.StatementMappingRegistry;
+import me.zort.sqllib.api.model.SchemaSynchronizer;
+import me.zort.sqllib.api.model.TableSchema;
+import me.zort.sqllib.api.model.TableSchemaBuilder;
 import me.zort.sqllib.api.options.NamingStrategy;
 import me.zort.sqllib.internal.Defaults;
 import me.zort.sqllib.internal.annotation.JsonField;
@@ -26,6 +29,11 @@ import me.zort.sqllib.internal.fieldResolver.LinkedOneFieldResolver;
 import me.zort.sqllib.internal.impl.DefaultObjectMapper;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.mapping.DefaultStatementMappingFactory;
+import me.zort.sqllib.mapping.MappingRegistryImpl;
+import me.zort.sqllib.mapping.ProxyInstanceImpl;
+import me.zort.sqllib.model.DatabaseSchemaBuilder;
+import me.zort.sqllib.model.EntitySchemaBuilder;
+import me.zort.sqllib.model.SQLSchemaSynchronizer;
 import me.zort.sqllib.pool.PooledSQLDatabaseConnection;
 import me.zort.sqllib.transaction.Transaction;
 import me.zort.sqllib.util.Validator;
@@ -34,12 +42,12 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 import static me.zort.sqllib.util.ExceptionsUtility.runCatching;
@@ -72,6 +80,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     @Getter
     private final ISQLDatabaseOptions options;
     private final transient List<ErrorStateObserver> errorStateHandlers;
+    private final transient MappingRegistryImpl mappingRegistry;
     private transient StatementMappingFactory mappingFactory;
     private transient ObjectMapper objectMapper;
     private transient CacheManager cacheManager;
@@ -105,6 +114,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         this.errorStateHandlers = new CopyOnWriteArrayList<>();
         this.transaction = null;
         this.logger = Logger.getGlobal();
+        this.mappingRegistry = new MappingRegistryImpl(this, new SQLSchemaSynchronizer());
 
         enableCaching(CacheManager.noCache());
 
@@ -164,6 +174,46 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     @Override
     public void enableCaching(CacheManager cacheManager) {
         this.cacheManager = cacheManager;
+    }
+
+    @ApiStatus.Experimental
+    @Override
+    public void synchronizeModel() {
+        mappingRegistry.getProxyInstances()
+                .stream().flatMap(i -> i.getTableSchemas(
+                        getOptions().getNamingStrategy(),
+                        this instanceof SQLiteDatabaseConnectionImpl).stream())
+                .forEach(schema -> synchronizeModel(schema, schema.getTable()));
+    }
+
+    @ApiStatus.Experimental
+    @Override
+    public void synchronizeModel(TableSchema entitySchema, String table) {
+        getSchemaSynchronizer().synchronize(this, entitySchema, getSchemaBuilder(table).buildTableSchema());
+    }
+
+    @ApiStatus.Experimental
+    @Override
+    public void synchronizeModel(Class<?> entity, String table) {
+        synchronizeModel(new EntitySchemaBuilder(table, entity, getOptions().getNamingStrategy(), this instanceof SQLiteDatabaseConnectionImpl).buildTableSchema(), table);
+    }
+
+    @ApiStatus.Experimental
+    @Override
+    public void setSchemaSynchronizer(SchemaSynchronizer<SQLDatabaseConnection> synchronizer) {
+        mappingRegistry.setSynchronizer(synchronizer);
+    }
+
+    @ApiStatus.Experimental
+    @Override
+    public SchemaSynchronizer<SQLDatabaseConnection> getSchemaSynchronizer() {
+        return mappingRegistry.getSynchronizer();
+    }
+
+    @ApiStatus.Experimental
+    @Override
+    public StatementMappingRegistry getMappingRegistry() {
+        return mappingRegistry;
     }
 
     /**
@@ -228,37 +278,23 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         Objects.requireNonNull(mappingInterface, "Mapping interface cannot be null!");
         Objects.requireNonNull(options, "Options cannot be null!");
 
-        StatementMappingStrategy<T> statementMapping = mappingFactory.strategy(mappingInterface, this);
-        StatementMappingResultAdapter mappingResultAdapter = mappingFactory.resultAdapter();
-        List<Method> pendingMethods = new CopyOnWriteArrayList<>();
+        AtomicReference<MappingProxyInstance<T>> instanceReference = new AtomicReference<>();
+        instanceReference.set(new ProxyInstanceImpl<>((T) Proxy.newProxyInstance(mappingInterface.getClassLoader(),
+                new Class[]{mappingInterface}, (proxy, method, args) -> instanceReference.get().invoke(proxy, method, args)),
+                options,
+                mappingFactory.strategy(mappingInterface, this),
+                mappingFactory.resultAdapter()));
 
-        return (T) Proxy.newProxyInstance(mappingInterface.getClassLoader(),
-                new Class[]{mappingInterface}, (proxy, method, args) -> {
-
-                    // Allow invokation from interfaces or abstract classes only.
-                    Class<?> declaringClass = method.getDeclaringClass();
-                    if ((declaringClass.isInterface() || Modifier.isAbstract(declaringClass.getModifiers()))
-                            && statementMapping.isMappingMethod(method)) {
-                        // Prepare and execute query based on invoked method.
-                        QueryResult result = statementMapping.executeQuery(options, method, args, mappingResultAdapter.retrieveResultType(method));
-                        // Adapt QueryResult to method return type.
-                        return mappingResultAdapter.adaptResult(method, result);
-                    }
-
-                    // Default methods are invoked normally.
-                    if (declaringClass.isInterface() && method.isDefault()) {
-                        return JVM.getJVM().invokeDefault(declaringClass, proxy, method, args);
-                    }
-
-                    throw new UnsupportedOperationException("Method " + method.getName() + " is not supported by this mapping repository!");
-                });
+        MappingProxyInstance<T> proxyInstanceWrapper = instanceReference.get();
+        mappingRegistry.registerProxy(proxyInstanceWrapper);
+        return proxyInstanceWrapper.getProxyInstance();
     }
 
     @ApiStatus.Experimental
     public final boolean buildEntitySchema(final @NotNull String tableName, final @NotNull Class<?> entityClass) {
         Objects.requireNonNull(entityClass, "Entity class cannot be null!");
 
-        TableSchemaBuilder converter = new TableSchemaBuilder(this, tableName, entityClass);
+        EntitySchemaBuilder converter = new EntitySchemaBuilder(tableName, entityClass, options.getNamingStrategy(), this instanceof SQLiteDatabaseConnectionImpl);
         String query = converter.buildTableQuery();
 
         return exec(() -> query).isSuccessful();
@@ -516,6 +552,17 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     @Override
     public final boolean isTransactionActive() {
         return transaction != null && transaction.isActive();
+    }
+
+    @Override
+    public TableSchemaBuilder getSchemaBuilder(String table) {
+        return new DatabaseSchemaBuilder(q -> {
+            try {
+                return buildStatement(() -> q);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }, table);
     }
 
     @SuppressWarnings("all")

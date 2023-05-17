@@ -1,12 +1,11 @@
 package me.zort.sqllib.mapping;
 
-import lombok.RequiredArgsConstructor;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.api.SQLConnection;
+import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.mapping.StatementMappingOptions;
 import me.zort.sqllib.api.mapping.StatementMappingStrategy;
-import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.internal.query.QueryNode;
 import me.zort.sqllib.internal.query.ResultSetAware;
 import me.zort.sqllib.mapping.annotation.Append;
@@ -25,10 +24,13 @@ import java.lang.reflect.Parameter;
  * @param <T> The type of the proxy instance.
  * @author ZorTik
  */
-@RequiredArgsConstructor
 public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
 
     private final SQLConnection connection;
+
+    public DefaultStatementMapping(SQLConnection connection) {
+        this.connection = connection;
+    }
 
     @SuppressWarnings("unchecked")
     @Override

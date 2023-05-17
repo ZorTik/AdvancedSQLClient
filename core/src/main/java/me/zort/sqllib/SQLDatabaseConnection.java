@@ -11,6 +11,10 @@ import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.mapping.StatementMappingFactory;
 import me.zort.sqllib.api.mapping.StatementMappingOptions;
+import me.zort.sqllib.api.mapping.StatementMappingRegistry;
+import me.zort.sqllib.api.model.SchemaSynchronizer;
+import me.zort.sqllib.api.model.TableSchema;
+import me.zort.sqllib.api.model.TableSchemaBuilder;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.internal.query.*;
@@ -52,6 +56,10 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
      * @param mappingFactory Mapping factory to use.
      */
     public abstract void setProxyMapping(final @NotNull StatementMappingFactory mappingFactory);
+    @ApiStatus.Experimental
+    public abstract void setSchemaSynchronizer(SchemaSynchronizer<SQLDatabaseConnection> synchronizer);
+    @ApiStatus.Experimental
+    public abstract StatementMappingRegistry getMappingRegistry();
 
     /**
      * @deprecated Use {@link SQLDatabaseConnection#createProxy(Class)} instead.
@@ -93,6 +101,12 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     public abstract <T> T createProxy(Class<T> mappingInterface);
     public abstract <T> T createProxy(Class<T> mappingInterface, @NotNull StatementMappingOptions options);
     public abstract boolean buildEntitySchema(String tableName, Class<?> entityClass);
+    @ApiStatus.Experimental
+    public abstract void synchronizeModel();
+    @ApiStatus.Experimental
+    public abstract void synchronizeModel(TableSchema entitySchema, String table);
+    @ApiStatus.Experimental
+    public abstract void synchronizeModel(Class<?> entity, String table);
 
     /**
      * Performs new query and returns the result. This result is never null.
@@ -148,6 +162,10 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     protected abstract DefsVals buildDefsVals(Object obj);
     public abstract boolean isLogSqlErrors();
     public abstract boolean isDebug();
+    @ApiStatus.Experimental
+    public abstract TableSchemaBuilder getSchemaBuilder(String table);
+    @ApiStatus.Experimental
+    public abstract SchemaSynchronizer<SQLDatabaseConnection> getSchemaSynchronizer();
 
     public UpsertQuery save(final @NotNull String table, final @NotNull Object obj) {
         if(buildDefsVals(obj) == null) throw new IllegalArgumentException("Cannot create save query! (defsVals == null)");

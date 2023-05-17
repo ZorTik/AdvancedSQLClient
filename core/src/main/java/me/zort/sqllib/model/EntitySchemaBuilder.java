@@ -1,8 +1,15 @@
-package me.zort.sqllib;
+package me.zort.sqllib.model;
 
 import com.google.gson.internal.Primitives;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import me.zort.sqllib.SQLDatabaseConnection;
+import me.zort.sqllib.SQLDatabaseConnectionImpl;
+import me.zort.sqllib.SQLiteDatabaseConnectionImpl;
 import me.zort.sqllib.api.ISQLDatabaseOptions;
+import me.zort.sqllib.api.model.TableSchema;
+import me.zort.sqllib.api.model.TableSchemaBuilder;
+import me.zort.sqllib.api.options.NamingStrategy;
 import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.internal.annotation.NullableField;
 import me.zort.sqllib.internal.annotation.PrimaryKey;
@@ -13,12 +20,18 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Objects;
 
+/**
+ * Builds table schema from provided entity class.
+ *
+ * @author ZorTik
+ */
 @RequiredArgsConstructor
-final class TableSchemaBuilder {
+public final class EntitySchemaBuilder implements TableSchemaBuilder {
 
-    private final SQLDatabaseConnection connection;
     private final String tableName;
     private final Class<?> typeClass;
+    private final NamingStrategy namingStrategy;
+    private final boolean sqLite;
     private static final Class<?>[] supportedTypes = new Class<?>[] {
             Integer.class,
             Long.class,
@@ -27,21 +40,20 @@ final class TableSchemaBuilder {
             String.class
     };
 
+    @Setter
+    private boolean debug = false;
+
     public String buildTableQuery() {
-        return String.format("CREATE TABLE IF NOT EXISTS %s(%s);", tableName, String.join(", ", buildDefsFromType()));
+        return String.format("CREATE TABLE IF NOT EXISTS %s(%s);", tableName, String.join(", ", buildTableSchema().getDefinitions()));
     }
 
-    public String[] buildDefsFromType() {
+    @Override
+    public TableSchema buildTableSchema() {
         Objects.requireNonNull(typeClass, "Type class must be set before building repository!");
 
-        if(!(connection instanceof SQLDatabaseConnectionImpl)) {
-            throw new IllegalStateException("We can build defs only from SQLDatabaseConnectionImpl child-classes.");
-        }
         debug("Building defs from type class: " + typeClass.getName());
 
-        ISQLDatabaseOptions options = ((SQLDatabaseConnectionImpl) connection).getOptions();
         String[] defs = new String[0];
-
         for (Field field : typeClass.getDeclaredFields()) {
             debug("Building def for field: " + field.getName() + " (" + field.getType().getName() + ")");
             if(Modifier.isTransient(field.getModifiers())) {
@@ -49,7 +61,7 @@ final class TableSchemaBuilder {
                 continue;
             }
 
-            String colName = options.getNamingStrategy().fieldNameToColumn(field.getName());
+            String colName = namingStrategy.fieldNameToColumn(field.getName());
             String colType = recognizeFieldTypeToDbType(field);
 
             if(colType != null && !colType.contains("NOT NULL") && field.isAnnotationPresent(NullableField.class)) {
@@ -65,7 +77,7 @@ final class TableSchemaBuilder {
 
         debug("Built defs: " + java.util.Arrays.toString(defs));
 
-        return defs;
+        return new TableSchema(tableName, defs);
     }
 
     private String recognizeFieldTypeToDbType(Field field) {
@@ -102,12 +114,11 @@ final class TableSchemaBuilder {
     }
 
     private void debug(String message) {
-        if(connection instanceof SQLDatabaseConnectionImpl && ((SQLDatabaseConnectionImpl) connection).getOptions().isDebug())
-            ((SQLDatabaseConnectionImpl) connection).debug(message);
+        if (debug) System.out.println(message);
     }
 
     private boolean isSQLite() {
-        return connection instanceof SQLiteDatabaseConnectionImpl;
+        return sqLite;
     }
 
     public static boolean isSupported(Class<?> type) {
