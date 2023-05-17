@@ -27,6 +27,6 @@ public class SQLSchemaSynchronizer implements SchemaSynchronizer<SQLDatabaseConn
                 }
             }
         }
-        return query.length() == 0 ? QueryResult.successful() : source.exec(query.toString());
+        return query.length() == 0 ? QueryResult.noChangesResult : source.exec(query.toString());
     }
 }

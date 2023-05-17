@@ -83,8 +83,8 @@ public class TestCase2 { // Experimental features
         assertEquals(2, dbSchema.getDefinitions().length);
         assertEquals("nickname VARCHAR(255) PRIMARY KEY", dbSchema.getDefinitions()[0]);
         assertEquals("points INTEGER", dbSchema.getDefinitions()[1]);
-        assertTrue(connection.synchronizeModel(schema, "users"));
-        assertTrue(connection.synchronizeModel());
+        assertFalse(connection.synchronizeModel(schema, "users"));
+        assertFalse(connection.synchronizeModel());
     }
 
     @Timeout(5)
