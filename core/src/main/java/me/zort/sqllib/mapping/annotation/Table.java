@@ -26,7 +26,7 @@ public @interface Table {
             } else if(method.getDeclaringClass().isAnnotationPresent(Table.class)) {
                 return mapper.assignValues(method.getDeclaringClass().getAnnotation(Table.class).value());
             } else {
-                throw new SQLMappingException("Method " + method.getName() + " requires @Table annotation", method, null);
+                throw new SQLMappingException("Method " + method.getName() + " in class " + method.getDeclaringClass().getSimpleName() + " requires @Table annotation", method, null);
             }
         }
     }

@@ -1,11 +1,14 @@
 package me.zort.sqllib.api.model;
 
+import me.zort.sqllib.api.SQLConnection;
+import me.zort.sqllib.api.data.QueryResult;
+
 /**
  * Synchronized (updates) table schema (column definitions) in provided source.
  *
  * @param <S> The target source
  */
-public interface SchemaSynchronizer<S> {
+public interface SchemaSynchronizer<S extends SQLConnection> {
 
     /**
      * Table synchronization logic in provided source.
@@ -16,6 +19,6 @@ public interface SchemaSynchronizer<S> {
      * @param from The template schema
      * @param to The schema to be <u>updated</u> to match 'from' schema
      */
-    void synchronize(S source, TableSchema from, TableSchema to);
+    QueryResult synchronize(S source, TableSchema from, TableSchema to);
 
 }

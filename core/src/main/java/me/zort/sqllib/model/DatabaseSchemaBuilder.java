@@ -1,5 +1,6 @@
 package me.zort.sqllib.model;
 
+import me.zort.sqllib.api.model.ColumnDefinition;
 import me.zort.sqllib.api.model.TableSchema;
 import me.zort.sqllib.api.model.TableSchemaBuilder;
 
@@ -38,21 +39,26 @@ public final class DatabaseSchemaBuilder implements TableSchemaBuilder {
             }
             primaryKeysRS.close();
 
-            String[] definitions = new String[meta.getColumnCount()];
+            ColumnDefinition[] definitions = new ColumnDefinition[meta.getColumnCount()];
             for (int i = 0; i < definitions.length; i++) {
-                definitions[i] = meta.getColumnName(i + 1) + " " + meta.getColumnTypeName(i + 1);
-                definitions[i] = definitions[i].replace(" INT", " INTEGER");
-
+                String name = meta.getColumnName(i + 1);
+                String type = prepareColumnType(meta.getColumnTypeName(i + 1));
                 if (meta.getColumnClassName(i + 1).equals(String.class.getName()) && meta.getColumnDisplaySize(i + 1) > 0) {
-                    definitions[i] += "(" + meta.getColumnDisplaySize(i + 1) + ")";
+                    type += "(" + meta.getColumnDisplaySize(i + 1) + ")";
                 }
                 if (primaryKeys.contains(meta.getColumnName(i + 1).toUpperCase())) {
-                    definitions[i] += " PRIMARY KEY";
+                    type += " PRIMARY KEY";
                 }
+                definitions[i] = new ColumnDefinition(name, type);
             }
             return new TableSchema(table, definitions);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static String prepareColumnType(String type) {
+        if (type.equalsIgnoreCase("INT")) type = "INTEGER";
+        return type;
     }
 }

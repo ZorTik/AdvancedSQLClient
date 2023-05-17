@@ -56,8 +56,15 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
      * @param mappingFactory Mapping factory to use.
      */
     public abstract void setProxyMapping(final @NotNull StatementMappingFactory mappingFactory);
+
+    /**
+     * Sets the schema synchronizer to use with synchronizeModel methods.
+     *
+     * @param synchronizer Schema synchronizer to use
+     */
     @ApiStatus.Experimental
     public abstract void setSchemaSynchronizer(SchemaSynchronizer<SQLDatabaseConnection> synchronizer);
+
     @ApiStatus.Experimental
     public abstract StatementMappingRegistry getMappingRegistry();
 
@@ -101,12 +108,40 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     public abstract <T> T createProxy(Class<T> mappingInterface);
     public abstract <T> T createProxy(Class<T> mappingInterface, @NotNull StatementMappingOptions options);
     public abstract boolean buildEntitySchema(String tableName, Class<?> entityClass);
+
+    /**
+     * Synchronizes proxy mapping models with database.<br>
+     * <i>Warning:</i> This tries to update all tables that are part of mapping
+     * proxies. Should be used carefully.
+     *
+     * @return True if synchronization was successful
+     */
     @ApiStatus.Experimental
-    public abstract void synchronizeModel();
+    public abstract boolean synchronizeModel();
+
+    /**
+     * Synchronizes provided entity schema with the database
+     * In other words, it tries to update database schema (table) to match
+     * the provided entity schema.
+     *
+     * @param entitySchema Entity schema
+     * @param table Table name
+     * @return True if synchronization was successful
+     */
     @ApiStatus.Experimental
-    public abstract void synchronizeModel(TableSchema entitySchema, String table);
+    public abstract boolean synchronizeModel(TableSchema entitySchema, String table);
+    /**
+     * Synchronizes provided entity class with the database
+     * In other words, it tries to update database schema (table) to match
+     * the provided entity schema. This method uses synchronizeModel method
+     * with schema generated from the provided entity class.
+     *
+     * @param entity The entity (model) class
+     * @param table Table name
+     * @return True if synchronization was successful
+     */
     @ApiStatus.Experimental
-    public abstract void synchronizeModel(Class<?> entity, String table);
+    public abstract boolean synchronizeModel(Class<?> entity, String table);
 
     /**
      * Performs new query and returns the result. This result is never null.
