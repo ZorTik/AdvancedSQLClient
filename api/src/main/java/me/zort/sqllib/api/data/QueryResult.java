@@ -13,4 +13,17 @@ public interface QueryResult {
     @Nullable
     String getRejectMessage();
 
+    static QueryResult successful() {
+        return new QueryResult() {
+            @Override
+            public boolean isSuccessful() {
+                return true;
+            }
+            @Override
+            public @Nullable String getRejectMessage() {
+                return null;
+            }
+        };
+    }
+
 }

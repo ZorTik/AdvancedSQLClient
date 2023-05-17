@@ -29,7 +29,7 @@ public class MappingRegistryImpl implements StatementMappingRegistry {
 
     @Override
     public void registerProxy(MappingProxyInstance<?> proxyInstance) {
-        proxyWrappers.put(proxyInstance.getProxyInstance().getClass(), proxyInstance);
+        proxyWrappers.put(proxyInstance.getTypeClass(), proxyInstance);
     }
 
     @Override

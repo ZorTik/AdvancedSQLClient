@@ -176,28 +176,59 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         this.cacheManager = cacheManager;
     }
 
+    /**
+     * Synchronizes proxy mapping models with database.<br>
+     * <i>Warning:</i> This tries to update all tables that are part of mapping
+     * proxies. Should be used carefully.
+     *
+     * @return True if synchronization was successful
+     */
     @ApiStatus.Experimental
     @Override
-    public void synchronizeModel() {
-        mappingRegistry.getProxyInstances()
+    public boolean synchronizeModel() {
+        return mappingRegistry.getProxyInstances()
                 .stream().flatMap(i -> i.getTableSchemas(
                         getOptions().getNamingStrategy(),
                         this instanceof SQLiteDatabaseConnectionImpl).stream())
-                .forEach(schema -> synchronizeModel(schema, schema.getTable()));
+                .allMatch(schema -> synchronizeModel(schema, schema.getTable()));
     }
 
+    /**
+     * Synchronizes provided entity schema with the database
+     * In other words, it tries to update database schema (table) to match
+     * the provided entity schema.
+     *
+     * @param entitySchema Entity schema
+     * @param table Table name
+     * @return True if synchronization was successful
+     */
     @ApiStatus.Experimental
     @Override
-    public void synchronizeModel(TableSchema entitySchema, String table) {
-        getSchemaSynchronizer().synchronize(this, entitySchema, getSchemaBuilder(table).buildTableSchema());
+    public boolean synchronizeModel(TableSchema entitySchema, String table) {
+        return getSchemaSynchronizer().synchronize(this, entitySchema, getSchemaBuilder(table).buildTableSchema()).isSuccessful();
     }
 
+    /**
+     * Synchronizes provided entity class with the database
+     * In other words, it tries to update database schema (table) to match
+     * the provided entity schema. This method uses synchronizeModel method
+     * with schema generated from the provided entity class.
+     *
+     * @param entity The entity (model) class
+     * @param table Table name
+     * @return True if synchronization was successful
+     */
     @ApiStatus.Experimental
     @Override
-    public void synchronizeModel(Class<?> entity, String table) {
-        synchronizeModel(new EntitySchemaBuilder(table, entity, getOptions().getNamingStrategy(), this instanceof SQLiteDatabaseConnectionImpl).buildTableSchema(), table);
+    public boolean synchronizeModel(Class<?> entity, String table) {
+        return synchronizeModel(new EntitySchemaBuilder(table, entity, getOptions().getNamingStrategy(), this instanceof SQLiteDatabaseConnectionImpl).buildTableSchema(), table);
     }
 
+    /**
+     * Sets the schema synchronizer to use with synchronizeModel methods.
+     *
+     * @param synchronizer Schema synchronizer to use
+     */
     @ApiStatus.Experimental
     @Override
     public void setSchemaSynchronizer(SchemaSynchronizer<SQLDatabaseConnection> synchronizer) {
@@ -279,15 +310,16 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         Objects.requireNonNull(options, "Options cannot be null!");
 
         AtomicReference<MappingProxyInstance<T>> instanceReference = new AtomicReference<>();
-        instanceReference.set(new ProxyInstanceImpl<>((T) Proxy.newProxyInstance(mappingInterface.getClassLoader(),
-                new Class[]{mappingInterface}, (proxy, method, args) -> instanceReference.get().invoke(proxy, method, args)),
+        T rawInstance = (T) Proxy.newProxyInstance(mappingInterface.getClassLoader(),
+                new Class[]{mappingInterface}, (proxy, method, args) -> instanceReference.get().invoke(proxy, method, args));
+        instanceReference.set(new ProxyInstanceImpl<>(mappingInterface,
                 options,
                 mappingFactory.strategy(mappingInterface, this),
                 mappingFactory.resultAdapter()));
 
         MappingProxyInstance<T> proxyInstanceWrapper = instanceReference.get();
         mappingRegistry.registerProxy(proxyInstanceWrapper);
-        return proxyInstanceWrapper.getProxyInstance();
+        return rawInstance;
     }
 
     @ApiStatus.Experimental

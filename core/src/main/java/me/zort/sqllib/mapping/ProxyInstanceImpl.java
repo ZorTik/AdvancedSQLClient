@@ -21,18 +21,18 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Getter
 public class ProxyInstanceImpl<T> implements MappingProxyInstance<T> {
 
-    private final T proxyInstance;
+    private final Class<T> typeClass;
     private final StatementMappingOptions options;
     private final StatementMappingStrategy<T> statementMapping;
     private final StatementMappingResultAdapter mappingResultAdapter;
 
     private final List<Method> pendingMethods = new CopyOnWriteArrayList<>();
 
-    public ProxyInstanceImpl(T proxyInstance,
+    public ProxyInstanceImpl(Class<T> typeClass,
                              StatementMappingOptions options,
                              StatementMappingStrategy<T> statementMappingStrategy,
                              StatementMappingResultAdapter mappingResultAdapter) {
-        this.proxyInstance = proxyInstance;
+        this.typeClass = typeClass;
         this.options = options;
         this.statementMapping = statementMappingStrategy;
         this.mappingResultAdapter = mappingResultAdapter;
@@ -61,10 +61,13 @@ public class ProxyInstanceImpl<T> implements MappingProxyInstance<T> {
     @Override
     public List<TableSchema> getTableSchemas(NamingStrategy namingStrategy, boolean sqLite) {
         List<TableSchema> schemaList = new ArrayList<>();
-        for (Method method : proxyInstance.getClass().getDeclaredMethods()) {
+        for (Method method : getTypeClass().getDeclaredMethods()) {
             Class<?> resultType = mappingResultAdapter.retrieveResultType(method);
-            String table = Table.Util.getFromContext(method, null);
-            schemaList.add(new EntitySchemaBuilder(table, resultType, namingStrategy, sqLite).buildTableSchema());
+
+            if (!QueryResult.class.isAssignableFrom(resultType) && statementMapping.isMappingMethod(method)) {
+                String table = options.getTable() != null ? options.getTable() : Table.Util.getFromContext(method, null);
+                schemaList.add(new EntitySchemaBuilder(table, resultType, namingStrategy, sqLite).buildTableSchema());
+            }
         }
         return schemaList;
     }

@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface MappingProxyInstance<T> extends InvocationHandler {
 
-    T getProxyInstance();
+    Class<T> getTypeClass();
     List<TableSchema> getTableSchemas(NamingStrategy namingStrategy, boolean sqLite);
 
 }

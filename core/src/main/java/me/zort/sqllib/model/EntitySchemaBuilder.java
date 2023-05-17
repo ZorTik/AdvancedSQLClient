@@ -3,10 +3,7 @@ package me.zort.sqllib.model;
 import com.google.gson.internal.Primitives;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
-import me.zort.sqllib.SQLDatabaseConnection;
-import me.zort.sqllib.SQLDatabaseConnectionImpl;
-import me.zort.sqllib.SQLiteDatabaseConnectionImpl;
-import me.zort.sqllib.api.ISQLDatabaseOptions;
+import me.zort.sqllib.api.model.ColumnDefinition;
 import me.zort.sqllib.api.model.TableSchema;
 import me.zort.sqllib.api.model.TableSchemaBuilder;
 import me.zort.sqllib.api.options.NamingStrategy;
@@ -53,7 +50,7 @@ public final class EntitySchemaBuilder implements TableSchemaBuilder {
 
         debug("Building defs from type class: " + typeClass.getName());
 
-        String[] defs = new String[0];
+        ColumnDefinition[] defs = new ColumnDefinition[0];
         for (Field field : typeClass.getDeclaredFields()) {
             debug("Building def for field: " + field.getName() + " (" + field.getType().getName() + ")");
             if(Modifier.isTransient(field.getModifiers())) {
@@ -70,7 +67,7 @@ public final class EntitySchemaBuilder implements TableSchemaBuilder {
                 }
             }
 
-            defs = Arrays.add(defs, colName + " " + colType);
+            defs = Arrays.add(defs, new ColumnDefinition(colName, colType));
 
             debug("Added def: " + colName + " " + colType);
         }
@@ -89,7 +86,9 @@ public final class EntitySchemaBuilder implements TableSchemaBuilder {
         }
 
         if(!isSupported)
-            throw new RuntimeException(String.format("We don't support %s types in SQLTableRepositoryBuilder yet.", fieldType.getSimpleName()));
+            throw new RuntimeException(String.format("We don't support %s types in SQLTableRepositoryBuilder yet. (%s)",
+                    fieldType.getSimpleName(),
+                    field.getDeclaringClass().getName()));
 
         String dbType = null;
         if(fieldType.equals(String.class)) {
