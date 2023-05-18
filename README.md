@@ -4,7 +4,7 @@
 
 
 # AdvancedSQLClient
-Ultimate SQL client with intuitive query builders, Json support and more!<br>
+Ultimate blazingly fast SQL client with intuitive query builders, Json support and more!<br>
 Head to new <a href="https://github.com/ZorTik/AdvancedSQLClient/wiki">wiki</a> for usage tutorial & quickstart!
 
 ![Badge](https://img.shields.io/jitpack/version/com.github.ZorTik/AdvancedSQLClient?style=for-the-badge) ![Badge](https://img.shields.io/github/license/ZorTik/AdvancedSQLClient?style=for-the-badge)
