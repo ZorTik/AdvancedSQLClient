@@ -10,10 +10,10 @@ import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.model.TableSchema;
+import me.zort.sqllib.internal.annotation.Default;
 import me.zort.sqllib.internal.annotation.PrimaryKey;
 import me.zort.sqllib.mapping.annotation.*;
-import me.zort.sqllib.model.DatabaseSchemaBuilder;
-import me.zort.sqllib.model.EntitySchemaBuilder;
+import me.zort.sqllib.model.schema.EntitySchemaBuilder;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -48,6 +48,7 @@ public class TestCase2 { // Experimental features
         assertTrue(connection.connect());
         assertTrue(connection.isConnected());
 
+        assertNull(connection.exec(() -> "DROP TABLE IF EXISTS users;").getRejectMessage());
         assertTrue(connection.buildEntitySchema("users", User.class));
         assertNull(connection.exec(() -> "TRUNCATE TABLE users;").getRejectMessage());
     }
@@ -55,7 +56,7 @@ public class TestCase2 { // Experimental features
     @Timeout(10)
     @Test
     public void test1_Mapping() {
-        DatabaseRepository repository = connection.createGate(DatabaseRepository.class);
+        DatabaseRepository repository = connection.createProxy(DatabaseRepository.class);
 
         User user1 = new User("User1", 1000);
 
@@ -85,6 +86,13 @@ public class TestCase2 { // Experimental features
         assertEquals("points INTEGER", dbSchema.getDefinitions()[1]);
         assertFalse(connection.synchronizeModel(schema, "users"));
         assertFalse(connection.synchronizeModel());
+
+        assertTrue(connection.synchronizeModel(UserCopy.class, "users"));
+
+        TableSchema copySchema = connection.getSchemaBuilder("users").buildTableSchema();
+        assertEquals(2, copySchema.getDefinitions().length);
+        assertEquals("nickname VARCHAR(255) PRIMARY KEY", copySchema.getDefinitions()[0]);
+        assertEquals("points INTEGER DEFAULT 0", copySchema.getDefinitions()[1]);
     }
 
     @Timeout(5)
@@ -145,6 +153,40 @@ public class TestCase2 { // Experimental features
             if (o == null || getClass() != o.getClass()) return false;
 
             TestCase2.User user = (TestCase2.User) o;
+
+            if (points != user.points) return false;
+            return nickname.equals(user.nickname);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = nickname.hashCode();
+            result = 31 * result + points;
+            return result;
+        }
+    }
+
+    @AllArgsConstructor
+    private static class UserCopy {
+        @PrimaryKey
+        private final String nickname;
+        @Default("0")
+        private final int points;
+
+        public String getNickname() {
+            return nickname;
+        }
+
+        public int getPoints() {
+            return points;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            TestCase2.UserCopy user = (TestCase2.UserCopy) o;
 
             if (points != user.points) return false;
             return nickname.equals(user.nickname);

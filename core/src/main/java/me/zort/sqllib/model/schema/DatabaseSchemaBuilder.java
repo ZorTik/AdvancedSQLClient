@@ -1,4 +1,4 @@
-package me.zort.sqllib.model;
+package me.zort.sqllib.model.schema;
 
 import me.zort.sqllib.api.model.ColumnDefinition;
 import me.zort.sqllib.api.model.TableSchema;
