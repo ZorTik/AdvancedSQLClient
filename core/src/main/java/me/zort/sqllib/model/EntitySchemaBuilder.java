@@ -7,6 +7,7 @@ import me.zort.sqllib.api.model.ColumnDefinition;
 import me.zort.sqllib.api.model.TableSchema;
 import me.zort.sqllib.api.model.TableSchemaBuilder;
 import me.zort.sqllib.api.options.NamingStrategy;
+import me.zort.sqllib.internal.annotation.Default;
 import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.internal.annotation.NullableField;
 import me.zort.sqllib.internal.annotation.PrimaryKey;
@@ -65,6 +66,13 @@ public final class EntitySchemaBuilder implements TableSchemaBuilder {
                 if(!field.getAnnotation(NullableField.class).nullable()) {
                     colType += " NOT NULL";
                 }
+            }
+            if (colType != null && field.isAnnotationPresent(Default.class)) {
+                String defaultValue = field.getAnnotation(Default.class).value();
+                if ((field.getType().equals(String.class) || field.isAnnotationPresent(JsonField.class))
+                        && !(defaultValue.startsWith("'") && defaultValue.endsWith("'")))
+                    defaultValue = "'" + defaultValue + "'";
+                colType += " DEFAULT " + defaultValue;
             }
 
             defs = Arrays.add(defs, new ColumnDefinition(colName, colType));
