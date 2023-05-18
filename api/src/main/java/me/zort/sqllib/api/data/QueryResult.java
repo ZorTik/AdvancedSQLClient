@@ -13,6 +13,8 @@ public interface QueryResult {
     @Nullable
     String getRejectMessage();
 
+    QueryResult noChangesResult = successful();
+
     static QueryResult successful() {
         return new QueryResult() {
             @Override

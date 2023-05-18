@@ -1,14 +1,13 @@
-package me.zort.sqllib.model;
+package me.zort.sqllib.model.schema;
 
 import me.zort.sqllib.api.model.ColumnDefinition;
 import me.zort.sqllib.api.model.TableSchema;
 import me.zort.sqllib.api.model.TableSchemaBuilder;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -31,23 +30,36 @@ public final class DatabaseSchemaBuilder implements TableSchemaBuilder {
     public TableSchema buildTableSchema() {
         try(PreparedStatement statement = statementFactory.apply("SELECT * FROM " + table + " LIMIT 0;");
             ResultSet rs = statement.executeQuery()) {
-            ResultSetMetaData meta = rs.getMetaData();
-            ResultSet primaryKeysRS = statement.getConnection().getMetaData().getPrimaryKeys(null, null, table);
+            ResultSetMetaData rsMeta = rs.getMetaData();
+            DatabaseMetaData connectionMeta = statement.getConnection().getMetaData();
+            ResultSet primaryKeysRS = connectionMeta.getPrimaryKeys(null, null, table);
+            ResultSet defaultValuesRS = connectionMeta.getColumns(null, null, table, null);
             Set<String> primaryKeys = new HashSet<>();
+            Map<String, String> defaultValues = new HashMap<>();
             while (primaryKeysRS.next()) {
                 primaryKeys.add(primaryKeysRS.getString("COLUMN_NAME").toUpperCase());
             }
-            primaryKeysRS.close();
-
-            ColumnDefinition[] definitions = new ColumnDefinition[meta.getColumnCount()];
-            for (int i = 0; i < definitions.length; i++) {
-                String name = meta.getColumnName(i + 1);
-                String type = prepareColumnType(meta.getColumnTypeName(i + 1));
-                if (meta.getColumnClassName(i + 1).equals(String.class.getName()) && meta.getColumnDisplaySize(i + 1) > 0) {
-                    type += "(" + meta.getColumnDisplaySize(i + 1) + ")";
+            while (defaultValuesRS.next()) {
+                String defaultValue = defaultValuesRS.getString("COLUMN_DEF");
+                if (defaultValue != null) {
+                    defaultValues.put(defaultValuesRS.getString("COLUMN_NAME").toUpperCase(), defaultValue);
                 }
-                if (primaryKeys.contains(meta.getColumnName(i + 1).toUpperCase())) {
+            }
+            primaryKeysRS.close();
+            defaultValuesRS.close();
+
+            ColumnDefinition[] definitions = new ColumnDefinition[rsMeta.getColumnCount()];
+            for (int i = 0; i < definitions.length; i++) {
+                String name = rsMeta.getColumnName(i + 1);
+                String type = prepareColumnType(rsMeta.getColumnTypeName(i + 1));
+                if (rsMeta.getColumnClassName(i + 1).equals(String.class.getName()) && rsMeta.getColumnDisplaySize(i + 1) > 0) {
+                    type += "(" + rsMeta.getColumnDisplaySize(i + 1) + ")";
+                }
+                if (primaryKeys.contains(name.toUpperCase())) {
                     type += " PRIMARY KEY";
+                }
+                if (defaultValues.containsKey(name.toUpperCase())) {
+                    type += " DEFAULT " + defaultValues.get(name.toUpperCase());
                 }
                 definitions[i] = new ColumnDefinition(name, type);
             }

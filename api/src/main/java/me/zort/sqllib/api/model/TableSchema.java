@@ -1,7 +1,5 @@
 package me.zort.sqllib.api.model;
 
-import me.zort.sqllib.util.Pair;
-
 public class TableSchema {
 
     private final String table;

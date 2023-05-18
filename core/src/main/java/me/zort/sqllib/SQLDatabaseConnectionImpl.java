@@ -31,9 +31,9 @@ import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.mapping.DefaultStatementMappingFactory;
 import me.zort.sqllib.mapping.MappingRegistryImpl;
 import me.zort.sqllib.mapping.ProxyInstanceImpl;
-import me.zort.sqllib.model.DatabaseSchemaBuilder;
-import me.zort.sqllib.model.EntitySchemaBuilder;
-import me.zort.sqllib.model.SQLSchemaSynchronizer;
+import me.zort.sqllib.model.schema.DatabaseSchemaBuilder;
+import me.zort.sqllib.model.schema.EntitySchemaBuilder;
+import me.zort.sqllib.model.schema.SQLSchemaSynchronizer;
 import me.zort.sqllib.pool.PooledSQLDatabaseConnection;
 import me.zort.sqllib.transaction.Transaction;
 import me.zort.sqllib.util.Validator;
@@ -183,7 +183,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      * <i>Warning:</i> This tries to update all tables that are part of mapping
      * proxies. Should be used carefully.
      *
-     * @return True if synchronization was successful
+     * @return True if there were any changes
      */
     @ApiStatus.Experimental
     @Override
@@ -192,7 +192,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
                 .stream().flatMap(i -> i.getTableSchemas(
                         getOptions().getNamingStrategy(),
                         this instanceof SQLiteDatabaseConnectionImpl).stream())
-                .allMatch(schema -> synchronizeModel(schema, schema.getTable()));
+                .anyMatch(schema -> synchronizeModel(schema, schema.getTable()));
     }
 
     /**
@@ -202,13 +202,14 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      *
      * @param entitySchema Entity schema
      * @param table Table name
-     * @return True if synchronization was successful
+     * @return True if there were any changes
      */
     @ApiStatus.Experimental
     @Override
     public boolean synchronizeModel(TableSchema entitySchema, String table) {
-        return getSchemaSynchronizer().synchronize(this, entitySchema,
-                getSchemaBuilder(table).buildTableSchema()).isSuccessful();
+        QueryResult result = getSchemaSynchronizer().synchronize(this, entitySchema,
+                getSchemaBuilder(table).buildTableSchema());
+        return result != QueryResult.noChangesResult && result.isSuccessful();
     }
 
     /**
@@ -219,7 +220,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
      *
      * @param entity The entity (model) class
      * @param table Table name
-     * @return True if synchronization was successful
+     * @return True if there were any changes
      */
     @ApiStatus.Experimental
     @Override
