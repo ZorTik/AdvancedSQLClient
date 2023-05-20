@@ -101,7 +101,8 @@ public class QueryDetails {
     }
 
     private static void set(PreparedStatement statement, int index, Object value) throws SQLException {
-        switch(value.getClass().getSimpleName().toLowerCase()) {
+        String type = value != null ? value.getClass().getSimpleName().toLowerCase() : "null";
+        switch(type) {
             case "string":
                 statement.setString(index, (String) value);
                 break;
