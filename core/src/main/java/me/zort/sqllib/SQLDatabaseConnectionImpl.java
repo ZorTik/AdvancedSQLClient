@@ -191,7 +191,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
         return mappingRegistry.getProxyInstances()
                 .stream().flatMap(i -> i.getTableSchemas(
                         getOptions().getNamingStrategy(),
-                        this instanceof SQLiteDatabaseConnectionImpl).stream())
+                        this instanceof SQLiteDatabaseConnection).stream())
                 .anyMatch(schema -> synchronizeModel(schema, schema.getTable()));
     }
 
@@ -227,7 +227,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     public boolean synchronizeModel(Class<?> entity, String table) {
         return synchronizeModel(new EntitySchemaBuilder(table, entity,
                 getOptions().getNamingStrategy(),
-                this instanceof SQLiteDatabaseConnectionImpl).buildTableSchema(), table);
+                this instanceof SQLiteDatabaseConnection).buildTableSchema(), table);
     }
 
     /**
@@ -332,7 +332,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     public final boolean buildEntitySchema(final @NotNull String tableName, final @NotNull Class<?> entityClass) {
         Objects.requireNonNull(entityClass, "Entity class cannot be null!");
 
-        EntitySchemaBuilder converter = new EntitySchemaBuilder(tableName, entityClass, options.getNamingStrategy(), this instanceof SQLiteDatabaseConnectionImpl);
+        EntitySchemaBuilder converter = new EntitySchemaBuilder(tableName, entityClass, options.getNamingStrategy(), this instanceof SQLiteDatabaseConnection);
         String query = converter.buildTableQuery();
 
         return exec(() -> query).isSuccessful();

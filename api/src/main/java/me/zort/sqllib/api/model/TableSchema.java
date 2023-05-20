@@ -35,6 +35,14 @@ public class TableSchema {
         return definitions;
     }
 
+    public String[] getDefinitionNames() {
+        String[] definitions = new String[this.definitions.length];
+        for (int i = 0; i < definitions.length; i++) {
+            definitions[i] = getDefinitionName(i);
+        }
+        return definitions;
+    }
+
     public String getTable() {
         return table;
     }
