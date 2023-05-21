@@ -98,7 +98,7 @@ public final class SQLConnectionBuilder implements ISQLConnectionBuilder<SQLData
         if (driver == null) driver = SQLDatabaseConnectionImpl.DEFAULT_DRIVER;
         SQLConnectionFactory connectionFactory = new LocalConnectionFactory(driver);
         return jdbc.contains("jdbc:sqlite")
-                ? new SQLiteDatabaseConnectionImpl(connectionFactory, options)
+                ? new SQLiteDatabaseConnection(connectionFactory, options)
                 : new SQLDatabaseConnectionImpl(connectionFactory, options);
     }
 

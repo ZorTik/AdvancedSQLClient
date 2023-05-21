@@ -60,13 +60,15 @@ public class ProxyInstanceImpl<T> implements MappingProxyInstance<T> {
 
     @Override
     public List<TableSchema> getTableSchemas(NamingStrategy namingStrategy, boolean sqLite) {
+        List<Class<?>> builtTypes = new ArrayList<>();
         List<TableSchema> schemaList = new ArrayList<>();
         for (Method method : getTypeClass().getDeclaredMethods()) {
             Class<?> resultType = mappingResultAdapter.retrieveResultType(method);
 
-            if (!QueryResult.class.isAssignableFrom(resultType) && statementMapping.isMappingMethod(method)) {
+            if (!QueryResult.class.isAssignableFrom(resultType) && statementMapping.isMappingMethod(method) && !builtTypes.contains(resultType)) {
                 String table = options.getTable() != null ? options.getTable() : Table.Util.getFromContext(method, null);
                 schemaList.add(new EntitySchemaBuilder(table, resultType, namingStrategy, sqLite).buildTableSchema());
+                builtTypes.add(resultType);
             }
         }
         return schemaList;

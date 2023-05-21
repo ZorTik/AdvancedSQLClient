@@ -8,6 +8,9 @@ import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.query.*;
 import me.zort.sqllib.internal.query.part.SetStatement;
+import me.zort.sqllib.model.column.SQLiteColumnQueryBuilder;
+import me.zort.sqllib.model.column.SQLiteColumnTypeAdjuster;
+import me.zort.sqllib.model.schema.SQLSchemaSynchronizer;
 import me.zort.sqllib.util.PrimaryKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,16 +25,27 @@ import java.util.Arrays;
  *
  * @author ZorTik
  */
-public class SQLiteDatabaseConnectionImpl extends SQLDatabaseConnectionImpl {
-    private final SQLiteDatabaseConnectionImpl identity = this;
+public class SQLiteDatabaseConnection extends SQLDatabaseConnectionImpl {
+    private final SQLiteDatabaseConnection identity = this;
 
     @SuppressWarnings("unused")
-    public SQLiteDatabaseConnectionImpl(final @NotNull SQLConnectionFactory connectionFactory) {
+    public SQLiteDatabaseConnection(final @NotNull SQLConnectionFactory connectionFactory) {
         super(connectionFactory);
+        setup();
     }
 
-    public SQLiteDatabaseConnectionImpl(final @NotNull SQLConnectionFactory connectionFactory, @Nullable ISQLDatabaseOptions options) {
+    public SQLiteDatabaseConnection(final @NotNull SQLConnectionFactory connectionFactory, @Nullable ISQLDatabaseOptions options) {
         super(connectionFactory, options);
+        setup();
+    }
+
+    private void setup() {
+        if (getSchemaSynchronizer() instanceof SQLSchemaSynchronizer) {
+            SQLSchemaSynchronizer schemaSynchronizer = (SQLSchemaSynchronizer) getSchemaSynchronizer();
+            schemaSynchronizer.setColumnQueryBuilder(new SQLiteColumnQueryBuilder(this));
+            schemaSynchronizer.setColumnTypeAdjuster(new SQLiteColumnTypeAdjuster());
+            schemaSynchronizer.setSeparateQueries(true);
+        }
     }
 
     /**
