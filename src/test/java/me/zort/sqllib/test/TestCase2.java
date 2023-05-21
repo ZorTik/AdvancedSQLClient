@@ -14,10 +14,13 @@ import me.zort.sqllib.internal.annotation.Default;
 import me.zort.sqllib.internal.annotation.PrimaryKey;
 import me.zort.sqllib.mapping.annotation.*;
 import me.zort.sqllib.model.schema.EntitySchemaBuilder;
+import me.zort.sqllib.model.schema.SQLSchemaSynchronizer;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class TestCase2 { // Experimental features
 
     private SQLDatabaseConnection connection;
+    private SQLDatabaseConnection sqliteConnection;
 
     @BeforeAll
     public void prepare() {
@@ -45,12 +49,28 @@ public class TestCase2 { // Experimental features
                 .withDriver("com.mysql.cj.jdbc.Driver")
                 .build(options);
 
+        doPrepareConnection(connection);
+    }
+
+    @BeforeAll
+    public void prepareSqlite() throws IOException {
+        File file = new File(System.getProperty("user.dir") + "/test.db");
+        file.delete();
+        file.getParentFile().mkdirs();
+        file.createNewFile();
+        SQLDatabaseOptions options = new SQLDatabaseOptions();
+        options.setDebug(true);
+        sqliteConnection = SQLConnectionBuilder.ofSQLite(file.getAbsolutePath())
+                .build(options);
+        doPrepareConnection(sqliteConnection);
+    }
+
+    private static void doPrepareConnection(SQLDatabaseConnection connection) {
         assertTrue(connection.connect());
         assertTrue(connection.isConnected());
 
         assertNull(connection.exec(() -> "DROP TABLE IF EXISTS users;").getRejectMessage());
         assertTrue(connection.buildEntitySchema("users", User.class));
-        assertNull(connection.exec(() -> "TRUNCATE TABLE users;").getRejectMessage());
     }
 
     @Timeout(10)
@@ -75,6 +95,12 @@ public class TestCase2 { // Experimental features
     @Timeout(5)
     @Test
     public void test2_Synchronization() {
+        doTestSynchronization(connection);
+        doTestSynchronization(sqliteConnection);
+    }
+
+    private static void doTestSynchronization(SQLDatabaseConnection connection) {
+        System.out.println(connection.getClass().getSimpleName() + ":");
         TableSchema schema = new EntitySchemaBuilder("users", User.class, ((SQLDatabaseConnectionImpl) connection).getOptions().getNamingStrategy(), false).buildTableSchema();
         assertEquals(2, schema.getDefinitions().length);
         assertEquals("nickname VARCHAR(255) PRIMARY KEY", schema.getDefinitions()[0]);
@@ -82,8 +108,8 @@ public class TestCase2 { // Experimental features
 
         TableSchema dbSchema = connection.getSchemaBuilder("users").buildTableSchema();
         assertEquals(2, dbSchema.getDefinitions().length);
-        assertEquals("nickname VARCHAR(255) PRIMARY KEY", dbSchema.getDefinitions()[0]);
-        assertEquals("points INTEGER", dbSchema.getDefinitions()[1]);
+        assertEquals("nickname " + adjustColumnType(connection, "VARCHAR(255) PRIMARY KEY"), dbSchema.getDefinitions()[0]);
+        assertEquals("points " + adjustColumnType(connection, "INTEGER"), dbSchema.getDefinitions()[1]);
         assertFalse(connection.synchronizeModel(schema, "users"));
         assertFalse(connection.synchronizeModel());
 
@@ -91,8 +117,12 @@ public class TestCase2 { // Experimental features
 
         TableSchema copySchema = connection.getSchemaBuilder("users").buildTableSchema();
         assertEquals(2, copySchema.getDefinitions().length);
-        assertEquals("nickname VARCHAR(255) PRIMARY KEY", copySchema.getDefinitions()[0]);
-        assertEquals("points INTEGER DEFAULT 0", copySchema.getDefinitions()[1]);
+        assertEquals("nickname " + adjustColumnType(connection, "VARCHAR(255) PRIMARY KEY"), copySchema.getDefinitions()[0]);
+        assertEquals("points " + adjustColumnType(connection, "INTEGER DEFAULT 0"), copySchema.getDefinitions()[1]);
+    }
+
+    private static String adjustColumnType(SQLDatabaseConnection connection, String type) {
+        return ((SQLSchemaSynchronizer) connection.getSchemaSynchronizer()).getColumnTypeAdjuster().adjust(type);
     }
 
     @Timeout(5)

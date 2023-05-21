@@ -5,11 +5,14 @@ import me.zort.sqllib.SQLiteDatabaseConnection;
 import me.zort.sqllib.api.model.ColumnDefinition;
 import me.zort.sqllib.api.model.TableSchema;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @AllArgsConstructor
 public class SQLiteColumnQueryBuilder extends InnoColumnQueryBuilder {
     private final SQLiteDatabaseConnection connection;
     @Override
-    public String buildActionQuery(ColumnAction action, String table, ColumnDefinition from, ColumnDefinition to) {
+    public List<String> buildActionQuery(ColumnAction action, String table, ColumnDefinition from, ColumnDefinition to) {
         if (action.equals(ColumnAction.MODIFY)) {
             TableSchema schema = connection.getSchemaBuilder(table).buildTableSchema();
             String[] newDefinitions = new String[schema.size()];
@@ -20,10 +23,11 @@ public class SQLiteColumnQueryBuilder extends InnoColumnQueryBuilder {
                     newDefinitions[i] = schema.getDefinition(i);
                 }
             }
-            String queries = "ALTER TABLE " + table + " RENAME TO " + table + "_old;";
-            queries += "CREATE TABLE " + table + "(" + String.join(", ", newDefinitions) + ");";
-            queries += "INSERT INTO " + table + "(" + String.join(", ", schema.getDefinitionNames()) + ") SELECT " + String.join(", ", schema.getDefinitionNames()) + " FROM " + table + "_old;";
-            queries += "DROP TABLE " + table + "_old;";
+            List<String> queries = new ArrayList<>();
+            queries.add("ALTER TABLE " + table + " RENAME TO " + table + "_old;");
+            queries.add("CREATE TABLE " + table + "(" + String.join(", ", newDefinitions) + ");");
+            queries.add("INSERT INTO " + table + "(" + String.join(", ", schema.getDefinitionNames()) + ") SELECT " + String.join(", ", schema.getDefinitionNames()) + " FROM " + table + "_old;");
+            queries.add("DROP TABLE " + table + "_old;");
             return queries;
         }
         return super.buildActionQuery(action, table, from, to);
