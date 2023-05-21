@@ -14,6 +14,13 @@ public class TableSchema {
         return definitions[index];
     }
 
+    public ColumnDefinition getDefinitionDetails(String name) {
+        for (ColumnDefinition definition : definitions) {
+            if (definition.getName().equals(name)) return definition;
+        }
+        return null;
+    }
+
     public String getDefinitionName(int index) {
         return getDefinitionDetails(index).getName();
     }
