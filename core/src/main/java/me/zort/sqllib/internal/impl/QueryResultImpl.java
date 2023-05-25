@@ -25,4 +25,11 @@ public class QueryResultImpl implements QueryResult {
         return this;
     }
 
+    @Override
+    public String toString() {
+        return "QueryResultImpl{" +
+                "successful=" + successful +
+                ", rejectMessage='" + rejectMessage + '\'' +
+                '}';
+    }
 }
