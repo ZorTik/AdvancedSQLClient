@@ -415,7 +415,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
             }
 
             cacheManager.set(query, result);
-
+            debug(result);
             return result;
         } catch (SQLException e) {
             if (!isRetry && e.getMessage().contains("database connection closed")) {
@@ -460,6 +460,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
             stmt.execute();
             QueryResultImpl result = new QueryResultImpl(true);
             cacheManager.set(query, result);
+            debug(result);
             return result;
         } catch (SQLException e) {
             if (!isRetry && e.getMessage().contains("database connection closed")) {
@@ -563,6 +564,13 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
 
     public void debug(String message) {
         if(options.isDebug()) logger.info(message);
+    }
+
+    private void debug(QueryResult result) {
+        debug("Query result: " + result);
+        if (result instanceof QueryRowsResult) {
+            debug("Rows: " + ((QueryRowsResult<?>) result).size());
+        }
     }
 
     @Override
