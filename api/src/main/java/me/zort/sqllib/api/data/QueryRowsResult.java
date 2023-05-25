@@ -27,4 +27,12 @@ public class QueryRowsResult<T> extends LinkedList<T> implements QueryResult {
         return this;
     }
 
+    @Override
+    public String toString() {
+        return "QueryRowsResult{" +
+                "successful=" + successful +
+                ", rejectMessage='" + rejectMessage + '\'' +
+                ", data=" + super.toString() +
+                '}';
+    }
 }

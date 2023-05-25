@@ -17,7 +17,7 @@ public class DefaultResultAdapter implements StatementMappingResultAdapter {
         if(returnType.equals(QueryResult.class)) {
             return result;
         } else if (isVoid(returnType) || !(result instanceof QueryRowsResult)) {
-            return null;
+            return noResult(returnType, result.isSuccessful());
         }
         QueryRowsResult<?> rows = (QueryRowsResult<?>) result;
         if (List.class.isAssignableFrom(returnType)) return rows;
@@ -36,6 +36,12 @@ public class DefaultResultAdapter implements StatementMappingResultAdapter {
         } else {
             return returnType;
         }
+    }
+
+    private static <T> Object noResult(Class<T> returnType, boolean successful) {
+        if (Optional.class.isAssignableFrom(returnType)) return Optional.empty();
+        if (List.class.isAssignableFrom(returnType)) return new QueryRowsResult<T>(successful);
+        return null;
     }
 
     // List<T>
