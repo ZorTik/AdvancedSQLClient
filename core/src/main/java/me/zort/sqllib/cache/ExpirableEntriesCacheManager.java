@@ -12,27 +12,27 @@ import java.util.concurrent.TimeUnit;
 
 public class ExpirableEntriesCacheManager implements CacheManager {
 
-    private final Cache<Query, QueryResult> cache;
+  private final Cache<Query, QueryResult> cache;
 
-    /**
-     * Creates a new cache manager with provided expiration duration
-     * in milliseconds.
-     *
-     * @param expirationDuration The expiration duration
-     */
-    public ExpirableEntriesCacheManager(long expirationDuration) {
-        cache = CacheBuilder.newBuilder()
-                .expireAfterWrite(expirationDuration, TimeUnit.MILLISECONDS)
-                .build();
-    }
+  /**
+   * Creates a new cache manager with provided expiration duration
+   * in milliseconds.
+   *
+   * @param expirationDuration The expiration duration
+   */
+  public ExpirableEntriesCacheManager(long expirationDuration) {
+    cache = CacheBuilder.newBuilder()
+            .expireAfterWrite(expirationDuration, TimeUnit.MILLISECONDS)
+            .build();
+  }
 
-    @Override
-    public void set(@NotNull Query query, @NotNull QueryResult result) {
-        cache.put(query, result);
-    }
+  @Override
+  public void set(@NotNull Query query, @NotNull QueryResult result) {
+    cache.put(query, result);
+  }
 
-    @Override
-    public @Nullable QueryResult get(@NotNull Query query, boolean isExec) {
-        return cache.getIfPresent(query);
-    }
+  @Override
+  public @Nullable QueryResult get(@NotNull Query query, boolean isExec) {
+    return cache.getIfPresent(query);
+  }
 }

@@ -9,27 +9,27 @@ import me.zort.sqllib.api.data.QueryRowsResult;
 @Getter
 public class QueryResultImpl implements QueryResult {
 
-    private final boolean successful;
-    private String rejectMessage = null;
+  private final boolean successful;
+  private String rejectMessage = null;
 
-    public QueryResultImpl(boolean successful, String rejectMessage) {
-        this.successful = successful;
-        rejectMessage(rejectMessage);
-    }
+  public QueryResultImpl(boolean successful, String rejectMessage) {
+    this.successful = successful;
+    rejectMessage(rejectMessage);
+  }
 
-    public QueryResultImpl rejectMessage(String message) {
-        if (rejectMessage != null)
-            throw new RuntimeException("Reject message is already set!");
+  public QueryResultImpl rejectMessage(String message) {
+    if (rejectMessage != null)
+      throw new RuntimeException("Reject message is already set!");
 
-        this.rejectMessage = message;
-        return this;
-    }
+    this.rejectMessage = message;
+    return this;
+  }
 
-    @Override
-    public String toString() {
-        return "QueryResultImpl{" +
-                "successful=" + successful +
-                ", rejectMessage='" + rejectMessage + '\'' +
-                '}';
-    }
+  @Override
+  public String toString() {
+    return "QueryResultImpl{" +
+            "successful=" + successful +
+            ", rejectMessage='" + rejectMessage + '\'' +
+            '}';
+  }
 }

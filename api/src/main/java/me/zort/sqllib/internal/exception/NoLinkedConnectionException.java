@@ -5,11 +5,11 @@ import me.zort.sqllib.api.Query;
 
 public class NoLinkedConnectionException extends RuntimeException {
 
-    @Getter
-    private final Query location;
+  @Getter
+  private final Query location;
 
-    public NoLinkedConnectionException(Query location) {
-        this.location = location;
-    }
+  public NoLinkedConnectionException(Query location) {
+    this.location = location;
+  }
 
 }

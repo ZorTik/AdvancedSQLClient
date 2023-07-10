@@ -7,12 +7,12 @@ import lombok.Getter;
 @Getter
 public class ColumnDefinition {
 
-    private final String name;
-    private final String type;
+  private final String name;
+  private final String type;
 
-    @Override
-    public String toString() {
-        return name + " " + type;
-    }
+  @Override
+  public String toString() {
+    return name + " " + type;
+  }
 
 }

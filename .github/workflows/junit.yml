@@ -1,6 +1,6 @@
 name: JUnit
 
-on: [push]
+on: [ push ]
 
 jobs:
   test:

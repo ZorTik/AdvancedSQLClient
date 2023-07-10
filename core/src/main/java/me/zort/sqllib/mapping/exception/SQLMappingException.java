@@ -7,12 +7,12 @@ import java.lang.reflect.Method;
 @Getter
 public class SQLMappingException extends RuntimeException {
 
-    private final Method method;
-    private final Object[] args;
+  private final Method method;
+  private final Object[] args;
 
-    public SQLMappingException(String message, Method method, Object[] args) {
-        super(message);
-        this.method = method;
-        this.args = args;
-    }
+  public SQLMappingException(String message, Method method, Object[] args) {
+    super(message);
+    this.method = method;
+    this.args = args;
+  }
 }

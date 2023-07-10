@@ -13,23 +13,23 @@ import java.lang.reflect.Method;
  */
 public interface StatementMappingResultAdapter {
 
-    /**
-     * Adapts invoked {@link StatementMappingStrategy} method QueryResult to
-     * the final result that can be passed to proxy instance.
-     *
-     * @param method The invoked proxy method.
-     * @param result The QueryResult of the invoked method.
-     * @return The adapted result.
-     */
-    Object adaptResult(Method method, QueryResult result);
+  /**
+   * Adapts invoked {@link StatementMappingStrategy} method QueryResult to
+   * the final result that can be passed to proxy instance.
+   *
+   * @param method The invoked proxy method.
+   * @param result The QueryResult of the invoked method.
+   * @return The adapted result.
+   */
+  Object adaptResult(Method method, QueryResult result);
 
-    /**
-     * Retrieves type of entity that needs to be mapped in the request
-     * to be passed in adaptResult as type in QueryResult.
-     *
-     * @param method The invoked proxy method.
-     * @return The type of entity that needs to be mapped.
-     */
-    Class<?> retrieveResultType(Method method);
+  /**
+   * Retrieves type of entity that needs to be mapped in the request
+   * to be passed in adaptResult as type in QueryResult.
+   *
+   * @param method The invoked proxy method.
+   * @return The type of entity that needs to be mapped.
+   */
+  Class<?> retrieveResultType(Method method);
 
 }

@@ -17,12 +17,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestCase3 { // Smaller independent modules tests
 
-    @Test
-    public void testSymbolSeparatedStrategy() {
-        SymbolSeparatedNamingStrategy strategy = new SymbolSeparatedNamingStrategy('_');
-        assertEquals("test", strategy.fieldNameToColumn("test"));
-        assertEquals("test_two", strategy.fieldNameToColumn("testTwo"));
-        assertEquals("this_is_third_test", strategy.fieldNameToColumn("thisIsThirdTest"));
-    }
+  @Test
+  public void testSymbolSeparatedStrategy() {
+    SymbolSeparatedNamingStrategy strategy = new SymbolSeparatedNamingStrategy('_');
+    assertEquals("test", strategy.fieldNameToColumn("test"));
+    assertEquals("test_two", strategy.fieldNameToColumn("testTwo"));
+    assertEquals("this_is_third_test", strategy.fieldNameToColumn("thisIsThirdTest"));
+  }
 
 }

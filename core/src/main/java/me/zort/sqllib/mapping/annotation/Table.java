@@ -15,19 +15,19 @@ import java.lang.reflect.Method;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})
 public @interface Table {
-    String value();
+  String value();
 
-    class Util {
-        @Nullable
-        public static String getFromContext(Method method, @Nullable ParameterPair[] parameters) {
-            PlaceholderMapper mapper = new PlaceholderMapper(parameters != null ? parameters : new ParameterPair[0]);
-            if (method.isAnnotationPresent(Table.class)) {
-                return mapper.assignValues(method.getAnnotation(Table.class).value());
-            } else if(method.getDeclaringClass().isAnnotationPresent(Table.class)) {
-                return mapper.assignValues(method.getDeclaringClass().getAnnotation(Table.class).value());
-            } else {
-                throw new SQLMappingException("Method " + method.getName() + " in class " + method.getDeclaringClass().getSimpleName() + " requires @Table annotation", method, null);
-            }
-        }
+  class Util {
+    @Nullable
+    public static String getFromContext(Method method, @Nullable ParameterPair[] parameters) {
+      PlaceholderMapper mapper = new PlaceholderMapper(parameters != null ? parameters : new ParameterPair[0]);
+      if (method.isAnnotationPresent(Table.class)) {
+        return mapper.assignValues(method.getAnnotation(Table.class).value());
+      } else if (method.getDeclaringClass().isAnnotationPresent(Table.class)) {
+        return mapper.assignValues(method.getDeclaringClass().getAnnotation(Table.class).value());
+      } else {
+        throw new SQLMappingException("Method " + method.getName() + " in class " + method.getDeclaringClass().getSimpleName() + " requires @Table annotation", method, null);
+      }
     }
+  }
 }

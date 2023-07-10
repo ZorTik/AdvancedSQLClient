@@ -9,7 +9,8 @@ import java.util.List;
  */
 public interface StatementMappingRegistry {
 
-    void registerProxy(MappingProxyInstance<?> proxyInstance);
-    List<MappingProxyInstance<?>> getProxyInstances();
+  void registerProxy(MappingProxyInstance<?> proxyInstance);
+
+  List<MappingProxyInstance<?>> getProxyInstances();
 
 }

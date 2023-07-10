@@ -2,12 +2,14 @@ package me.zort.sqllib.api;
 
 public interface SQLEndpoint {
 
-    String buildJdbc();
-    String getUsername();
-    String getPassword();
+  String buildJdbc();
 
-    default boolean isValid() {
-        return true;
-    }
+  String getUsername();
+
+  String getPassword();
+
+  default boolean isValid() {
+    return true;
+  }
 
 }

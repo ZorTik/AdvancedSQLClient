@@ -15,21 +15,21 @@ import me.zort.sqllib.util.ParameterPair;
 import java.lang.reflect.Method;
 
 public class DeleteQueryBuilder implements QueryAnnotation.QueryBuilder<Delete> {
-    @Override
-    public QueryNode<?> build(QueryAnnotation.DefaultMappingDetails details, Delete queryAnnotation, Method method, ParameterPair[] parameters) {
-        PlaceholderMapper placeholderMapper = new PlaceholderMapper(parameters);
-        String table = details.getOptions().getTable();
-        if (table == null) table = Table.Util.getFromContext(method, parameters);
+  @Override
+  public QueryNode<?> build(QueryAnnotation.DefaultMappingDetails details, Delete queryAnnotation, Method method, ParameterPair[] parameters) {
+    PlaceholderMapper placeholderMapper = new PlaceholderMapper(parameters);
+    String table = details.getOptions().getTable();
+    if (table == null) table = Table.Util.getFromContext(method, parameters);
 
-        QueryNode<?> node = new DeleteQuery(null, table);
-        if (method.isAnnotationPresent(Where.class)) {
-            node = Where.Builder.build((Conditional<?>) node, method.getAnnotation(Where.class), placeholderMapper);
-            node = node.getAncestor();
-        }
-        if (method.isAnnotationPresent(Limit.class)) {
-            node = (QueryNode<?>) Limit.Builder.build((Limitable<?>) node, method.getAnnotation(Limit.class));
-            node = node.getAncestor();
-        }
-        return node;
+    QueryNode<?> node = new DeleteQuery(null, table);
+    if (method.isAnnotationPresent(Where.class)) {
+      node = Where.Builder.build((Conditional<?>) node, method.getAnnotation(Where.class), placeholderMapper);
+      node = node.getAncestor();
     }
+    if (method.isAnnotationPresent(Limit.class)) {
+      node = (QueryNode<?>) Limit.Builder.build((Limitable<?>) node, method.getAnnotation(Limit.class));
+      node = node.getAncestor();
+    }
+    return node;
+  }
 }

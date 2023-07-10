@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 public class Pair<F, S> {
 
-    private final F first;
-    private final S second;
+  private final F first;
+  private final S second;
 
 }

@@ -11,106 +11,106 @@ import java.util.Optional;
 
 public class QuickStart {
 
-    private SQLDatabaseConnection connection;
+  private SQLDatabaseConnection connection;
 
-    public void quickStart() {
+  public void quickStart() {
 
-        String address = "localhost";
-        int port = 3306;
-        String database = "database";
-        String username = "username";
-        String password = "password";
+    String address = "localhost";
+    int port = 3306;
+    String database = "database";
+    String username = "username";
+    String password = "password";
 
-        connection = new SQLConnectionBuilder(address, port, database, username, password).build();
+    connection = new SQLConnectionBuilder(address, port, database, username, password).build();
 
-        if (!connection.connect()) {
-            System.out.println("Failed to connect to the database!");
-            System.exit(1);
-        }
-
-        QueryResult result = connection.exec(() ->
-                "CREATE TABLE IF NOT EXISTS users(" +
-                "firstname VARCHAR(32) PRIMARY KEY NOT NULL," +
-                "lastname VARCHAR(32) NOT NULL);");
-
-        if (!result.isSuccessful()) {
-            System.out.println("Failed to create the table!");
-            System.out.println(result.getRejectMessage());
-            System.exit(1);
-        }
-
-        QueryResult result2 = connection.insert()
-                .into("users", "firstname", "lastname")
-                .values("John", "Doe")
-                .execute();
-
-        Optional<Row> result3 = connection.select()
-                .from("users")
-                .where().isEqual("firstname", "John")
-                .obtainOne();
-
-        if (!result3.isPresent()) {
-            System.out.println("Where did John go?");
-            System.exit(1);
-        }
-
-        connection.select();
-        connection.update();
-        connection.delete();
-        connection.upsert();
-
-        connection.disconnect();
+    if (!connection.connect()) {
+      System.out.println("Failed to connect to the database!");
+      System.exit(1);
     }
 
-    static class User {
-        @PrimaryKey
-        private String firstname;
-        private String lastname;
+    QueryResult result = connection.exec(() ->
+            "CREATE TABLE IF NOT EXISTS users(" +
+                    "firstname VARCHAR(32) PRIMARY KEY NOT NULL," +
+                    "lastname VARCHAR(32) NOT NULL);");
 
-        public User(String firstname, String lastname) {
-            this.firstname = firstname;
-            this.lastname = lastname;
-        }
+    if (!result.isSuccessful()) {
+      System.out.println("Failed to create the table!");
+      System.out.println(result.getRejectMessage());
+      System.exit(1);
     }
 
-    public void saveUser() {
-        User user = new User("John", "Doe");
-        QueryResult result = connection.save("users", user).execute();
+    QueryResult result2 = connection.insert()
+            .into("users", "firstname", "lastname")
+            .values("John", "Doe")
+            .execute();
+
+    Optional<Row> result3 = connection.select()
+            .from("users")
+            .where().isEqual("firstname", "John")
+            .obtainOne();
+
+    if (!result3.isPresent()) {
+      System.out.println("Where did John go?");
+      System.exit(1);
     }
 
-    public void loadUser() {
-        User user = connection.select()
-                .from("users")
-                .where().isEqual("firstname", "John")
-                .obtainOne(User.class)
-                .orElse(null);
+    connection.select();
+    connection.update();
+    connection.delete();
+    connection.upsert();
+
+    connection.disconnect();
+  }
+
+  static class User {
+    @PrimaryKey
+    private String firstname;
+    private String lastname;
+
+    public User(String firstname, String lastname) {
+      this.firstname = firstname;
+      this.lastname = lastname;
     }
+  }
+
+  public void saveUser() {
+    User user = new User("John", "Doe");
+    QueryResult result = connection.save("users", user).execute();
+  }
+
+  public void loadUser() {
+    User user = connection.select()
+            .from("users")
+            .where().isEqual("firstname", "John")
+            .obtainOne(User.class)
+            .orElse(null);
+  }
 
 
-    @Table("users")
-    interface UsersGate {
+  @Table("users")
+  interface UsersGate {
 
-        @Save
-        QueryResult saveUser(User user);
+    @Save
+    QueryResult saveUser(User user);
 
-        @Select
-        @Where(@Where.Condition(column = "firstname", value = "{First Name}"))
-        Optional<User> getUser(@Placeholder("First Name") String firstName);
+    @Select
+    @Where(@Where.Condition(column = "firstname", value = "{First Name}"))
+    Optional<User> getUser(@Placeholder("First Name") String firstName);
 
-        @Select
-        @Limit(10)
-        List<User> selectFirstTen();
+    @Select
+    @Limit(10)
+    List<User> selectFirstTen();
 
-        @Delete
-        void deleteAll();
-    }
+    @Delete
+    void deleteAll();
+  }
 
-    public void gateExample() {
-        UsersGate gate = connection.createGate(UsersGate.class);
+  public void gateExample() {
+    UsersGate gate = connection.createGate(UsersGate.class);
 
-        QueryResult result = gate.saveUser(new User("John", "Doe"));
+    QueryResult result = gate.saveUser(new User("John", "Doe"));
 
-        User user = gate.getUser("John").orElse(null);
-    }
+    User user = gate.getUser("John").orElse(null);
+  }
 
 }

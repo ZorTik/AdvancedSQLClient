@@ -8,13 +8,13 @@ import me.zort.sqllib.api.SQLEndpoint;
 @Getter
 public class SQLEndpointImpl implements SQLEndpoint {
 
-    private final String jdbc;
-    private final String username;
-    private final String password;
+  private final String jdbc;
+  private final String username;
+  private final String password;
 
-    @Override
-    public String buildJdbc() {
-        return jdbc;
-    }
+  @Override
+  public String buildJdbc() {
+    return jdbc;
+  }
 
 }

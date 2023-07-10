@@ -7,17 +7,17 @@ import java.util.ArrayList;
 
 public interface Conditional<P extends QueryNode<?> & Conditional<P>> { // P = self
 
-    default WhereStatement<P> where() {
-        return where(QueryPriority.CONDITION.getPrior());
-    }
+  default WhereStatement<P> where() {
+    return where(QueryPriority.CONDITION.getPrior());
+  }
 
-    default WhereStatement<P> where(int priority) {
-        if(!(this instanceof QueryNode)) {
-            throw new IllegalStatementOperationException("This instance is not query part!");
-        }
-        WhereStatement<P> stmt = new WhereStatement<>((P) this, new ArrayList<>(), priority);
-        ((QueryNode<?>) this).then(stmt);
-        return stmt;
+  default WhereStatement<P> where(int priority) {
+    if (!(this instanceof QueryNode)) {
+      throw new IllegalStatementOperationException("This instance is not query part!");
     }
+    WhereStatement<P> stmt = new WhereStatement<>((P) this, new ArrayList<>(), priority);
+    ((QueryNode<?>) this).then(stmt);
+    return stmt;
+  }
 
 }

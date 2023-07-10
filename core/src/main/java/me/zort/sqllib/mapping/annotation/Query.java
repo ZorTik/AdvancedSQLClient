@@ -9,7 +9,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface Query { // Produces result
 
-    String value();
-    String[] params() default {};
+  String value();
+
+  String[] params() default {};
 
 }

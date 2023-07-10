@@ -7,6 +7,6 @@ package me.zort.sqllib.api.options;
  */
 public interface NamingStrategy {
 
-    String fieldNameToColumn(String str);
+  String fieldNameToColumn(String str);
 
 }

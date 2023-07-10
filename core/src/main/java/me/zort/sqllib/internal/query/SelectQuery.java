@@ -13,51 +13,51 @@ import java.util.Objects;
 
 public class SelectQuery extends QueryNode<QueryNode<?>> implements Executive, Conditional<SelectQuery>, Limitable<SelectQuery>, ResultSetAware {
 
-    private final List<String> cols;
-    private String table;
+  private final List<String> cols;
+  private String table;
 
-    @Getter
-    private final SQLDatabaseConnection connection;
+  @Getter
+  private final SQLDatabaseConnection connection;
 
-    public SelectQuery() {
-        this(null);
-    }
+  public SelectQuery() {
+    this(null);
+  }
 
-    public SelectQuery(@Nullable SQLDatabaseConnection connection, String... cols) {
-        this(connection, null, Arrays.asList(cols));
-    }
+  public SelectQuery(@Nullable SQLDatabaseConnection connection, String... cols) {
+    this(connection, null, Arrays.asList(cols));
+  }
 
-    public SelectQuery(@Nullable SQLDatabaseConnection connection, @Nullable String table, List<String> cols) {
-        super(null, new ArrayList<>(), QueryPriority.GENERAL);
-        this.table = table;
-        this.cols = cols;
-        this.connection = connection;
-    }
+  public SelectQuery(@Nullable SQLDatabaseConnection connection, @Nullable String table, List<String> cols) {
+    super(null, new ArrayList<>(), QueryPriority.GENERAL);
+    this.table = table;
+    this.cols = cols;
+    this.connection = connection;
+  }
 
-    public SelectQuery from(String table) {
-        this.table = table;
-        return this;
-    }
+  public SelectQuery from(String table) {
+    this.table = table;
+    return this;
+  }
 
-    public SelectQuery limit(int limit) {
-        then(new LimitStatement<>(this, new ArrayList<>(), limit));
-        return this;
-    }
+  public SelectQuery limit(int limit) {
+    then(new LimitStatement<>(this, new ArrayList<>(), limit));
+    return this;
+  }
 
-    @Override
-    public QueryDetails buildQueryDetails() {
-        Objects.requireNonNull(table, "Table cannot be null!");
+  @Override
+  public QueryDetails buildQueryDetails() {
+    Objects.requireNonNull(table, "Table cannot be null!");
 
-        QueryDetails details = new QueryDetails.Builder(String.format("SELECT %s FROM %s",
-                this.cols.isEmpty() ? "*" : String.join(", ", this.cols),
-                table))
-                .build();
+    QueryDetails details = new QueryDetails.Builder(String.format("SELECT %s FROM %s",
+            this.cols.isEmpty() ? "*" : String.join(", ", this.cols),
+            table))
+            .build();
 
-        return details.append(buildInnerQuery());
-    }
+    return details.append(buildInnerQuery());
+  }
 
-    @Override
-    public SelectQuery then(String part) {
-        return (SelectQuery) super.then(part);
-    }
+  @Override
+  public SelectQuery then(String part) {
+    return (SelectQuery) super.then(part);
+  }
 }

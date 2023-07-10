@@ -5,12 +5,12 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public final class ExceptionsUtility {
 
-    public static void runCatching(Runnable runnable) {
-        try {
-            runnable.run();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+  public static void runCatching(Runnable runnable) {
+    try {
+      runnable.run();
+    } catch (Exception e) {
+      e.printStackTrace();
     }
+  }
 
 }

@@ -18,59 +18,66 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * Proxy instance invocation handler and reference.
+ * This class is responsible for handling method invocations
+ * inside generated proxies and building schemas.
+ *
+ * @param <T> Proxy type class
+ */
 @Getter
 public class ProxyInstanceImpl<T> implements MappingProxyInstance<T> {
 
-    private final Class<T> typeClass;
-    private final StatementMappingOptions options;
-    private final StatementMappingStrategy<T> statementMapping;
-    private final StatementMappingResultAdapter mappingResultAdapter;
+  private final Class<T> typeClass;
+  private final StatementMappingOptions options;
+  private final StatementMappingStrategy<T> statementMapping;
+  private final StatementMappingResultAdapter mappingResultAdapter;
 
-    private final List<Method> pendingMethods = new CopyOnWriteArrayList<>();
+  private final List<Method> pendingMethods = new CopyOnWriteArrayList<>();
 
-    public ProxyInstanceImpl(Class<T> typeClass,
-                             StatementMappingOptions options,
-                             StatementMappingStrategy<T> statementMappingStrategy,
-                             StatementMappingResultAdapter mappingResultAdapter) {
-        this.typeClass = typeClass;
-        this.options = options;
-        this.statementMapping = statementMappingStrategy;
-        this.mappingResultAdapter = mappingResultAdapter;
+  public ProxyInstanceImpl(Class<T> typeClass,
+                           StatementMappingOptions options,
+                           StatementMappingStrategy<T> statementMappingStrategy,
+                           StatementMappingResultAdapter mappingResultAdapter) {
+    this.typeClass = typeClass;
+    this.options = options;
+    this.statementMapping = statementMappingStrategy;
+    this.mappingResultAdapter = mappingResultAdapter;
+  }
+
+  @Override
+  public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    // Allow invokation from interfaces or abstract classes only.
+    Class<?> declaringClass = method.getDeclaringClass();
+    if ((declaringClass.isInterface() || Modifier.isAbstract(declaringClass.getModifiers()))
+            && statementMapping.isMappingMethod(method)) {
+      // Prepare and execute query based on invoked method.
+      QueryResult result = statementMapping.executeQuery(options, method, args, mappingResultAdapter.retrieveResultType(method));
+      // Adapt QueryResult to method return type.
+      return mappingResultAdapter.adaptResult(method, result);
     }
 
-    @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        // Allow invokation from interfaces or abstract classes only.
-        Class<?> declaringClass = method.getDeclaringClass();
-        if ((declaringClass.isInterface() || Modifier.isAbstract(declaringClass.getModifiers()))
-                && statementMapping.isMappingMethod(method)) {
-            // Prepare and execute query based on invoked method.
-            QueryResult result = statementMapping.executeQuery(options, method, args, mappingResultAdapter.retrieveResultType(method));
-            // Adapt QueryResult to method return type.
-            return mappingResultAdapter.adaptResult(method, result);
-        }
-
-        // Default methods are invoked normally.
-        if (declaringClass.isInterface() && method.isDefault()) {
-            return JVM.getJVM().invokeDefault(declaringClass, proxy, method, args);
-        }
-
-        throw new UnsupportedOperationException("Method " + method.getName() + " is not supported by this mapping repository!");
+    // Default methods are invoked normally.
+    if (declaringClass.isInterface() && method.isDefault()) {
+      return JVM.getJVM().invokeDefault(declaringClass, proxy, method, args);
     }
 
-    @Override
-    public List<TableSchema> getTableSchemas(NamingStrategy namingStrategy, boolean sqLite) {
-        List<Class<?>> builtTypes = new ArrayList<>();
-        List<TableSchema> schemaList = new ArrayList<>();
-        for (Method method : getTypeClass().getDeclaredMethods()) {
-            Class<?> resultType = mappingResultAdapter.retrieveResultType(method);
+    throw new UnsupportedOperationException("Method " + method.getName() + " is not supported by this mapping repository!");
+  }
 
-            if (!QueryResult.class.isAssignableFrom(resultType) && statementMapping.isMappingMethod(method) && !builtTypes.contains(resultType)) {
-                String table = options.getTable() != null ? options.getTable() : Table.Util.getFromContext(method, null);
-                schemaList.add(new EntitySchemaBuilder(table, resultType, namingStrategy, sqLite).buildTableSchema());
-                builtTypes.add(resultType);
-            }
-        }
-        return schemaList;
+  @Override
+  public List<TableSchema> getTableSchemas(NamingStrategy namingStrategy, boolean sqLite) {
+    List<Class<?>> builtTypes = new ArrayList<>();
+    List<TableSchema> schemaList = new ArrayList<>();
+    for (Method method : getTypeClass().getDeclaredMethods()) {
+      Class<?> resultType = mappingResultAdapter.retrieveResultType(method);
+
+      if (!QueryResult.class.isAssignableFrom(resultType) && statementMapping.isMappingMethod(method) && !builtTypes.contains(resultType)) {
+        String table = options.getTable() != null ? options.getTable() : Table.Util.getFromContext(method, null);
+        schemaList.add(new EntitySchemaBuilder(table, resultType, namingStrategy, sqLite).buildTableSchema());
+        builtTypes.add(resultType);
+      }
     }
+    return schemaList;
+  }
 }

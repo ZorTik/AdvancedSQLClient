@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 public class PrimaryKey {
 
-    private final String column;
-    private final String value;
+  private final String column;
+  private final String value;
 
 }

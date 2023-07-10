@@ -18,9 +18,12 @@ import java.util.Optional;
  */
 public interface ResultSetAware extends Query {
 
-    Optional<Row> obtainOne();
-    <T> Optional<T> obtainOne(Class<T> mapTo);
-    QueryRowsResult<Row> obtainAll();
-    <T> QueryRowsResult<T> obtainAll(Class<T> mapTo);
+  Optional<Row> obtainOne();
+
+  <T> Optional<T> obtainOne(Class<T> mapTo);
+
+  QueryRowsResult<Row> obtainAll();
+
+  <T> QueryRowsResult<T> obtainAll(Class<T> mapTo);
 
 }
