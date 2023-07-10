@@ -29,6 +29,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface NullableField {
 
-    boolean nullable() default true;
+  boolean nullable() default true;
 
 }

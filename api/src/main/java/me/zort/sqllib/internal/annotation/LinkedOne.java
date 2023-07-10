@@ -29,18 +29,20 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface LinkedOne {
 
-    /**
-     * This represents name of current table column where is
-     * stored id of the linked object in target table.
-     * @return The column name.
-     */
-    String localColumn();
+  /**
+   * This represents name of current table column where is
+   * stored id of the linked object in target table.
+   *
+   * @return The column name.
+   */
+  String localColumn();
 
-    /**
-     * This represents name of the target table where is
-     * stored the linked object.
-     * @return The table name.
-     */
-    String targetTable();
+  /**
+   * This represents name of the target table where is
+   * stored the linked object.
+   *
+   * @return The table name.
+   */
+  String targetTable();
 
 }

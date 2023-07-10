@@ -26,74 +26,74 @@ import java.lang.reflect.Parameter;
  */
 public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
 
-    private final SQLConnection connection;
+  private final SQLConnection connection;
 
-    public DefaultStatementMapping(SQLConnection connection) {
-        this.connection = connection;
+  public DefaultStatementMapping(SQLConnection connection) {
+    this.connection = connection;
+  }
+
+  @SuppressWarnings("unchecked")
+  @Override
+  public QueryResult executeQuery(StatementMappingOptions options, Method method, Object[] args, @Nullable Class<?> mapTo) {
+    ParameterPair[] parameters = new ParameterPair[method.getParameters().length];
+    int i = 0;
+    for (Parameter parameter : method.getParameters()) {
+      parameters[i] = new ParameterPair(parameter, args[i]);
+      i++;
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public QueryResult executeQuery(StatementMappingOptions options, Method method, Object[] args, @Nullable Class<?> mapTo) {
-        ParameterPair[] parameters = new ParameterPair[method.getParameters().length];
-        int i = 0;
-        for (Parameter parameter : method.getParameters()) {
-            parameters[i] = new ParameterPair(parameter, args[i]);
-            i++;
-        }
+    Annotation queryAnnotation = filterQueryAnnotation(method, args);
+    QueryAnnotation wrappedAnnotation = QueryAnnotation.wrap(queryAnnotation);
 
-        Annotation queryAnnotation = filterQueryAnnotation(method, args);
-        QueryAnnotation wrappedAnnotation = QueryAnnotation.wrap(queryAnnotation);
-
-        if (wrappedAnnotation == null) {
-            throw new SQLMappingException("No query builder found for method " + method.getName() + "! Is query annotation present?", method, args);
-        } else if (!(connection instanceof SQLDatabaseConnection)) {
-            throw new SQLMappingException("Connection is not a SQLDatabaseConnection!", method, args);
-        }
-
-        QueryNode<?> node = wrappedAnnotation.getQueryBuilder().build(
-                new QueryAnnotation.DefaultMappingDetails(connection, options), queryAnnotation,
-                method, parameters);
-        if (method.isAnnotationPresent(Append.class)) {
-            Append append = method.getAnnotation(Append.class);
-            node.then(new PlaceholderMapper(parameters).assignValues(append.value()));
-        }
-
-        if (mapTo != null && wrappedAnnotation.isProducesResult() && QueryRowsResult.class.isAssignableFrom(mapTo)) {
-            return ((SQLDatabaseConnection) connection).query(node);
-        }
-
-        if (wrappedAnnotation.isProducesResult() && node instanceof ResultSetAware) {
-            return mapTo != null
-                    ? ((SQLDatabaseConnection) connection).query(node, mapTo)
-                    : ((SQLDatabaseConnection) connection).query(node);
-        } else {
-            return ((SQLDatabaseConnection) connection).exec(node);
-        }
+    if (wrappedAnnotation == null) {
+      throw new SQLMappingException("No query builder found for method " + method.getName() + "! Is query annotation present?", method, args);
+    } else if (!(connection instanceof SQLDatabaseConnection)) {
+      throw new SQLMappingException("Connection is not a SQLDatabaseConnection!", method, args);
     }
 
-    private static Annotation filterQueryAnnotation(Method method, Object[] args) {
-        Annotation queryAnnotation = null;
-        for (Annotation annotation : method.getAnnotations()) {
-            boolean isQueryAnnot = QueryAnnotation.isQueryAnnotation(annotation);
-            if (isQueryAnnot && queryAnnotation == null) {
-                queryAnnotation = annotation;
-            } else if (isQueryAnnot) {
-                String errMessage = String.format("Multiple query annotations (Select/Insert/...) found on method %s!", method.getName());
-                throw new SQLMappingException(errMessage, method, args);
-            }
-        }
-        return queryAnnotation;
+    QueryNode<?> node = wrappedAnnotation.getQueryBuilder().build(
+            new QueryAnnotation.DefaultMappingDetails(connection, options), queryAnnotation,
+            method, parameters);
+    if (method.isAnnotationPresent(Append.class)) {
+      Append append = method.getAnnotation(Append.class);
+      node.then(new PlaceholderMapper(parameters).assignValues(append.value()));
     }
 
-    @Override
-    public boolean isMappingMethod(Method method) {
-        for (Annotation annot : method.getAnnotations()) {
-            if (QueryAnnotation.isQueryAnnotation(annot)) {
-                return true;
-            }
-        }
-        return false;
+    if (mapTo != null && wrappedAnnotation.isProducesResult() && QueryRowsResult.class.isAssignableFrom(mapTo)) {
+      return ((SQLDatabaseConnection) connection).query(node);
     }
+
+    if (wrappedAnnotation.isProducesResult() && node instanceof ResultSetAware) {
+      return mapTo != null
+              ? ((SQLDatabaseConnection) connection).query(node, mapTo)
+              : ((SQLDatabaseConnection) connection).query(node);
+    } else {
+      return ((SQLDatabaseConnection) connection).exec(node);
+    }
+  }
+
+  private static Annotation filterQueryAnnotation(Method method, Object[] args) {
+    Annotation queryAnnotation = null;
+    for (Annotation annotation : method.getAnnotations()) {
+      boolean isQueryAnnot = QueryAnnotation.isQueryAnnotation(annotation);
+      if (isQueryAnnot && queryAnnotation == null) {
+        queryAnnotation = annotation;
+      } else if (isQueryAnnot) {
+        String errMessage = String.format("Multiple query annotations (Select/Insert/...) found on method %s!", method.getName());
+        throw new SQLMappingException(errMessage, method, args);
+      }
+    }
+    return queryAnnotation;
+  }
+
+  @Override
+  public boolean isMappingMethod(Method method) {
+    for (Annotation annot : method.getAnnotations()) {
+      if (QueryAnnotation.isQueryAnnotation(annot)) {
+        return true;
+      }
+    }
+    return false;
+  }
 
 }

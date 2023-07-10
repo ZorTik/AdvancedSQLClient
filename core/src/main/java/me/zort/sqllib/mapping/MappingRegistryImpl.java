@@ -13,17 +13,17 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class MappingRegistryImpl implements StatementMappingRegistry {
 
-    private final Map<Class<?>, MappingProxyInstance<?>> proxyWrappers = new ConcurrentHashMap<>();
-    private final SQLDatabaseConnectionImpl connection;
+  private final Map<Class<?>, MappingProxyInstance<?>> proxyWrappers = new ConcurrentHashMap<>();
+  private final SQLDatabaseConnectionImpl connection;
 
-    @Override
-    public void registerProxy(MappingProxyInstance<?> proxyInstance) {
-        proxyWrappers.put(proxyInstance.getTypeClass(), proxyInstance);
-    }
+  @Override
+  public void registerProxy(MappingProxyInstance<?> proxyInstance) {
+    proxyWrappers.put(proxyInstance.getTypeClass(), proxyInstance);
+  }
 
-    @Override
-    public List<MappingProxyInstance<?>> getProxyInstances() {
-        return new ArrayList<>(proxyWrappers.values());
-    }
+  @Override
+  public List<MappingProxyInstance<?>> getProxyInstances() {
+    return new ArrayList<>(proxyWrappers.values());
+  }
 
 }

@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.PARAMETER)
 public @interface Placeholder {
 
-    // The placeholder, without brackets
-    String value();
+  // The placeholder, without brackets
+  String value();
 
 }

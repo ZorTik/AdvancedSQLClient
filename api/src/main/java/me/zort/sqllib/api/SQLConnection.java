@@ -13,30 +13,30 @@ import java.sql.Connection;
  */
 public interface SQLConnection {
 
-    /**
-     * Tries to connect to remote SQL server.
-     *
-     * @return True if connection was successful,
-     * otherwise false.
-     */
-    boolean connect();
+  /**
+   * Tries to connect to remote SQL server.
+   *
+   * @return True if connection was successful,
+   * otherwise false.
+   */
+  boolean connect();
 
-    /**
-     * Tries to disconnect from remote SQL server.
-     */
-    void disconnect();
+  /**
+   * Tries to disconnect from remote SQL server.
+   */
+  void disconnect();
 
-    /**
-     * Returns current running connection with
-     * SQL server.
-     *
-     * @return The connection.
-     */
-    @Nullable
-    Connection getConnection();
+  /**
+   * Returns current running connection with
+   * SQL server.
+   *
+   * @return The connection.
+   */
+  @Nullable
+  Connection getConnection();
 
-    default boolean isConnected() {
-        return getConnection() != null;
-    }
+  default boolean isConnected() {
+    return getConnection() != null;
+  }
 
 }

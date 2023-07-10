@@ -17,22 +17,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 public class SelectQueryBuilder implements QueryAnnotation.QueryBuilder<Select> {
-    @Override
-    public QueryNode<?> build(QueryAnnotation.DefaultMappingDetails details, Select queryAnnotation, Method method, ParameterPair[] parameters) {
-        PlaceholderMapper placeholderMapper = new PlaceholderMapper(parameters);
-        String table = details.getOptions().getTable();
-        if (table == null) table = Table.Util.getFromContext(method, parameters);
+  @Override
+  public QueryNode<?> build(QueryAnnotation.DefaultMappingDetails details, Select queryAnnotation, Method method, ParameterPair[] parameters) {
+    PlaceholderMapper placeholderMapper = new PlaceholderMapper(parameters);
+    String table = details.getOptions().getTable();
+    if (table == null) table = Table.Util.getFromContext(method, parameters);
 
-        QueryNode<?> node = new SelectQuery(null, table, queryAnnotation.value().equals("*")
-        ? new ArrayList<>() : Arrays.asList(queryAnnotation.value().replaceAll(" ", "").split(",")));
-        if (method.isAnnotationPresent(Where.class)) {
-            node = Where.Builder.build((Conditional<?>) node, method.getAnnotation(Where.class), placeholderMapper);
-            node = node.getAncestor();
-        }
-        if (method.isAnnotationPresent(Limit.class)) {
-            node = (QueryNode<?>) Limit.Builder.build((Limitable<?>) node, method.getAnnotation(Limit.class));
-            node = node.getAncestor();
-        }
-        return node;
+    QueryNode<?> node = new SelectQuery(null, table, queryAnnotation.value().equals("*")
+            ? new ArrayList<>() : Arrays.asList(queryAnnotation.value().replaceAll(" ", "").split(",")));
+    if (method.isAnnotationPresent(Where.class)) {
+      node = Where.Builder.build((Conditional<?>) node, method.getAnnotation(Where.class), placeholderMapper);
+      node = node.getAncestor();
     }
+    if (method.isAnnotationPresent(Limit.class)) {
+      node = (QueryNode<?>) Limit.Builder.build((Limitable<?>) node, method.getAnnotation(Limit.class));
+      node = node.getAncestor();
+    }
+    return node;
+  }
 }

@@ -5,12 +5,14 @@ import me.zort.sqllib.api.data.QueryResult;
 
 public interface FlowStep {
 
-    Status execute(SQLDatabaseConnection connection);
-    QueryResult getResult(); // Result if the #execute returned SUCCESS, otherwise null
-    boolean isOptional();
+  Status execute(SQLDatabaseConnection connection);
 
-    enum Status {
-        SUCCESS, BREAK, CONTINUE
-    }
+  QueryResult getResult(); // Result if the #execute returned SUCCESS, otherwise null
+
+  boolean isOptional();
+
+  enum Status {
+    SUCCESS, BREAK, CONTINUE
+  }
 
 }

@@ -11,47 +11,47 @@ import java.util.Objects;
 
 public class DeleteQuery extends QueryNode<QueryNode<?>> implements Executive, Conditional<DeleteQuery>, Limitable<DeleteQuery> {
 
-    private String table;
+  private String table;
 
-    @Getter
-    private final SQLDatabaseConnection connection;
+  @Getter
+  private final SQLDatabaseConnection connection;
 
-    public DeleteQuery() {
-        this(null);
-    }
+  public DeleteQuery() {
+    this(null);
+  }
 
-    public DeleteQuery(@Nullable SQLDatabaseConnection connection) {
-        this(connection, null);
-    }
+  public DeleteQuery(@Nullable SQLDatabaseConnection connection) {
+    this(connection, null);
+  }
 
-    public DeleteQuery(@Nullable SQLDatabaseConnection connection, @Nullable String table) {
-        super(null, new ArrayList<>(), QueryPriority.GENERAL);
-        this.table = table;
-        this.connection = connection;
-    }
+  public DeleteQuery(@Nullable SQLDatabaseConnection connection, @Nullable String table) {
+    super(null, new ArrayList<>(), QueryPriority.GENERAL);
+    this.table = table;
+    this.connection = connection;
+  }
 
-    public DeleteQuery from(String table) {
-        this.table = table;
-        return this;
-    }
+  public DeleteQuery from(String table) {
+    this.table = table;
+    return this;
+  }
 
-    public DeleteQuery limit(int limit) {
-        then(new LimitStatement<>(this, new ArrayList<>(), limit));
-        return this;
-    }
+  public DeleteQuery limit(int limit) {
+    then(new LimitStatement<>(this, new ArrayList<>(), limit));
+    return this;
+  }
 
-    @Override
-    public QueryDetails buildQueryDetails() {
-        Objects.requireNonNull(table, "Table cannot be null!");
+  @Override
+  public QueryDetails buildQueryDetails() {
+    Objects.requireNonNull(table, "Table cannot be null!");
 
-        return new QueryDetails.Builder("DELETE FROM " + table)
-                .build()
-                .append(buildInnerQuery());
-    }
+    return new QueryDetails.Builder("DELETE FROM " + table)
+            .build()
+            .append(buildInnerQuery());
+  }
 
-    @Override
-    public DeleteQuery then(String part) {
-        return (DeleteQuery) super.then(part);
-    }
+  @Override
+  public DeleteQuery then(String part) {
+    return (DeleteQuery) super.then(part);
+  }
 
 }

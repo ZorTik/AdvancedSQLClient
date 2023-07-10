@@ -13,32 +13,32 @@ import me.zort.sqllib.util.ParameterPair;
 import java.lang.reflect.Method;
 
 public class SaveQueryBuilder implements QueryAnnotation.QueryBuilder<Save> {
-    @Override
-    public QueryNode<?> build(QueryAnnotation.DefaultMappingDetails details, Save queryAnnotation, Method method, ParameterPair[] parameters) {
-        SQLConnection connection = details.getConnection();
-        if (!(connection instanceof SQLDatabaseConnectionImpl))
-            throw new IllegalArgumentException("The connection must be an instance of SQLDatabaseConnectionImpl");
+  @Override
+  public QueryNode<?> build(QueryAnnotation.DefaultMappingDetails details, Save queryAnnotation, Method method, ParameterPair[] parameters) {
+    SQLConnection connection = details.getConnection();
+    if (!(connection instanceof SQLDatabaseConnectionImpl))
+      throw new IllegalArgumentException("The connection must be an instance of SQLDatabaseConnectionImpl");
 
-        String table = details.getOptions().getTable();
-        if (table == null) table = Table.Util.getFromContext(method, parameters);
+    String table = details.getOptions().getTable();
+    if (table == null) table = Table.Util.getFromContext(method, parameters);
 
-        Object saveableObject = getSaveableObject(parameters);
+    Object saveableObject = getSaveableObject(parameters);
 
-        UpsertQuery query = ((SQLDatabaseConnectionImpl) connection).save(saveableObject);
-        query.table(table);
-        query.setAssignedSaveObject(saveableObject);
+    UpsertQuery query = ((SQLDatabaseConnectionImpl) connection).save(saveableObject);
+    query.table(table);
+    query.setAssignedSaveObject(saveableObject);
 
-        return query;
+    return query;
+  }
+
+  private static Object getSaveableObject(ParameterPair[] parameters) {
+    for (ParameterPair parameter : parameters) {
+      if (parameter.getValue() == null) continue;
+
+      Class<?> aClass = parameter.getValue().getClass();
+      if (!Primitives.isWrapperType(Primitives.wrap(aClass))) return parameter.getValue();
     }
 
-    private static Object getSaveableObject(ParameterPair[] parameters) {
-        for (ParameterPair parameter : parameters) {
-            if (parameter.getValue() == null) continue;
-
-            Class<?> aClass = parameter.getValue().getClass();
-            if (!Primitives.isWrapperType(Primitives.wrap(aClass))) return parameter.getValue();
-        }
-
-        throw new IllegalArgumentException("No object to save found in paramaters!");
-    }
+    throw new IllegalArgumentException("No object to save found in paramaters!");
+  }
 }

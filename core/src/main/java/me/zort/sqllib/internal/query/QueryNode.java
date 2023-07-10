@@ -28,185 +28,185 @@ import java.util.function.Function;
 @Getter
 public abstract class QueryNode<P extends QueryNode<?>> implements Query, StatementFactory<PreparedStatement> {
 
-    @Getter(onMethod_ = {@Nullable})
-    private final transient P parent;
-    private final List<QueryNode<?>> children;
-    private final Map<String, QueryDetails> details;
-    private final int priority;
+  @Getter(onMethod_ = {@Nullable})
+  private final transient P parent;
+  private final List<QueryNode<?>> children;
+  private final Map<String, QueryDetails> details;
+  private final int priority;
 
-    public QueryNode(@Nullable P parent, List<QueryNode<?>> initial, QueryPriority priority) {
-        this(parent, initial, priority.getPrior());
+  public QueryNode(@Nullable P parent, List<QueryNode<?>> initial, QueryPriority priority) {
+    this(parent, initial, priority.getPrior());
+  }
+
+  public QueryNode(@Nullable P parent, List<QueryNode<?>> initial, int priority) {
+    this.parent = parent;
+    this.children = initial;
+    this.priority = priority;
+    this.details = new ConcurrentHashMap<>();
+  }
+
+  /**
+   * Builds the query string with placeholders containing values
+   * for passing into PreparedStatement.
+   * <p>
+   * Query example: SELECT * FROM table WHERE id = &lt;id&gt;;
+   * Values example: [AnyId]
+   *
+   * @return QueryDetails object.
+   */
+  public abstract QueryDetails buildQueryDetails();
+
+  @Override
+  public PreparedStatement prepare(Connection connection) throws SQLException {
+    return details.remove(buildQuery()).prepare(connection);
+  }
+
+  @Override
+  public String buildQuery() {
+    QueryDetails queryDetails = buildQueryDetails();
+
+    if (isAncestor())
+      debug(String.format("Query: %s", queryDetails.getQueryStr()));
+
+    String uuid = UUID.randomUUID().toString();
+    details.put(uuid, queryDetails);
+    return uuid;
+  }
+
+  public QueryDetails buildInnerQuery() {
+    List<QueryNode<?>> children = new ArrayList<>(this.children);
+    children.sort(Comparator.comparingInt(QueryNode::getPriority));
+
+    QueryDetails details = new QueryDetails("", new HashMap<>());
+
+    if (children.isEmpty()) {
+      return QueryDetails.empty();
     }
 
-    public QueryNode(@Nullable P parent, List<QueryNode<?>> initial, int priority) {
-        this.parent = parent;
-        this.children = initial;
-        this.priority = priority;
-        this.details = new ConcurrentHashMap<>();
+    for (QueryNode<?> inner : children) {
+      if (details.length() > 0)
+        details.append(" ");
+
+      QueryDetails innerDetails = inner.getDetails().get(inner.buildQuery());
+      details.append(innerDetails);
     }
 
-    /**
-     * Builds the query string with placeholders containing values
-     * for passing into PreparedStatement.
-     * <p>
-     * Query example: SELECT * FROM table WHERE id = &lt;id&gt;;
-     * Values example: [AnyId]
-     *
-     * @return QueryDetails object.
-     */
-    public abstract QueryDetails buildQueryDetails();
+    return details;
+  }
 
-    @Override
-    public PreparedStatement prepare(Connection connection) throws SQLException {
-        return details.remove(buildQuery()).prepare(connection);
+  @Nullable
+  protected <T> T invokeToConnection(Function<SQLDatabaseConnection, T> func)
+          throws NoLinkedConnectionException, InvalidConnectionInstanceException {
+    QueryNode<?> current = this;
+    while (current.getParent() != null && !(current instanceof Executive)) {
+      current = current.getParent();
     }
+    T result;
+    if (current instanceof Executive) {
+      SQLConnection connection = ((Executive) current).getConnection();
+      if (!(connection instanceof SQLDatabaseConnection)) {
+        throw new InvalidConnectionInstanceException(connection);
+      }
 
-    @Override
-    public String buildQuery() {
-        QueryDetails queryDetails = buildQueryDetails();
-
-        if (isAncestor())
-            debug(String.format("Query: %s", queryDetails.getQueryStr()));
-
-        String uuid = UUID.randomUUID().toString();
-        details.put(uuid, queryDetails);
-        return uuid;
+      result = func.apply((SQLDatabaseConnection) connection);
+    } else {
+      throw new NoLinkedConnectionException(this);
     }
+    return result;
+  }
 
-    public QueryDetails buildInnerQuery() {
-        List<QueryNode<?>> children = new ArrayList<>(this.children);
-        children.sort(Comparator.comparingInt(QueryNode::getPriority));
+  public QueryNode<?> then(String part) {
+    int maxPriority = children.stream()
+            .map(QueryNode::getPriority)
+            .max(Comparator.naturalOrder())
+            .orElse(0);
 
-        QueryDetails details = new QueryDetails("", new HashMap<>());
+    then(new QueryNode<QueryNode<?>>(parent, Collections.emptyList(), maxPriority + 1) {
+      @Override
+      public QueryDetails buildQueryDetails() {
+        return new QueryDetails(part, new HashMap<>());
+      }
+    });
+    return this;
+  }
 
-        if (children.isEmpty()) {
-            return QueryDetails.empty();
-        }
+  public <T extends QueryNode<?>> QueryNode<T> then(QueryNode<T> part) {
+    this.children.add(part);
+    return part;
+  }
 
-        for (QueryNode<?> inner : children) {
-            if (details.length() > 0)
-                details.append(" ");
+  public P also() {
+    return parent;
+  }
 
-            QueryDetails innerDetails = inner.getDetails().get(inner.buildQuery());
-            details.append(innerDetails);
-        }
+  public QueryResult execute() {
+    return invokeToConnection(connection -> connection.exec(getAncestor()));
+  }
 
-        return details;
+  public Optional<Row> obtainOne() {
+    QueryRowsResult<Row> resultList = obtainAll();
+
+    return resultList.isEmpty()
+            ? Optional.empty()
+            : Optional.ofNullable(resultList.get(0));
+  }
+
+  public <T> Optional<T> obtainOne(Class<T> mapTo) {
+    QueryRowsResult<T> resultList = obtainAll(mapTo);
+
+    return resultList.isEmpty()
+            ? Optional.empty()
+            : Optional.ofNullable(resultList.get(0));
+  }
+
+  public QueryRowsResult<Row> obtainAll() {
+    requireResultSetAware();
+    return invokeToConnection(connection -> connection.query(getAncestor()));
+  }
+
+  public <T> QueryRowsResult<T> obtainAll(Class<T> mapTo) {
+    requireResultSetAware();
+    return invokeToConnection(connection -> connection.query(getAncestor(), mapTo));
+  }
+
+  private void requireResultSetAware() {
+    if (!generatesResultSet()) {
+      throw new IllegalStateException("This query node is not ResultSetAware! (Did you mean execute()?)");
     }
+  }
 
-    @Nullable
-    protected <T> T invokeToConnection(Function<SQLDatabaseConnection, T> func)
-            throws NoLinkedConnectionException, InvalidConnectionInstanceException {
-        QueryNode<?> current = this;
-        while(current.getParent() != null && !(current instanceof Executive)) {
-            current = current.getParent();
-        }
-        T result;
-        if(current instanceof Executive) {
-            SQLConnection connection = ((Executive) current).getConnection();
-            if(!(connection instanceof SQLDatabaseConnection)) {
-                throw new InvalidConnectionInstanceException(connection);
-            }
-
-            result = func.apply((SQLDatabaseConnection) connection);
-        } else {
-            throw new NoLinkedConnectionException(this);
-        }
-        return result;
+  public QueryNode<?> getAncestor() {
+    QueryNode<?> current = this;
+    while (current.getParent() != null) {
+      current = current.getParent();
     }
+    return current;
+  }
 
-    public QueryNode<?> then(String part) {
-        int maxPriority = children.stream()
-                .map(QueryNode::getPriority)
-                .max(Comparator.naturalOrder())
-                .orElse(0);
+  public boolean generatesResultSet() {
+    return this instanceof ResultSetAware;
+  }
 
-        then(new QueryNode<QueryNode<?>>(parent, Collections.emptyList(), maxPriority + 1) {
-            @Override
-            public QueryDetails buildQueryDetails() {
-                return new QueryDetails(part, new HashMap<>());
-            }
-        });
-        return this;
+  private void debug(String message) {
+    if (getAncestor() instanceof Executive
+            && ((Executive) getAncestor()).getConnection() instanceof SQLDatabaseConnectionImpl) {
+      ((SQLDatabaseConnectionImpl) ((Executive) getAncestor()).getConnection()).debug(message);
     }
+  }
 
-    public <T extends QueryNode<?>> QueryNode<T> then(QueryNode<T> part) {
-        this.children.add(part);
-        return part;
-    }
+  public String toString() {
+    return "QueryNode{details=" + buildQueryDetails().toString() + "}";
+  }
 
-    public P also() {
-        return parent;
-    }
+  @Override
+  public boolean equals(Object obj) {
+    if (!(obj instanceof QueryNode)) return false;
+    QueryNode<?> other = (QueryNode<?>) obj;
+    return toString().equals(other.toString());
+  }
 
-    public QueryResult execute() {
-        return invokeToConnection(connection -> connection.exec(getAncestor()));
-    }
-
-    public Optional<Row> obtainOne() {
-        QueryRowsResult<Row> resultList = obtainAll();
-
-        return resultList.isEmpty()
-                ? Optional.empty()
-                : Optional.ofNullable(resultList.get(0));
-    }
-
-    public <T> Optional<T> obtainOne(Class<T> mapTo) {
-        QueryRowsResult<T> resultList = obtainAll(mapTo);
-
-        return resultList.isEmpty()
-                ? Optional.empty()
-                : Optional.ofNullable(resultList.get(0));
-    }
-
-    public QueryRowsResult<Row> obtainAll() {
-        requireResultSetAware();
-        return invokeToConnection(connection -> connection.query(getAncestor()));
-    }
-
-    public <T> QueryRowsResult<T> obtainAll(Class<T> mapTo) {
-        requireResultSetAware();
-        return invokeToConnection(connection -> connection.query(getAncestor(), mapTo));
-    }
-
-    private void requireResultSetAware() {
-        if (!generatesResultSet()) {
-            throw new IllegalStateException("This query node is not ResultSetAware! (Did you mean execute()?)");
-        }
-    }
-
-    public QueryNode<?> getAncestor() {
-        QueryNode<?> current = this;
-        while(current.getParent() != null) {
-            current = current.getParent();
-        }
-        return current;
-    }
-
-    public boolean generatesResultSet() {
-        return this instanceof ResultSetAware;
-    }
-
-    private void debug(String message) {
-        if (getAncestor() instanceof Executive
-        && ((Executive) getAncestor()).getConnection() instanceof SQLDatabaseConnectionImpl) {
-            ((SQLDatabaseConnectionImpl) ((Executive) getAncestor()).getConnection()).debug(message);
-        }
-    }
-
-    public String toString() {
-        return "QueryNode{details=" + buildQueryDetails().toString() + "}";
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (!(obj instanceof QueryNode)) return false;
-        QueryNode<?> other = (QueryNode<?>) obj;
-        return toString().equals(other.toString());
-    }
-
-    @Override
-    public int hashCode() {
-        return toString().hashCode();
-    }
+  @Override
+  public int hashCode() {
+    return toString().hashCode();
+  }
 }

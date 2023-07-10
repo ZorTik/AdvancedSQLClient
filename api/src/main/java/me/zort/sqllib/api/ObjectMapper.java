@@ -8,15 +8,16 @@ import java.lang.reflect.Type;
 
 public interface ObjectMapper {
 
-    void registerBackupValueResolver(@NotNull FieldValueResolver resolver);
-    <T> T assignValues(Row row, Class<T> typeClass);
+  void registerBackupValueResolver(@NotNull FieldValueResolver resolver);
 
-    interface FieldValueResolver {
-        Object obtainValue(SQLConnection connection,
-                           AnnotatedElement element,
-                           Row row,
-                           String fieldName,
-                           String convertedName,
-                           Type type);
-    }
+  <T> T assignValues(Row row, Class<T> typeClass);
+
+  interface FieldValueResolver {
+    Object obtainValue(SQLConnection connection,
+                       AnnotatedElement element,
+                       Row row,
+                       String fieldName,
+                       String convertedName,
+                       Type type);
+  }
 }

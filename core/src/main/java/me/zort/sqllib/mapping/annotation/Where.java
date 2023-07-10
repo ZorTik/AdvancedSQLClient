@@ -14,45 +14,47 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface Where {
 
-    Condition[] value(); // And
+  Condition[] value(); // And
 
-    @interface Condition {
+  @interface Condition {
 
-        String column();
-        String value();
-        Type type() default Type.EQUALS;
+    String column();
 
-        enum Type {
-            EQUALS, BT, LT
-        }
+    String value();
+
+    Type type() default Type.EQUALS;
+
+    enum Type {
+      EQUALS, BT, LT
     }
+  }
 
-    class Builder {
-        public static WhereStatement<?> build(Conditional<?> parent, Where annotation, PlaceholderMapper mapper) {
-            WhereStatement<?> where = parent.where();
-            for (Condition condition : annotation.value()) {
-                String value = mapper.assignValues(condition.value());
+  class Builder {
+    public static WhereStatement<?> build(Conditional<?> parent, Where annotation, PlaceholderMapper mapper) {
+      WhereStatement<?> where = parent.where();
+      for (Condition condition : annotation.value()) {
+        String value = mapper.assignValues(condition.value());
 
-                switch (condition.type()) {
-                    case EQUALS:
-                        where.isEqual(condition.column(), value);
-                        break;
-                    case BT:
-                    case LT:
-                        try {
-                            int number = Integer.parseInt(value);
-                            if (condition.type().equals(Condition.Type.BT)) {
-                                where.bt(condition.column(), number);
-                            } else {
-                                where.lt(condition.column(), number);
-                            }
-                        } catch (NumberFormatException e) {
-                            throw new IllegalArgumentException("Value of current @Where.Condition must be a number! (" + value + ")");
-                        }
-                        break;
-                }
+        switch (condition.type()) {
+          case EQUALS:
+            where.isEqual(condition.column(), value);
+            break;
+          case BT:
+          case LT:
+            try {
+              int number = Integer.parseInt(value);
+              if (condition.type().equals(Condition.Type.BT)) {
+                where.bt(condition.column(), number);
+              } else {
+                where.lt(condition.column(), number);
+              }
+            } catch (NumberFormatException e) {
+              throw new IllegalArgumentException("Value of current @Where.Condition must be a number! (" + value + ")");
             }
-            return where;
+            break;
         }
+      }
+      return where;
     }
+  }
 }

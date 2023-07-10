@@ -9,23 +9,25 @@ import org.jetbrains.annotations.Nullable;
  */
 public interface QueryResult {
 
-    boolean isSuccessful();
-    @Nullable
-    String getRejectMessage();
+  boolean isSuccessful();
 
-    QueryResult noChangesResult = successful();
+  @Nullable
+  String getRejectMessage();
 
-    static QueryResult successful() {
-        return new QueryResult() {
-            @Override
-            public boolean isSuccessful() {
-                return true;
-            }
-            @Override
-            public @Nullable String getRejectMessage() {
-                return null;
-            }
-        };
-    }
+  QueryResult noChangesResult = successful();
+
+  static QueryResult successful() {
+    return new QueryResult() {
+      @Override
+      public boolean isSuccessful() {
+        return true;
+      }
+
+      @Override
+      public @Nullable String getRejectMessage() {
+        return null;
+      }
+    };
+  }
 
 }

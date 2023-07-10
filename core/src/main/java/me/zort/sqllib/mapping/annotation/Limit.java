@@ -11,12 +11,12 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface Limit {
 
-    int value();
+  int value();
 
-    class Builder {
-        public static <T extends Limitable<?>> T build(T parent, Limit annotation) {
-            return (T) parent.limit(annotation.value());
-        }
+  class Builder {
+    public static <T extends Limitable<?>> T build(T parent, Limit annotation) {
+      return (T) parent.limit(annotation.value());
     }
+  }
 
 }

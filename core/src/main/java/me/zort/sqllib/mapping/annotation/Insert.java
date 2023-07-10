@@ -9,7 +9,8 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface Insert {
 
-    String[] cols();
-    String[] vals();
+  String[] cols();
+
+  String[] vals();
 
 }
