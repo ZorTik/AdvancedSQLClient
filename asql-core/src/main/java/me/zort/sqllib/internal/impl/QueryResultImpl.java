@@ -18,8 +18,9 @@ public class QueryResultImpl implements QueryResult {
   }
 
   public QueryResultImpl rejectMessage(String message) {
-    if (rejectMessage != null)
+    if (rejectMessage != null) {
       throw new RuntimeException("Reject message is already set!");
+    }
 
     this.rejectMessage = message;
     return this;

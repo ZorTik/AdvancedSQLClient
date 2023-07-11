@@ -16,12 +16,14 @@ public class ConstructorParameterResolver implements ObjectMapper.FieldValueReso
   private static final Pattern argumentPattern = Pattern.compile("(arg)(\\d+)");
 
   @Override
-  public Object obtainValue(SQLConnection connection,
-                            AnnotatedElement element,
-                            Row row,
-                            String fieldName,
-                            String convertedName,
-                            Type type) {
+  public Object obtainValue(
+          SQLConnection connection,
+          AnnotatedElement element,
+          Row row,
+          String fieldName,
+          String convertedName,
+          Type type
+  ) {
     if (!(element instanceof Parameter) || !(((Parameter) element).getDeclaringExecutable() instanceof Constructor))
       return null;
 

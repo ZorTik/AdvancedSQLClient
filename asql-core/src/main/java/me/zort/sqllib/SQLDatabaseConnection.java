@@ -1,7 +1,6 @@
 package me.zort.sqllib;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.SQLConnection;
@@ -15,7 +14,7 @@ import me.zort.sqllib.api.mapping.StatementMappingRegistry;
 import me.zort.sqllib.api.model.SchemaSynchronizer;
 import me.zort.sqllib.api.model.TableSchema;
 import me.zort.sqllib.api.model.TableSchemaBuilder;
-import me.zort.sqllib.cache.ExpirableEntriesCacheManager;
+import me.zort.sqllib.cache.ExpireWriteCacheManager;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.internal.query.*;
@@ -28,6 +27,13 @@ import org.jetbrains.annotations.Nullable;
 import java.io.Closeable;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static me.zort.sqllib.SQLConnectionRegistry.registerConnection;
+import static me.zort.sqllib.util.ExceptionsUtility.runCatching;
 
 /**
  * Database connection object able to handle queries
@@ -39,16 +45,20 @@ import java.sql.SQLException;
 public abstract class SQLDatabaseConnection implements SQLConnection, Closeable {
 
   private final SQLConnectionFactory connectionFactory;
+  private final transient List<SQLDatabaseConnectionImpl.CodeObserver> codeHandlers;
   @Getter(onMethod_ = {@Nullable})
   private Connection connection;
   @Getter(onMethod_ = {@Nullable})
   private SQLException lastError = null;
+  @Getter
+  private int errorCount = 0;
 
   public SQLDatabaseConnection(final @NotNull SQLConnectionFactory connectionFactory) {
     this.connectionFactory = connectionFactory;
     this.connection = null;
+    this.codeHandlers = new CopyOnWriteArrayList<>();
 
-    SQLConnectionRegistry.register(this);
+    registerConnection(this);
   }
 
   /**
@@ -219,14 +229,42 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
   public abstract SchemaSynchronizer<SQLDatabaseConnection> getSchemaSynchronizer();
 
   /**
+   * Adds an error state observer to the list of observers to be
+   * notified when a fatal error occurs.
+   *
+   * @param observer Observer to add.
+   */
+  public void addCodeHandler(final @NotNull SQLDatabaseConnection.CodeObserver observer) {
+    this.codeHandlers.add(observer);
+  }
+
+  /**
+   * Adds an error state observer to the list of observers to be
+   * notified when a fatal error occurs. The provided observer will be notified
+   * only to calls with the provided code.
+   *
+   * @param observer Observer to add.
+   */
+  public void addCodeHandler(final int code, final @NotNull SQLDatabaseConnection.CodeObserver observer) {
+    addCodeHandler(code1 -> {
+      if (code1 != code) return;
+      observer.onNotified(code1);
+    });
+  }
+
+  public List<SQLDatabaseConnection.CodeObserver> getCodeHandlers() {
+    return new ArrayList<>(codeHandlers);
+  }
+
+  /**
    * Enables caching for provided milliseconds.
-   * This uses {@link ExpirableEntriesCacheManager} cache manager.
+   * This uses {@link ExpireWriteCacheManager} cache manager.
    *
    * @param millis The entries expiration in milliseconds
    * @return This instance
    */
   public SQLDatabaseConnection cacheFor(long millis) {
-    enableCaching(new ExpirableEntriesCacheManager(millis));
+    enableCaching(new ExpireWriteCacheManager(millis));
     return this;
   }
 
@@ -239,14 +277,14 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     DefsVals defsVals = buildDefsVals(obj);
     if (defsVals == null) return null;
     String[] defs = defsVals.getDefs();
-    SQLDatabaseConnectionImpl.UnknownValueWrapper[] vals = defsVals.getVals();
+    AtomicReference<Object>[] vals = defsVals.getVals();
     UpsertQuery upsertQuery = upsert().into(null, defs);
-    for (SQLDatabaseConnectionImpl.UnknownValueWrapper wrapper : vals) {
-      upsertQuery.appendVal(wrapper.getObject());
+    for (AtomicReference<Object> wrapper : vals) {
+      upsertQuery.appendVal(wrapper.get());
     }
     SetStatement<InsertQuery> setStatement = upsertQuery.onDuplicateKey();
     for (int i = 0; i < defs.length; i++) {
-      setStatement.and(defs[i], vals[i].getObject());
+      setStatement.and(defs[i], vals[i].get());
     }
 
     return (UpsertQuery) setStatement.getAncestor();
@@ -257,8 +295,8 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     if (defsVals == null) return new QueryResultImpl(false);
 
     InsertQuery query = insert().into(table, defsVals.getDefs());
-    for (SQLDatabaseConnectionImpl.UnknownValueWrapper valueWrapper : defsVals.getVals()) {
-      query.appendVal(valueWrapper.getObject());
+    for (AtomicReference<Object> valueWrapper : defsVals.getVals()) {
+      query.appendVal(valueWrapper.get());
     }
 
     return query.execute();
@@ -274,7 +312,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     return update(null);
   }
 
-  public UpdateQuery update(@Nullable String table) {
+  @Deprecated public UpdateQuery update(@Nullable String table) {
     return new UpdateQuery(this, table);
   }
 
@@ -282,7 +320,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     return insert(null);
   }
 
-  public InsertQuery insert(@Nullable String table) {
+  @Deprecated public InsertQuery insert(@Nullable String table) {
     return new InsertQuery(this, table);
   }
 
@@ -290,7 +328,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     return upsert(null);
   }
 
-  public UpsertQuery upsert(@Nullable String table) {
+  @Deprecated public UpsertQuery upsert(@Nullable String table) {
     return new UpsertQuery(this, table);
   }
 
@@ -304,6 +342,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     try {
       connection = connectionFactory.connect();
       lastError = null;
+      notifyHandlers(Code.CONNECTED);
     } catch (SQLException e) {
       logSqlError(e);
       connection = null;
@@ -322,6 +361,7 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
       logSqlError(e);
       lastError = e;
     }
+    notifyHandlers(Code.CLOSED);
   }
 
   @Override
@@ -333,16 +373,38 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
     if (isLogSqlErrors()) e.printStackTrace();
   }
 
+  @SuppressWarnings("all")
+  protected void notifyHandlers(int code) {
+    if (code >= 100) {
+      // Code is higher than 99, so it's an error
+      errorCount++;
+    }
+    this.codeHandlers.forEach(handler -> runCatching(() -> handler.onNotified(code)));
+  }
+
+  @Override
+  protected void finalize() throws Throwable {
+    disconnect();
+    notifyHandlers(Code.CLEARING);
+  }
+
+  public interface CodeObserver {
+    void onNotified(int code);
+  }
+
   @AllArgsConstructor
   @Getter
   protected static class DefsVals {
     private final String[] defs;
-    private final SQLDatabaseConnectionImpl.UnknownValueWrapper[] vals;
+    private final AtomicReference<Object>[] vals;
   }
 
-  @AllArgsConstructor
-  @Data
-  public static class UnknownValueWrapper {
-    private Object object;
+  public static final class Code {
+    public static final int CONNECTED = 1;
+    public static final int CLOSED = 2;
+    public static final int CLEARING = 3;
+
+    // Error codes start on 100
+    public static final int QUERY_FATAL = 100;
   }
 }

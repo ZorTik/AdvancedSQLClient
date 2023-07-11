@@ -1,4 +1,0 @@
-include ":api", ":shared", ":core"
-project(":api").projectDir = file("../api")
-project(":shared").projectDir = file("../shared")
-project(":core").projectDir = file("../core")
