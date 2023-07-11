@@ -130,18 +130,28 @@ public final class SQLConnectionPool {
     if (error != null) throw error;
 
     if (polled instanceof SQLDatabaseConnectionImpl)
-      ((SQLDatabaseConnectionImpl) polled).addCodeHandler(code -> handleConnectionError(polled));
+      ((SQLDatabaseConnectionImpl) polled).addCodeHandler(code -> handleConnectionCode(polled, code));
 
     return polled;
   }
 
-  synchronized void handleConnectionError(PooledSQLDatabaseConnection polled) {
-    errorCount++;
+  synchronized void handleConnectionCode(PooledSQLDatabaseConnection polled, int code) {
+    if (code == SQLDatabaseConnection.Code.CONNECTED) {
+      return;
+    }
+
+    if (code >= 100) {
+      errorCount++;
+    }
     // Remove the connection from the pool and disconnect
     // on fatal errors.
     freeConnections.remove(polled);
     usedConnections.remove(polled);
-    polled.disconnect();
+    if (code != SQLDatabaseConnection.Code.CLOSED) {
+      // I prevent stack overflow by closing only connections
+      // that are not already closed.
+      polled.disconnect();
+    }
   }
 
   void releaseObject(PooledSQLDatabaseConnection connection) {

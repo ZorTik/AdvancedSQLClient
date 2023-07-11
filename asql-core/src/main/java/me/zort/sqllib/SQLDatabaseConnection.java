@@ -1,7 +1,6 @@
 package me.zort.sqllib;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.SQLConnection;
@@ -376,7 +375,10 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
 
   @SuppressWarnings("all")
   protected void notifyHandlers(int code) {
-    errorCount++;
+    if (code >= 100) {
+      // Code is higher than 99, so it's an error
+      errorCount++;
+    }
     this.codeHandlers.forEach(handler -> runCatching(() -> handler.onNotified(code)));
   }
 
@@ -398,9 +400,11 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
   }
 
   public static final class Code {
-    public static final int QUERY_FATAL = 0;
     public static final int CONNECTED = 1;
     public static final int CLOSED = 2;
     public static final int CLEARING = 3;
+
+    // Error codes start on 100
+    public static final int QUERY_FATAL = 100;
   }
 }
