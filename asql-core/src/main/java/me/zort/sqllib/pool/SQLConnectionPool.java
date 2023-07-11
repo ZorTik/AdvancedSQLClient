@@ -2,7 +2,6 @@ package me.zort.sqllib.pool;
 
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import me.zort.sqllib.SQLConnectionBuilder;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.SQLDatabaseConnectionImpl;
 import me.zort.sqllib.api.ISQLConnectionBuilder;
@@ -131,7 +130,7 @@ public final class SQLConnectionPool {
     if (error != null) throw error;
 
     if (polled instanceof SQLDatabaseConnectionImpl)
-      ((SQLDatabaseConnectionImpl) polled).addErrorHandler(code -> handleConnectionError(polled));
+      ((SQLDatabaseConnectionImpl) polled).addCodeHandler(code -> handleConnectionError(polled));
 
     return polled;
   }

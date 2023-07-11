@@ -4,7 +4,7 @@ include ':core'
 include 'shared'
 include 'examples'
 
-project(":api").projectDir = file("api")
-project(":core").projectDir = file("core")
-project(":shared").projectDir = file("shared")
-project(":examples").projectDir = file("examples")
+project(":api").projectDir = file("asql-api")
+project(":core").projectDir = file("asql-core")
+project(":shared").projectDir = file("asql-shared")
+project(":examples").projectDir = file("asql-examples")

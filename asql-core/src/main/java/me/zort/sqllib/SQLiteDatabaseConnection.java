@@ -18,6 +18,8 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 /**
  * SQLite database connection that changes some operations
@@ -66,7 +68,7 @@ public class SQLiteDatabaseConnection extends SQLDatabaseConnectionImpl {
     DefsVals defsVals = buildDefsVals(obj);
     if (defsVals == null) throw new IllegalArgumentException("Cannot create save query! (defsVals == null)");
     String[] defs = defsVals.getDefs();
-    UnknownValueWrapper[] vals = defsVals.getVals();
+    AtomicReference<Object>[] vals = defsVals.getVals();
 
     debug("Saving object into table " + table + " with definitions " + Arrays.toString(defs) + " and values " + Arrays.toString(vals));
 
@@ -88,31 +90,56 @@ public class SQLiteDatabaseConnection extends SQLDatabaseConnectionImpl {
           i++;
         }
         if (index >= 0) {
-          primaryKey = new PrimaryKey(colName, vals[index].getObject() instanceof String
-                  ? (String) vals[index].getObject() : String.valueOf(vals[index].getObject()));
+          primaryKey = new PrimaryKey(colName, vals[index].get() instanceof String
+                  ? (String) vals[index].get() : String.valueOf(vals[index].get()));
           break;
         }
       }
     }
     InsertQuery insert = insert().into(table, defs);
-    for (UnknownValueWrapper val : vals) {
-      insert.appendVal(val.getObject());
+    for (AtomicReference<Object> val : vals) {
+      insert.appendVal(val.get());
     }
+    Function<QueryNode<?>, UpsertQuery> decor;
+    decor = node -> new UpsertQuery(identity) {
+      @Override
+      public QueryDetails buildQueryDetails() {
+        return node.buildQueryDetails();
+      }
+      @Override
+      public UpsertQuery into(String table, String... defs) {
+        notAvailable();
+        return null;
+      }
+      @Override
+      public UpsertQuery table(String table) {
+        notAvailable();
+        return null;
+      }
+      @Override
+      public UpsertQuery values(Object... values) {
+        notAvailable();
+        return null;
+      }
+      private void notAvailable() {
+        throw new UnsupportedOperationException("You can't modify upsert query in SQLite mode!");
+      }
+    };
 
     if (primaryKey == null) {
       debug("No primary key found for object " + obj.getClass().getName() + ", so we can't build update condition.");
       debug("Performing insert query instead: " + insert.buildQuery());
-      return new UpsertQueryDecorator(insert);
+      return decor.apply(insert);
     }
 
     SetStatement<UpdateQuery> setStmt = update().table(table).set();
     for (int i = 0; i < defs.length; i++) {
-      setStmt.and(defs[i], vals[i].getObject());
+      setStmt.and(defs[i], vals[i].get());
     }
     UpdateQuery update = setStmt.also()
             .where().isEqual(primaryKey.getColumn(), primaryKey.getValue())
             .also();
-    return new UpsertQueryDecorator(upsert(table, primaryKey, insert, update));
+    return decor.apply(upsert(table, primaryKey, insert, update));
   }
 
   /**
@@ -127,10 +154,12 @@ public class SQLiteDatabaseConnection extends SQLDatabaseConnectionImpl {
    * @return Either insert or update query.
    */
   @Nullable
-  public final QueryNode<?> upsert(final @NotNull String table,
-                                   final @NotNull PrimaryKey primaryKey,
-                                   final @NotNull InsertQuery insert,
-                                   final @NotNull UpdateQuery update) {
+  public final QueryNode<?> upsert(
+          final @NotNull String table,
+          final @NotNull PrimaryKey primaryKey,
+          final @NotNull InsertQuery insert,
+          final @NotNull UpdateQuery update
+  ) {
 
     QueryRowsResult<Row> selectResult = select("*")
             .from(table)
@@ -151,41 +180,5 @@ public class SQLiteDatabaseConnection extends SQLDatabaseConnectionImpl {
       query = save(((UpsertQuery) query).getTable(), ((UpsertQuery) query).getAssignedSaveObject());
 
     return super.exec(query);
-  }
-
-  final class UpsertQueryDecorator extends UpsertQuery {
-    private final QueryNode<?> query;
-
-    public UpsertQueryDecorator(QueryNode<?> query) {
-      super(identity);
-      this.query = query;
-    }
-
-    @Override
-    public QueryDetails buildQueryDetails() {
-      return query.buildQueryDetails();
-    }
-
-    @Override
-    public UpsertQuery into(String table, String... defs) {
-      notAvailable();
-      return null;
-    }
-
-    @Override
-    public UpsertQuery table(String table) {
-      notAvailable();
-      return null;
-    }
-
-    @Override
-    public UpsertQuery values(Object... values) {
-      notAvailable();
-      return null;
-    }
-
-    private void notAvailable() {
-      throw new UnsupportedOperationException("You can't modify upsert query in SQLite mode!");
-    }
   }
 }

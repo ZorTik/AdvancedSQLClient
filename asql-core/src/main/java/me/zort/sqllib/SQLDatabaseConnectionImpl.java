@@ -45,12 +45,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.sql.*;
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
-
-import static me.zort.sqllib.util.ExceptionsUtility.runCatching;
 
 /**
  * Main database client object implementation.
@@ -80,7 +80,6 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
 
   @Getter
   private final ISQLDatabaseOptions options;
-  private final transient List<ErrorStateObserver> errorStateHandlers;
   private final transient StatementMappingRegistry mappingRegistry;
   private transient StatementMappingFactory mappingFactory;
   private transient ObjectMapper objectMapper;
@@ -90,7 +89,6 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
   @Getter(onMethod_ = {@Nullable, @ApiStatus.Experimental})
   private transient Transaction transaction;
   private transient SchemaSynchronizer<SQLDatabaseConnection> schemaSynchronizer;
-  private int errorCount = 0;
 
   /**
    * Constructs new instance of this implementation with default
@@ -113,7 +111,6 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     this.options = options == null ? defaultOptions() : options;
     this.objectMapper = new DefaultObjectMapper(this);
     this.mappingFactory = new DefaultStatementMappingFactory();
-    this.errorStateHandlers = new CopyOnWriteArrayList<>();
     this.transaction = null;
     this.logger = Logger.getGlobal();
     this.mappingRegistry = new MappingRegistryImpl(this);
@@ -156,16 +153,6 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
    */
   public void setProxyMapping(final @NotNull StatementMappingFactory mappingFactory) {
     this.mappingFactory = Objects.requireNonNull(mappingFactory, "Mapping factory cannot be null!");
-  }
-
-  /**
-   * Adds an error state observer to the list of observers to be
-   * notified when a fatal error occurs.
-   *
-   * @param observer Observer to add.
-   */
-  public void addErrorHandler(final @NotNull ErrorStateObserver observer) {
-    this.errorStateHandlers.add(observer);
   }
 
   /**
@@ -423,7 +410,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
       }
 
       logSqlError(e);
-      notifyError(ErrorCode.QUERY_FATAL);
+      notifyHandlers(Code.QUERY_FATAL);
       query.errorSignal(e);
       return new QueryRowsResult<>(false, e.getMessage());
     }
@@ -468,7 +455,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
       }
 
       logSqlError(e);
-      notifyError(ErrorCode.QUERY_FATAL);
+      notifyHandlers(Code.QUERY_FATAL);
       query.errorSignal(e);
       return new QueryResultImpl(false, e.getMessage());
     }
@@ -508,10 +495,10 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     // I make entry array for indexing safety.
     Map.Entry<String, Object>[] entryArray = fields.entrySet().toArray(new Map.Entry[0]);
     String[] defs = new String[entryArray.length];
-    UnknownValueWrapper[] vals = new UnknownValueWrapper[entryArray.length];
+    AtomicReference<Object>[] vals = new AtomicReference[entryArray.length];
     for (int i = 0; i < entryArray.length; i++) {
       defs[i] = entryArray[i].getKey();
-      vals[i] = new UnknownValueWrapper(entryArray[i].getValue());
+      vals[i] = new AtomicReference<>(entryArray[i].getValue());
     }
     return new DefsVals(defs, vals);
   }
@@ -526,7 +513,8 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
       throw new IllegalStateException("Connection is not established!");
     }
     rawConnection.setAutoCommit(false);
-    return transaction = new Transaction(this);
+    transaction = new Transaction(this);
+    return transaction;
   }
 
   @ApiStatus.Experimental
@@ -574,7 +562,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
 
   @Override
   public void close() {
-    if (errorCount > 0 && getAssignedPool() != null) {
+    if (getErrorCount() > 0 && getAssignedPool() != null) {
       // If there was any error and this connection is part of a pool,
       // we won't return object to the pool, but disconnect.
       disconnect();
@@ -610,12 +598,6 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     }, table);
   }
 
-  @SuppressWarnings("all")
-  private void notifyError(int code) {
-    errorCount++;
-    this.errorStateHandlers.forEach(handler -> runCatching(() -> handler.onErrorState(code)));
-  }
-
   public final SQLDatabaseOptions cloneOptions() {
     SQLDatabaseOptions cloned = new SQLDatabaseOptions();
     cloned.setDebug(options.isDebug());
@@ -647,14 +629,6 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
       SQLConnectionRegistry.debug(connection, "Query: " + queryString);
       return connection.prepareStatement(queryString);
     }
-  }
-
-  public interface ErrorStateObserver {
-    void onErrorState(int code);
-  }
-
-  public static final class ErrorCode {
-    public static final int QUERY_FATAL = 0;
   }
 
 }

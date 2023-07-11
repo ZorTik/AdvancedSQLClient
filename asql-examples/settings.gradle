@@ -1,0 +1,4 @@
+include ":api", ":shared", ":core"
+project(":api").projectDir = file("../asql-api")
+project(":shared").projectDir = file("../asql-shared")
+project(":core").projectDir = file("../asql-core")

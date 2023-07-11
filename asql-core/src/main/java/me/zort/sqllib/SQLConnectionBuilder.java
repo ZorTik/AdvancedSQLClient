@@ -5,6 +5,7 @@ import me.zort.sqllib.api.ISQLConnectionBuilder;
 import me.zort.sqllib.api.ISQLDatabaseOptions;
 import me.zort.sqllib.api.SQLEndpoint;
 import me.zort.sqllib.api.cache.CacheManager;
+import me.zort.sqllib.cache.ExpireWriteCacheManager;
 import me.zort.sqllib.internal.exception.SQLDriverNotFoundException;
 import me.zort.sqllib.internal.exception.SQLEndpointNotValidException;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
@@ -76,6 +77,10 @@ public final class SQLConnectionBuilder implements ISQLConnectionBuilder<SQLData
   public @NotNull SQLConnectionBuilder withCacheManager(final @Nullable CacheManager cacheManager) {
     this.cacheManager = cacheManager;
     return this;
+  }
+
+  public @NotNull SQLConnectionBuilder cacheQueries(final long expirationMillis) {
+    return withCacheManager(new ExpireWriteCacheManager(expirationMillis));
   }
 
   public @NotNull SQLDatabaseConnection build() {

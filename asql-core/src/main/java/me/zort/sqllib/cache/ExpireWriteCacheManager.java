@@ -1,5 +1,6 @@
 package me.zort.sqllib.cache;
 
+import com.google.common.annotations.Beta;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import me.zort.sqllib.api.Query;
@@ -10,7 +11,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.TimeUnit;
 
-public class ExpirableEntriesCacheManager implements CacheManager {
+@Beta
+public class ExpireWriteCacheManager implements CacheManager {
 
   private final Cache<Query, QueryResult> cache;
 
@@ -20,14 +22,13 @@ public class ExpirableEntriesCacheManager implements CacheManager {
    *
    * @param expirationDuration The expiration duration
    */
-  public ExpirableEntriesCacheManager(long expirationDuration) {
+  public ExpireWriteCacheManager(long expirationDuration) {
     cache = CacheBuilder.newBuilder()
             .expireAfterWrite(expirationDuration, TimeUnit.MILLISECONDS)
             .build();
   }
 
-  @Override
-  public void set(@NotNull Query query, @NotNull QueryResult result) {
+  @Override public void set(@NotNull Query query, @NotNull QueryResult result) {
     cache.put(query, result);
   }
 
