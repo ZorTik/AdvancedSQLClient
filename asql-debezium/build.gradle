@@ -1,0 +1,21 @@
+plugins {
+    id 'java'
+}
+
+group = 'me.zort'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    implementation group: 'org.jetbrains', name: 'annotations', version: '20.1.0'
+    implementation 'io.debezium:debezium-api:2.3.0.Final'
+    implementation 'io.debezium:debezium-embedded:2.3.0.Final'
+    implementation 'io.debezium:debezium-connector-mysql:2.3.0.Final'
+    implementation project(':api')
+    implementation project(':core')
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+}

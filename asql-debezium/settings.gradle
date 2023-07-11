@@ -1,0 +1,5 @@
+rootProject.name = 'asql-debezium'
+include ":api"
+include ":core"
+project(":api").projectDir = file("../asql-api")
+project(":core").projectDir = file("../asql-core")

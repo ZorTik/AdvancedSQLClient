@@ -24,8 +24,9 @@ public class ConstructorParameterResolver implements ObjectMapper.FieldValueReso
           String convertedName,
           Type type
   ) {
-    if (!(element instanceof Parameter) || !(((Parameter) element).getDeclaringExecutable() instanceof Constructor))
+    if (!(element instanceof Parameter) || !(((Parameter) element).getDeclaringExecutable() instanceof Constructor)) {
       return null;
+    }
 
     Parameter p = (Parameter) element;
     Matcher matcher = argumentPattern.matcher(p.getName());
