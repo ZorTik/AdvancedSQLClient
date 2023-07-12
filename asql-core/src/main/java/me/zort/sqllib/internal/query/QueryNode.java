@@ -9,6 +9,8 @@ import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.internal.exception.InvalidConnectionInstanceException;
 import me.zort.sqllib.internal.exception.NoLinkedConnectionException;
+import me.zort.sqllib.util.Pair;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.Connection;
@@ -61,6 +63,7 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
     return details.remove(buildQuery()).prepare(connection);
   }
 
+  @ApiStatus.Internal
   @Override
   public String buildQuery() {
     QueryDetails queryDetails = buildQueryDetails();
@@ -73,6 +76,7 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
     return uuid;
   }
 
+  @ApiStatus.Internal
   public QueryDetails buildInnerQuery() {
     List<QueryNode<?>> children = new ArrayList<>(this.children);
     children.sort(Comparator.comparingInt(QueryNode::getPriority));
@@ -192,6 +196,10 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
             && ((Executive) getAncestor()).getConnection() instanceof SQLDatabaseConnectionImpl) {
       ((SQLDatabaseConnectionImpl) ((Executive) getAncestor()).getConnection()).debug(message);
     }
+  }
+
+  public Pair<String, Object[]> toPreparedQuery() {
+    return getAncestor().buildQueryDetails().buildStatementDetails();
   }
 
   public String toString() {
