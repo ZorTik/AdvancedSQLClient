@@ -11,15 +11,17 @@ import me.zort.sqllib.SQLDatabaseConnectionImpl;
 import me.zort.sqllib.debezium.builder.EntityFilterBuilder;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.lang.reflect.AnnotatedElement;
 import java.net.URI;
-import java.sql.Connection;
+import java.net.URISyntaxException;
+import java.sql.DatabaseMetaData;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -40,31 +42,46 @@ import java.util.function.Function;
  * @author ZorTik
  */
 @Beta
-public final class ASQLDebeziumService implements
-        DebeziumEngine.ChangeConsumer<ChangeEvent<String, String>>, Runnable {
+public final class ASQLDebeziumWatcher
+        implements DebeziumEngine.ChangeConsumer<ChangeEvent<String, String>> {
 
   @SneakyThrows
-  public static @NotNull Builder configure(@NotNull SQLDatabaseConnection connection) {
+  public static @NotNull Builder configure(
+          @NotNull SQLDatabaseConnection connection, String password
+  ) {
     if (!(connection instanceof SQLDatabaseConnectionImpl)) {
       throw new IllegalArgumentException("Connection does not contain options!");
     } else if (!connection.isConnected()) {
       throw new IllegalArgumentException("Connection is not connected!");
     }
-    Connection rawConnection = connection.getConnection();
-    URI uri = new URI(rawConnection.getMetaData().getURL());
+    DatabaseMetaData rawConnectionMeta = connection.getConnection().getMetaData();
+    URI uri = new URI(rawConnectionMeta.getURL());
+    return configure(
+            uri.getHost(), uri.getPort(), rawConnectionMeta.getUserName(), password
+    );
+  }
+
+  public static @NotNull Builder configure(
+          @NotNull String hostname,
+          int port,
+          @NotNull String username,
+          @NotNull String password
+  ) throws URISyntaxException {
     Configuration.Builder configBuilder = Configuration.create()
-            .with("database.hostname", uri.getHost())
-            .with("database.port", uri.getPort());
-    // TODO: Build configuration builder from raw connection details
+            .with("database.hostname", hostname)
+            .with("database.port", String.valueOf(port))
+            .with("database.user", username)
+            .with("database.password", password);
     return new Builder(configBuilder);
   }
 
   private final DebeziumEngine<ChangeEvent<String, String>> engine;
   private final Map<RecordFilter, Consumer<ChangeEvent<String, String>>> handlers;
+  private boolean running = false;
 
-  private ASQLDebeziumService(DebeziumEngine.Builder<ChangeEvent<String, String>> builder) {
+  private ASQLDebeziumWatcher(DebeziumEngine.Builder<ChangeEvent<String, String>> builder) {
     this.engine = builder.notifying(this).build();
-    this.handlers = null;
+    this.handlers = new ConcurrentHashMap<>();
   }
 
   @Override
@@ -85,9 +102,26 @@ public final class ASQLDebeziumService implements
     committer.markBatchFinished();
   }
 
-  @Override
-  public void run() {
-    engine.run();
+  public void start(ExecutorService executor) {
+    if (running) {
+      throw new IllegalStateException("Service is already running!");
+    }
+    executor.submit(engine);
+    running = true;
+  }
+
+  public void stop() {
+    try {
+      engine.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    } finally {
+      running = false;
+    }
+  }
+
+  public @NotNull CompletableFuture<ChangeEvent<String, String>> awaitChange() {
+    return awaitChange(RecordFilter.any());
   }
 
   /**
@@ -116,7 +150,13 @@ public final class ASQLDebeziumService implements
     private Builder(Configuration.Builder initialConfig) {
       this.config = initialConfig;
       edit(builder -> builder
-              .with("name", "Asql-Debezium-" + (++serviceCount)));
+              .with("name", "Asql-Debezium-" + (++serviceCount))
+              .with("offset.storage", "org.apache.kafka.connect.storage.FileOffsetBackingStore")
+              .with("offset.storage.file.filename", System.getProperty("user.dir") + "/offsets.dat")
+              .with("server.id", serviceCount)
+              .with("database.history", "io.debezium.relational.history.FileDatabaseHistory")
+              .with("io.debezium.relational.history.FileDatabaseHistory", System.getProperty("user.dir") + "/dbhistory.dat")
+              .with("offset.flush.interval.ms", 1000));
     }
 
     public @NotNull Builder edit(
@@ -130,10 +170,19 @@ public final class ASQLDebeziumService implements
       return edit(builder -> builder.with("connector.class", type.getClassName()));
     }
 
-    public @NotNull ASQLDebeziumService build() {
+    public @NotNull ASQLDebeziumWatcher build() {
+      Configuration configuration = config.build();
+      assertProperty(configuration, "connector.class");
+      assertProperty(configuration, "database.hostname");
       DebeziumEngine.Builder<ChangeEvent<String, String>> builder = DebeziumEngine.create(Json.class)
-              .using(config.build().asProperties());
-      return new ASQLDebeziumService(builder);
+              .using(configuration.asProperties());
+      return new ASQLDebeziumWatcher(builder);
+    }
+
+    private static void assertProperty(Configuration config, String name) {
+      if (!config.hasKey(name)) {
+        throw new IllegalArgumentException("Configuration requires property " + name);
+      }
     }
   }
 

@@ -1,6 +1,8 @@
 package me.zort.sqllib.debezium;
 
+import io.debezium.data.Envelope;
 import io.debezium.engine.ChangeEvent;
+import me.zort.sqllib.debezium.filter.EnvelopeOpRecordFilter;
 import me.zort.sqllib.mapping.annotation.Table;
 import me.zort.sqllib.util.ParameterPair;
 import org.jetbrains.annotations.NotNull;
@@ -10,11 +12,11 @@ import java.util.function.Predicate;
 
 /**
  * Tests a record if the provided record should be notified
- * to the registered consumer in {@link ASQLDebeziumService}.
+ * to the registered consumer in {@link ASQLDebeziumWatcher}.
  *
  * @author ZorTik
  */
-public final class RecordFilter {
+public class RecordFilter {
 
   private static final long DEFAULT_EXPIRATION = 10000L;
 
@@ -31,26 +33,30 @@ public final class RecordFilter {
     return testFunction.test(record);
   }
 
-  public void setExpireAfter(long expireAfter) {
+  public final void setExpireAfter(long expireAfter) {
     if (isRegistered()) {
       throw new IllegalStateException("Filter expiration cannot be changed after it has been registered!");
     }
     this.expireAfter = expireAfter;
   }
 
-  public boolean isRegistered() {
+  public final boolean isRegistered() {
     return expireAt != -1;
   }
 
-  public boolean expired() {
+  public final boolean expired() {
     return System.currentTimeMillis() >= expireAt;
   }
 
-  void markRegistered() {
+  final void markRegistered() {
     if (isRegistered()) {
       throw new IllegalStateException("Filter has already been registered!");
     }
     expireAt = System.currentTimeMillis() + expireAfter;
+  }
+
+  public static @NotNull RecordFilter any() {
+    return new RecordFilter(record -> true);
   }
 
   public static @NotNull RecordFilter table(AnnotatedElement element, ParameterPair... parameters) {
@@ -58,12 +64,15 @@ public final class RecordFilter {
     return new RecordFilter(record -> record.destination().equals(table));
   }
 
-  public static @NotNull RecordFilter column(String column) {
-    return new RecordFilter(record -> record.key().equals(column));
+  public static @NotNull RecordFilter columnChanged(String column) {
+    return new EnvelopeOpRecordFilter(record -> record.key().equals(column), Envelope.Operation.UPDATE);
   }
 
-  public static @NotNull RecordFilter column(String column, String value) {
-    return new RecordFilter(record -> record.key().equals(column) && record.value().equals(value));
+  public static @NotNull RecordFilter columnChanged(String column, String value) {
+    return new EnvelopeOpRecordFilter(
+            record -> record.key().equals(column) && record.value().equals(value),
+            Envelope.Operation.UPDATE
+    );
   }
 
   public static @NotNull RecordFilter join(RecordFilter... filters) {

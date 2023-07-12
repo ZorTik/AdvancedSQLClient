@@ -10,18 +10,18 @@ import java.util.concurrent.TimeoutException;
 
 /**
  * Provides easy to use API for building and executing filters
- * in {@link ASQLDebeziumService}.
+ * in {@link ASQLDebeziumWatcher}.
  *
  * @see RecordFilter
- * @see ASQLDebeziumService
+ * @see ASQLDebeziumWatcher
  * @author ZorTik
  */
 public class RecordFilterBuilder {
 
-  private final ASQLDebeziumService service;
+  private final ASQLDebeziumWatcher service;
   private RecordFilter filter;
 
-  public RecordFilterBuilder(ASQLDebeziumService service) {
+  public RecordFilterBuilder(ASQLDebeziumWatcher service) {
     this.service = service;
     this.filter = null;
   }

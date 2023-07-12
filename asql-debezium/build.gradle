@@ -17,6 +17,14 @@ dependencies {
     implementation 'io.debezium:debezium-connector-mysql:1.9.6.Final'
     implementation 'com.google.guava:guava:31.0-jre'
     implementation project(':api')
+    implementation project(':shared')
     implementation project(':core')
     annotationProcessor 'org.projectlombok:lombok:1.18.24'
+}
+
+task runWithJavaExec(type: JavaExec) {
+    group = "Execution"
+    description = "Run the main class with JavaExecTask"
+    classpath = sourceSets.main.runtimeClasspath
+    main = "me.zort.sqllib.debezium.Test"
 }
