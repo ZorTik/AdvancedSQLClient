@@ -12,9 +12,10 @@ repositories {
 dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.24'
     implementation group: 'org.jetbrains', name: 'annotations', version: '20.1.0'
-    implementation 'io.debezium:debezium-api:2.3.0.Final'
-    implementation 'io.debezium:debezium-embedded:2.3.0.Final'
-    implementation 'io.debezium:debezium-connector-mysql:2.3.0.Final'
+    implementation 'io.debezium:debezium-api:1.9.6.Final'
+    implementation 'io.debezium:debezium-embedded:1.9.6.Final'
+    implementation 'io.debezium:debezium-connector-mysql:1.9.6.Final'
+    implementation 'com.google.guava:guava:31.0-jre'
     implementation project(':api')
     implementation project(':core')
     annotationProcessor 'org.projectlombok:lombok:1.18.24'

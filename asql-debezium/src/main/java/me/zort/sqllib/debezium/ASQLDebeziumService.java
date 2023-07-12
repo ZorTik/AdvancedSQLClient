@@ -1,5 +1,6 @@
 package me.zort.sqllib.debezium;
 
+import com.google.common.annotations.Beta;
 import io.debezium.config.Configuration;
 import io.debezium.engine.ChangeEvent;
 import io.debezium.engine.DebeziumEngine;
@@ -14,6 +15,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
+@Beta
 public final class ASQLDebeziumService implements DebeziumEngine.ChangeConsumer<ChangeEvent<String, String>> {
 
   public static @NotNull Builder configure(SQLDatabaseConnection connection) {
