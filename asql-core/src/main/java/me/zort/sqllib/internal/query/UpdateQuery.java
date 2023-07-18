@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Objects;
 
-public class UpdateQuery extends QueryNode<QueryNode<?>> implements Executive, Conditional<UpdateQuery> {
+public class UpdateQuery extends AncestorQueryNode implements Executive, Conditional<UpdateQuery> {
 
   private String table;
 
@@ -26,7 +26,7 @@ public class UpdateQuery extends QueryNode<QueryNode<?>> implements Executive, C
   }
 
   public UpdateQuery(@Nullable SQLDatabaseConnection connection, @Nullable String table) {
-    super(null, new ArrayList<>(), QueryPriority.GENERAL.getPrior());
+    super(new ArrayList<>());
     this.table = table;
     this.connection = connection;
   }

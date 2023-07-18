@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Objects;
 
-public class InsertQuery extends QueryNode<QueryNode<?>> implements Executive, Conditional<InsertQuery> {
+public class InsertQuery extends AncestorQueryNode implements Executive, Conditional<InsertQuery> {
 
   @Getter
   private String table;
@@ -31,7 +31,7 @@ public class InsertQuery extends QueryNode<QueryNode<?>> implements Executive, C
   }
 
   public InsertQuery(@Nullable SQLDatabaseConnection connection, @Nullable String table) {
-    super(null, new ArrayList<>(), QueryPriority.GENERAL);
+    super(new ArrayList<>());
     this.table = table;
     this.connection = connection;
     this.defs = new String[0];

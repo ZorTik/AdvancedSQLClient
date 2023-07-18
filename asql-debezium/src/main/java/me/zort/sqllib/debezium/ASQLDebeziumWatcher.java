@@ -14,7 +14,6 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.lang.reflect.AnnotatedElement;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.sql.DatabaseMetaData;
 import java.util.HashMap;
 import java.util.List;
@@ -66,7 +65,7 @@ public final class ASQLDebeziumWatcher
           int port,
           @NotNull String username,
           @NotNull String password
-  ) throws URISyntaxException {
+  ) {
     Configuration.Builder configBuilder = Configuration.create()
             .with("database.hostname", hostname)
             .with("database.port", String.valueOf(port))

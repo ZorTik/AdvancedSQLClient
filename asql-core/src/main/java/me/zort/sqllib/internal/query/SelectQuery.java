@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-public class SelectQuery extends QueryNode<QueryNode<?>> implements
+public class SelectQuery extends AncestorQueryNode implements
         Executive, Conditional<SelectQuery>, Limitable<SelectQuery>, ResultSetAware {
 
   private final List<String> cols;
@@ -30,7 +30,7 @@ public class SelectQuery extends QueryNode<QueryNode<?>> implements
   }
 
   public SelectQuery(@Nullable SQLDatabaseConnection connection, @Nullable String table, List<String> cols) {
-    super(null, new ArrayList<>(), QueryPriority.GENERAL);
+    super(new ArrayList<>());
     this.table = table;
     this.cols = cols;
     this.connection = connection;

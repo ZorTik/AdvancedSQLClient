@@ -1,6 +1,7 @@
 package me.zort.sqllib.transaction;
 
 import me.zort.sqllib.SQLDatabaseConnection;
+import me.zort.sqllib.api.data.QueryResult;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -49,6 +50,16 @@ public final class Transaction {
     verify();
     if (committed) throw new IllegalStateException("Transaction already committed!");
     connection.rollback();
+  }
+
+  public QueryResult rollback(String savepoint) {
+    verify();
+    return databaseConnection.exec(() -> "ROLLBACK TO " + savepoint + ";");
+  }
+
+  public QueryResult savepoint(String savepoint) {
+    verify();
+    return databaseConnection.exec(() -> "SAVEPOINT " + savepoint + ";");
   }
 
   public boolean isActive() {
