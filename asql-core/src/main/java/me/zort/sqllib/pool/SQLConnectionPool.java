@@ -28,6 +28,20 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @RequiredArgsConstructor
 public final class SQLConnectionPool {
 
+  private final ISQLConnectionBuilder<? extends SQLDatabaseConnection> builder;
+  private final int maxConnections;
+  private final long borrowObjectTimeout;
+  private final boolean blockWhenExhausted;
+  private final boolean checkConnectionValidity;
+  private final int checkConnectionValidityTimeout;
+  private final ISQLDatabaseOptions connectionOptions;
+
+  private volatile int errorCount = 0;
+
+  // --***-- Pooled connection caches --***--
+  private final Queue<PooledSQLDatabaseConnection> freeConnections = new ConcurrentLinkedQueue<>();
+  private final List<PooledSQLDatabaseConnection> usedConnections = new CopyOnWriteArrayList<>();
+
   @Data
   public static final class Options {
     // Max number of connections in the pool
@@ -42,20 +56,6 @@ public final class SQLConnectionPool {
     private int checkConnectionValidityTimeout = 3;
     private ISQLDatabaseOptions connectionOptions = null;
   }
-
-  private final ISQLConnectionBuilder<? extends SQLDatabaseConnection> builder;
-  private final int maxConnections;
-  private final long borrowObjectTimeout;
-  private final boolean blockWhenExhausted;
-  private final boolean checkConnectionValidity;
-  private final int checkConnectionValidityTimeout;
-  private final ISQLDatabaseOptions connectionOptions;
-
-  private volatile int errorCount = 0;
-
-  // --***-- Pooled connection caches --***--
-  private final Queue<PooledSQLDatabaseConnection> freeConnections = new ConcurrentLinkedQueue<>();
-  private final List<PooledSQLDatabaseConnection> usedConnections = new CopyOnWriteArrayList<>();
 
   @SuppressWarnings("unused")
   public SQLConnectionPool(final @NotNull ISQLConnectionBuilder<? extends SQLDatabaseConnection> from) {

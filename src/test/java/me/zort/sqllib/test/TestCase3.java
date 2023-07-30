@@ -1,7 +1,7 @@
 package me.zort.sqllib.test;
 
 import lombok.extern.log4j.Log4j2;
-import me.zort.sqllib.naming.SymbolSeparatedNamingStrategy;
+import me.zort.sqllib.naming.SnakeCaseNamingStrategy;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -19,7 +19,7 @@ public class TestCase3 { // Smaller independent modules tests
 
   @Test
   public void testSymbolSeparatedStrategy() {
-    SymbolSeparatedNamingStrategy strategy = new SymbolSeparatedNamingStrategy('_');
+    SnakeCaseNamingStrategy strategy = new SnakeCaseNamingStrategy('_');
     assertEquals("test", strategy.fieldNameToColumn("test"));
     assertEquals("test_two", strategy.fieldNameToColumn("testTwo"));
     assertEquals("this_is_third_test", strategy.fieldNameToColumn("thisIsThirdTest"));

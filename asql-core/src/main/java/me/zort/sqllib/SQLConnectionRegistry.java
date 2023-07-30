@@ -50,6 +50,7 @@ public final class SQLConnectionRegistry {
   private static class RegistryCodeHandler implements SQLDatabaseConnection.CodeObserver {
     private final SQLDatabaseConnection connection;
 
+    // This will ensure that only connected instances are present in the registry
     @Override
     public void onNotified(int code) {
       if (code == SQLDatabaseConnection.Code.CONNECTED) {

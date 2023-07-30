@@ -19,13 +19,18 @@ public class SQLSchemaSynchronizer implements SchemaSynchronizer<SQLDatabaseConn
 
   private SQLColumnQueryBuilder columnQueryBuilder = new InnoColumnQueryBuilder();
   private SQLColumnTypeAdjuster columnTypeAdjuster = type -> type;
+  // Should we execute the queries ony-by-one?
   private boolean separateQueries = false;
 
   @Override
   public QueryResult synchronize(SQLDatabaseConnection source, TableSchema from, TableSchema to) {
     List<String> columnQueries = new ArrayList<>();
+    // Order definitions to make sure we don't synchronize different columns
     ColumnDefinition[][] definitions = orderDefinitions(from, to);
+
     for (int i = 0; i < Math.max(definitions[0].length, definitions[1].length); i++) {
+      // Try to build statement that will change the column using the provided
+      // definitions pair.
       final ColumnDefinition fromDefinition = definitions[0][i];
       final ColumnDefinition toDefinition = definitions[1][i];
 
@@ -46,10 +51,12 @@ public class SQLSchemaSynchronizer implements SchemaSynchronizer<SQLDatabaseConn
     if (columnQueries.size() == 0) return QueryResult.noChangesResult;
     List<QueryResult> results = new ArrayList<>();
     if (separateQueries) {
+      // Execute modification queries one-by-one if requested.
       for (String query : columnQueries) {
         results.add(source.exec(query));
       }
     } else {
+      // Execute all queries at once.
       results.add(source.exec(String.join("", columnQueries)));
     }
     return results.stream().allMatch(QueryResult::isSuccessful) ? QueryResult.successful() : new QueryResultImpl(false);

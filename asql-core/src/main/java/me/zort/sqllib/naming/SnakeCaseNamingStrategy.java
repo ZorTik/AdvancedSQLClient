@@ -10,10 +10,14 @@ import me.zort.sqllib.api.options.NamingStrategy;
  * @author ZorTik
  */
 @AllArgsConstructor
-public class SymbolSeparatedNamingStrategy implements NamingStrategy {
+public class SnakeCaseNamingStrategy implements NamingStrategy {
 
   private final char symbol;
   private final boolean upperCase;
+
+  public SnakeCaseNamingStrategy() {
+    this('_');
+  }
 
   /**
    * Creates a naming strategy with provided symbol that
@@ -21,7 +25,7 @@ public class SymbolSeparatedNamingStrategy implements NamingStrategy {
    *
    * @param symbol The symbol to separate words with.
    */
-  public SymbolSeparatedNamingStrategy(char symbol) {
+  public SnakeCaseNamingStrategy(char symbol) {
     this(symbol, false);
   }
 
