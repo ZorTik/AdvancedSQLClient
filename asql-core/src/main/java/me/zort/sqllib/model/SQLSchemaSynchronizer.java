@@ -1,4 +1,4 @@
-package me.zort.sqllib.model.schema;
+package me.zort.sqllib.model;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -8,9 +8,7 @@ import me.zort.sqllib.api.model.ColumnDefinition;
 import me.zort.sqllib.api.model.SchemaSynchronizer;
 import me.zort.sqllib.api.model.TableSchema;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
-import me.zort.sqllib.model.column.InnoColumnQueryBuilder;
-import me.zort.sqllib.model.column.SQLColumnQueryBuilder;
-import me.zort.sqllib.model.column.SQLColumnTypeAdjuster;
+import me.zort.sqllib.model.builder.InnoColumnQueryBuilder;
 
 import java.util.ArrayList;
 import java.util.List;

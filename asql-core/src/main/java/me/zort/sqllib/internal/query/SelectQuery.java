@@ -12,6 +12,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Represents a SELECT query.
+ */
 public class SelectQuery extends AncestorQueryNode implements
         Executive, Conditional<SelectQuery>, Limitable<SelectQuery>, ResultSetAware {
 

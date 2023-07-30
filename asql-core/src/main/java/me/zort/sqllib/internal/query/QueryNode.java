@@ -21,8 +21,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
- * Represents a query builder node, a part of a
- * query builder flow.
+ * Represents a query builder node, a part of a query builder flow.
+ * This is a tree structure node, each node can represent part in a query that is prepared
+ * to be joined in a final query.
  *
  * @param <P> Parent node type.
  * @author ZorTik
@@ -198,6 +199,7 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
     }
   }
 
+  @SuppressWarnings("unused")
   public Pair<String, Object[]> toPreparedQuery() {
     return getAncestor().buildQueryDetails().buildStatementDetails();
   }
