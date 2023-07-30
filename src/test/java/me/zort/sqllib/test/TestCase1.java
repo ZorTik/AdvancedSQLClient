@@ -13,7 +13,7 @@ import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.provider.Select;
 import me.zort.sqllib.internal.impl.DefaultSQLEndpoint;
-import me.zort.sqllib.transaction.FlowResult;
+import me.zort.sqllib.transaction.TransactionFlow;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.*;
@@ -181,7 +181,7 @@ public class TestCase1 { // Basic operations
 
   @Test
   public void test6_Transactions() {
-    FlowResult result1 = connection.beginTransaction()
+    TransactionFlow.Result result1 = connection.beginTransaction()
             .flow()
             .step(connection.save(table, user1))
             .step(connection.select()

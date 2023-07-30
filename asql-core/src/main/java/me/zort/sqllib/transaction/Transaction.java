@@ -29,7 +29,7 @@ public final class Transaction {
     return new TransactionFlow.Builder(this);
   }
 
-  public TransactionFlow flow(final FlowStep[] steps, final TransactionFlow.Options options) {
+  public TransactionFlow flow(final TransactionFlow.Step[] steps, final TransactionFlow.Options options) {
     verify();
     return new TransactionFlow(this, steps, options);
   }
