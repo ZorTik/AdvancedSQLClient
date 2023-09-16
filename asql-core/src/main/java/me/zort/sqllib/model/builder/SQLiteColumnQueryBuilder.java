@@ -1,4 +1,4 @@
-package me.zort.sqllib.model.column;
+package me.zort.sqllib.model.builder;
 
 import lombok.AllArgsConstructor;
 import me.zort.sqllib.SQLiteDatabaseConnection;

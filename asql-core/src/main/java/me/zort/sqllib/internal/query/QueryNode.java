@@ -9,6 +9,8 @@ import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.internal.exception.InvalidConnectionInstanceException;
 import me.zort.sqllib.internal.exception.NoLinkedConnectionException;
+import me.zort.sqllib.util.Pair;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.sql.Connection;
@@ -19,8 +21,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 /**
- * Represents a query builder node, a part of a
- * query builder flow.
+ * Represents a query builder node, a part of a query builder flow.
+ * This is a tree structure node, each node can represent part in a query that is prepared
+ * to be joined in a final query.
  *
  * @param <P> Parent node type.
  * @author ZorTik
@@ -61,6 +64,7 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
     return details.remove(buildQuery()).prepare(connection);
   }
 
+  @ApiStatus.Internal
   @Override
   public String buildQuery() {
     QueryDetails queryDetails = buildQueryDetails();
@@ -73,6 +77,7 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
     return uuid;
   }
 
+  @ApiStatus.Internal
   public QueryDetails buildInnerQuery() {
     List<QueryNode<?>> children = new ArrayList<>(this.children);
     children.sort(Comparator.comparingInt(QueryNode::getPriority));
@@ -192,6 +197,11 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
             && ((Executive) getAncestor()).getConnection() instanceof SQLDatabaseConnectionImpl) {
       ((SQLDatabaseConnectionImpl) ((Executive) getAncestor()).getConnection()).debug(message);
     }
+  }
+
+  @SuppressWarnings("unused")
+  public Pair<String, Object[]> toPreparedQuery() {
+    return getAncestor().buildQueryDetails().buildStatementDetails();
   }
 
   public String toString() {

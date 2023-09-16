@@ -1,9 +1,11 @@
 package me.zort.sqllib.transaction;
 
 import lombok.*;
+import me.zort.sqllib.SQLDatabaseConnection;
+import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.data.QueryResult;
+import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.internal.query.QueryNode;
-import me.zort.sqllib.transaction.step.FlowStepImpl;
 import me.zort.sqllib.util.Arrays;
 import org.jetbrains.annotations.NotNull;
 
@@ -13,32 +15,32 @@ import java.sql.SQLException;
 public class TransactionFlow {
 
   private final Transaction transaction;
-  private final FlowStep[] steps;
+  private final Step[] steps;
   private final Options options;
   private boolean executed = false;
   private int index = -1;
 
-  public FlowResult execute() {
+  public Result execute() {
     return executeNext(steps.length);
   }
 
   @SneakyThrows(SQLException.class)
-  public FlowResult executeNext(int count) {
+  public Result executeNext(int count) {
     if (executed) throw new IllegalStateException("TransactionFlow already fully executed!");
 
     QueryResult[] results = new QueryResult[steps.length];
     int maxIndex = index + count;
     int lastIndex = index;
     for (int i = 0; i <= maxIndex; i++) {
-      FlowStep.Status status = steps[i].execute(transaction.getDatabaseConnection());
-      if (status.equals(FlowStep.Status.BREAK)) {
+      Step.Status status = steps[i].execute(transaction.getDatabaseConnection());
+      if (status.equals(Step.Status.BREAK)) {
         if (options.rollbackOnFailure) {
           transaction.rollback();
           index = -1;
         }
         break;
       }
-      results[i] = status.equals(FlowStep.Status.SUCCESS) ? steps[i].getResult() : null;
+      results[i] = status.equals(Step.Status.SUCCESS) ? steps[i].getResult() : null;
       lastIndex = i;
     }
     boolean success = true;
@@ -48,9 +50,9 @@ public class TransactionFlow {
       results[++lastIndex] = null;
     }
 
-    FlowResult result = success
-            ? new FlowResult(true)
-            : new FlowResult(false,
+    Result result = success
+            ? new Result(true)
+            : new Result(false,
             String.format("Transaction failed at step %d!", lastIndexFinal + 1));
 
     result.addAll(java.util.Arrays.asList(results));
@@ -76,7 +78,7 @@ public class TransactionFlow {
   public static final class Builder {
     private final Transaction transaction;
     private final Options options;
-    private FlowStep[] steps = new FlowStep[0];
+    private Step[] steps = new Step[0];
 
     public Builder(Transaction transaction) {
       this.transaction = transaction;
@@ -88,10 +90,10 @@ public class TransactionFlow {
     }
 
     public @NotNull Builder step(final @NotNull QueryNode<?> node, boolean optional) {
-      return step(new FlowStepImpl(node, optional));
+      return step(new StepImpl(node, optional));
     }
 
-    public @NotNull Builder step(final @NotNull FlowStep step) {
+    public @NotNull Builder step(final @NotNull TransactionFlow.Step step) {
       steps = Arrays.add(steps, step);
       return this;
     }
@@ -124,4 +126,55 @@ public class TransactionFlow {
     private boolean autoClose = true;
   }
 
+  public static final class Result extends QueryRowsResult<QueryResult> {
+    @Setter(AccessLevel.PROTECTED)
+    @Getter
+    private int brokenIndex = -1;
+
+    public Result(final boolean successful) {
+      super(successful);
+    }
+
+    public Result(final boolean successful, String rejectMessage) {
+      super(successful, rejectMessage);
+    }
+
+  }
+
+  @RequiredArgsConstructor
+  private static class StepImpl implements Step {
+    private final Query query;
+    @Getter
+    private final boolean optional;
+    @Getter
+    private QueryResult result = null;
+
+    @Override
+    public Status execute(SQLDatabaseConnection connection) {
+      if (!(query instanceof QueryNode)) throw new IllegalStateException("FlowStepImpl accepts only QueryNode!");
+
+      QueryNode<?> node = (QueryNode<?>) query;
+      node = node.getAncestor();
+      QueryResult localResult = node.generatesResultSet()
+              ? connection.query(node)
+              : connection.exec(node);
+
+      if (localResult.isSuccessful()) result = localResult;
+      return localResult.isSuccessful() ? Status.SUCCESS : (optional ? Status.CONTINUE : Status.BREAK);
+    }
+  }
+
+  public interface Step {
+
+    Status execute(SQLDatabaseConnection connection);
+
+    QueryResult getResult(); // Result if the #execute returned SUCCESS, otherwise null
+
+    boolean isOptional();
+
+    enum Status {
+      SUCCESS, BREAK, CONTINUE
+    }
+
+  }
 }

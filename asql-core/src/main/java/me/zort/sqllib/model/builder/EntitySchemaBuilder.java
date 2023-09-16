@@ -1,4 +1,4 @@
-package me.zort.sqllib.model.schema;
+package me.zort.sqllib.model.builder;
 
 import com.google.gson.internal.Primitives;
 import lombok.RequiredArgsConstructor;

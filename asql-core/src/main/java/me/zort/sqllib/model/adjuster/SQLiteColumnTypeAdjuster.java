@@ -1,4 +1,6 @@
-package me.zort.sqllib.model.column;
+package me.zort.sqllib.model.adjuster;
+
+import me.zort.sqllib.model.SQLColumnTypeAdjuster;
 
 import java.util.Arrays;
 import java.util.regex.Matcher;

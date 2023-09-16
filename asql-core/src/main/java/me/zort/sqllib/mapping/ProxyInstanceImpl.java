@@ -10,7 +10,7 @@ import me.zort.sqllib.api.mapping.StatementMappingStrategy;
 import me.zort.sqllib.api.model.TableSchema;
 import me.zort.sqllib.api.options.NamingStrategy;
 import me.zort.sqllib.mapping.annotation.Table;
-import me.zort.sqllib.model.schema.EntitySchemaBuilder;
+import me.zort.sqllib.model.builder.EntitySchemaBuilder;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;

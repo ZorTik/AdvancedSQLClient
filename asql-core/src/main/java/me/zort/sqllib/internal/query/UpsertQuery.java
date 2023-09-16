@@ -8,6 +8,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 
+/**
+ * Represents an upsert (update or insert) query.
+ */
 public class UpsertQuery extends InsertQuery {
 
   @Setter

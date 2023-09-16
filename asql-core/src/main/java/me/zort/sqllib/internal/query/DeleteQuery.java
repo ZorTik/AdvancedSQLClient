@@ -4,12 +4,13 @@ import lombok.Getter;
 import me.zort.sqllib.api.Executive;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.internal.query.part.LimitStatement;
+import me.zort.sqllib.internal.query.part.OffsetStatement;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Objects;
 
-public class DeleteQuery extends QueryNode<QueryNode<?>> implements Executive, Conditional<DeleteQuery>, Limitable<DeleteQuery> {
+public class DeleteQuery extends AncestorQueryNode implements Executive, Conditional<DeleteQuery>, Limitable<DeleteQuery> {
 
   private String table;
 
@@ -25,13 +26,19 @@ public class DeleteQuery extends QueryNode<QueryNode<?>> implements Executive, C
   }
 
   public DeleteQuery(@Nullable SQLDatabaseConnection connection, @Nullable String table) {
-    super(null, new ArrayList<>(), QueryPriority.GENERAL);
+    super(new ArrayList<>());
     this.table = table;
     this.connection = connection;
   }
 
   public DeleteQuery from(String table) {
     this.table = table;
+    return this;
+  }
+
+  @Override
+  public DeleteQuery offset(int offset) {
+    then(new OffsetStatement<>(this, new ArrayList<>(), offset));
     return this;
   }
 

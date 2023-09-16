@@ -1,5 +1,7 @@
 package me.zort.sqllib.internal.annotation;
 
+import org.jetbrains.annotations.ApiStatus;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -25,6 +27,7 @@ import java.lang.annotation.Target;
  *
  * @author ZorTik
  */
+@ApiStatus.Experimental
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
 public @interface LinkedOne {

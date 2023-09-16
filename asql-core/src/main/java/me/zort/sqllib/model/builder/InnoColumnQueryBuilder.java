@@ -1,6 +1,7 @@
-package me.zort.sqllib.model.column;
+package me.zort.sqllib.model.builder;
 
 import me.zort.sqllib.api.model.ColumnDefinition;
+import me.zort.sqllib.model.SQLColumnQueryBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
