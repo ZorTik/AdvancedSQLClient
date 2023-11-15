@@ -106,7 +106,7 @@ public class QuickStart {
   }
 
   public void gateExample() {
-    UsersGate gate = connection.createGate(UsersGate.class);
+    UsersGate gate = connection.createProxy(UsersGate.class);
 
     QueryResult result = gate.saveUser(new User("John", "Doe"));
 
