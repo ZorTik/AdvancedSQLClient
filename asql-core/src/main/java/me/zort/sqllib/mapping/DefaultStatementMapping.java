@@ -77,7 +77,8 @@ public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
         return ((SQLDatabaseConnection) connection).exec(node);
       }
     } finally {
-      if (connection instanceof PooledSQLDatabaseConnection) {
+      if (connection instanceof PooledSQLDatabaseConnection
+        && ((PooledSQLDatabaseConnection) connection).isPoolAssigned()) {
         ((PooledSQLDatabaseConnection) connection).close();
       }
     }

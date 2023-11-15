@@ -27,6 +27,10 @@ public abstract class PooledSQLDatabaseConnection extends SQLDatabaseConnection 
     this.lastUsed = lastUsed;
   }
 
+  public boolean isPoolAssigned() {
+    return assignedPool != null;
+  }
+
   /**
    * The close() method in this class checks if there is any assigned
    * pool (most commonly when this instance is part of a pool) and optionally
