@@ -10,7 +10,6 @@ import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.mapping.StatementMappingFactory;
 import me.zort.sqllib.api.mapping.StatementMappingOptions;
-import me.zort.sqllib.api.mapping.StatementMappingRegistry;
 import me.zort.sqllib.api.model.SchemaSynchronizer;
 import me.zort.sqllib.api.model.TableSchema;
 import me.zort.sqllib.api.model.TableSchemaBuilder;
@@ -19,6 +18,7 @@ import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.impl.QueryResultImpl;
 import me.zort.sqllib.internal.query.*;
 import me.zort.sqllib.internal.query.part.SetStatement;
+import me.zort.sqllib.mapping.MappingProvider;
 import me.zort.sqllib.transaction.Transaction;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -42,7 +42,8 @@ import static me.zort.sqllib.util.ExceptionsUtility.runCatching;
  * @author ZorTik
  */
 @SuppressWarnings("unused")
-public abstract class SQLDatabaseConnection implements SQLConnection, Closeable {
+public abstract class SQLDatabaseConnection
+        extends MappingProvider implements SQLConnection, Closeable {
 
   private final SQLConnectionFactory connectionFactory;
   private final transient List<SQLDatabaseConnectionImpl.CodeObserver> codeHandlers;
@@ -54,19 +55,14 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
   private int errorCount = 0;
 
   public SQLDatabaseConnection(final @NotNull SQLConnectionFactory connectionFactory) {
+    super();
     this.connectionFactory = connectionFactory;
     this.connection = null;
     this.codeHandlers = new CopyOnWriteArrayList<>();
 
+    setMConnectionFactory(() -> this);
     registerConnection(this);
   }
-
-  /**
-   * Sets a mapping to use when using {@link SQLDatabaseConnection#createProxy(Class, StatementMappingOptions)}.
-   *
-   * @param mappingFactory Mapping factory to use.
-   */
-  public abstract void setProxyMapping(final @NotNull StatementMappingFactory mappingFactory);
 
   /**
    * Sets the schema synchronizer to use with synchronizeModel methods.
@@ -75,50 +71,6 @@ public abstract class SQLDatabaseConnection implements SQLConnection, Closeable 
    */
   @ApiStatus.Experimental
   public abstract void setSchemaSynchronizer(SchemaSynchronizer<SQLDatabaseConnection> synchronizer);
-
-  @ApiStatus.Experimental
-  public abstract StatementMappingRegistry getMappingRegistry();
-
-  /**
-   * @deprecated Use {@link SQLDatabaseConnection#createProxy(Class)} instead.
-   */
-  @Deprecated
-  public abstract <T> T createGate(Class<T> mappingInterface);
-
-  /**
-   * Constructs a mapping repository based on provided interface.
-   * The interface should follow rules for creating mapping repositories
-   * in this library.
-   * <p>
-   * Example:
-   * <pre>
-   *     &#64;Table("users")
-   *     public interface MyRepository {
-   *          &#64;Select("*")
-   *          &#64;Where(&#64;Where.Condition(column = "firstname", value = "{First Name}"))
-   *          &#64;Limit(1)
-   *          Optional&lt;User&gt; getUser(&#64;Placeholder("First Name") String firstName);
-   *
-   *          &#64;Select
-   *          List&lt;User&gt; getUsers();
-   *
-   *          &#64;Delete
-   *          QueryResult deleteUsers();
-   *     }
-   *
-   *     SQLDatabaseConnection connection = ...;
-   *     MyRepository repository = connection.createGate(MyRepository.class);
-   *
-   *     Optional&lt;User&gt; user = repository.getUser("John");
-   * </pre>
-   *
-   * @param mappingInterface Interface to create mapping repository for.
-   * @param <T>              Type of mapping repository.
-   * @return Mapping repository.
-   */
-  public abstract <T> T createProxy(Class<T> mappingInterface);
-
-  public abstract <T> T createProxy(Class<T> mappingInterface, @NotNull StatementMappingOptions options);
 
   public abstract boolean buildEntitySchema(String tableName, Class<?> entityClass);
 

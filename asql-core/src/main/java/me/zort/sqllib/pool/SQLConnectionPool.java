@@ -6,6 +6,7 @@ import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.SQLDatabaseConnectionImpl;
 import me.zort.sqllib.api.ISQLConnectionBuilder;
 import me.zort.sqllib.api.ISQLDatabaseOptions;
+import me.zort.sqllib.mapping.MappingProvider;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
@@ -25,8 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @author ZorTik
  */
 @ApiStatus.AvailableSince("0.6.0")
-@RequiredArgsConstructor
-public final class SQLConnectionPool {
+public final class SQLConnectionPool extends MappingProvider {
 
   private final ISQLConnectionBuilder<? extends SQLDatabaseConnection> builder;
   private final int maxConnections;
@@ -78,6 +78,13 @@ public final class SQLConnectionPool {
     this.checkConnectionValidity = poolOptions.checkConnectionValidity;
     this.checkConnectionValidityTimeout = poolOptions.checkConnectionValidityTimeout;
     this.connectionOptions = poolOptions.connectionOptions;
+    setMConnectionFactory(() -> {
+      try {
+        return getResource();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
   }
 
   /**

@@ -6,6 +6,7 @@ import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.mapping.StatementMappingOptions;
 import me.zort.sqllib.api.mapping.StatementMappingStrategy;
+import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.query.QueryNode;
 import me.zort.sqllib.internal.query.ResultSetAware;
 import me.zort.sqllib.mapping.annotation.Append;
@@ -16,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.function.Supplier;
 
 /**
  * This mapping strategy uses annotations from me.zort.sqllib.mapping.annotation
@@ -26,10 +28,10 @@ import java.lang.reflect.Parameter;
  */
 public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
 
-  private final SQLConnection connection;
+  private final Supplier<SQLConnection> connectionFactory;
 
-  public DefaultStatementMapping(SQLConnection connection) {
-    this.connection = connection;
+  public DefaultStatementMapping(Supplier<SQLConnection> connectionFactory) {
+    this.connectionFactory = connectionFactory;
   }
 
   @SuppressWarnings("unchecked")
@@ -42,33 +44,43 @@ public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
       i++;
     }
 
-    Annotation queryAnnotation = filterQueryAnnotation(method, args);
-    QueryAnnotation wrappedAnnotation = QueryAnnotation.wrap(queryAnnotation);
+    SQLConnection connection = connectionFactory.get();
 
-    if (wrappedAnnotation == null) {
-      throw new SQLMappingException("No query builder found for method " + method.getName() + "! Is query annotation present?", method, args);
-    } else if (!(connection instanceof SQLDatabaseConnection)) {
-      throw new SQLMappingException("Connection is not a SQLDatabaseConnection!", method, args);
-    }
+    try {
+      Annotation queryAnnotation = filterQueryAnnotation(method, args);
+      QueryAnnotation wrappedAnnotation = QueryAnnotation.wrap(queryAnnotation);
 
-    QueryNode<?> node = wrappedAnnotation.getQueryBuilder().build(
-            new QueryAnnotation.DefaultMappingDetails(connection, options), queryAnnotation,
-            method, parameters);
-    if (method.isAnnotationPresent(Append.class)) {
-      Append append = method.getAnnotation(Append.class);
-      node.then(new PlaceholderMapper(parameters).assignValues(append.value()));
-    }
+      if (wrappedAnnotation == null) {
+        throw new SQLMappingException("No query builder found for method " + method.getName() + "! Is query annotation present?", method, args);
+      } else if (!(connection instanceof SQLDatabaseConnection)) {
+        throw new SQLMappingException("Connection is not a SQLDatabaseConnection!", method, args);
+      }
 
-    if (mapTo != null && wrappedAnnotation.isProducesResult() && QueryRowsResult.class.isAssignableFrom(mapTo)) {
-      return ((SQLDatabaseConnection) connection).query(node);
-    }
+      QueryNode<?> node = wrappedAnnotation.getQueryBuilder().build(
+              new QueryAnnotation.DefaultMappingDetails(connection, options), queryAnnotation,
+              method, parameters);
+      if (method.isAnnotationPresent(Append.class)) {
+        Append append = method.getAnnotation(Append.class);
+        node.then(new PlaceholderMapper(parameters).assignValues(append.value()));
+      }
 
-    if (wrappedAnnotation.isProducesResult() && node instanceof ResultSetAware) {
-      return mapTo != null
-              ? ((SQLDatabaseConnection) connection).query(node, mapTo)
-              : ((SQLDatabaseConnection) connection).query(node);
-    } else {
-      return ((SQLDatabaseConnection) connection).exec(node);
+      if (mapTo != null && wrappedAnnotation.isProducesResult() && QueryRowsResult.class.isAssignableFrom(mapTo)) {
+        return ((SQLDatabaseConnection) connection).query(node);
+      }
+
+      if (wrappedAnnotation.isProducesResult() && node instanceof ResultSetAware) {
+        return mapTo != null
+                ? ((SQLDatabaseConnection) connection).query(node, mapTo)
+                : ((SQLDatabaseConnection) connection).query(node);
+      } else {
+        return ((SQLDatabaseConnection) connection).exec(node);
+      }
+    } finally {
+      if (connection instanceof SQLDatabaseConnection) {
+        ((SQLDatabaseConnection) connection).close();
+      } else {
+        connection.disconnect();
+      }
     }
   }
 

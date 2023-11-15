@@ -2,6 +2,8 @@ package me.zort.sqllib.api.mapping;
 
 import me.zort.sqllib.api.SQLConnection;
 
+import java.util.function.Supplier;
+
 /**
  * The StatementMappingFactory is responsible for creating new {@link StatementMappingStrategy}
  * for defined interfaces.
@@ -15,11 +17,14 @@ public interface StatementMappingFactory {
    * is responsible for handling that specific interface.
    *
    * @param interfaceClass The interface class
-   * @param connection     The connection to use.
+   * @param connectionFactory     The connection factory to use.
    * @param <T>            The interface class type.
    * @return The StatementMapping.
    */
-  <T> StatementMappingStrategy<T> strategy(Class<T> interfaceClass, SQLConnection connection);
+  <T> StatementMappingStrategy<T> strategy(
+          Class<T> interfaceClass,
+          Supplier<SQLConnection> connectionFactory
+  );
 
   StatementMappingResultAdapter resultAdapter();
 
