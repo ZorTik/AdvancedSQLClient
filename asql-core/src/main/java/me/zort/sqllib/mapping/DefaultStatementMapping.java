@@ -11,6 +11,7 @@ import me.zort.sqllib.internal.query.QueryNode;
 import me.zort.sqllib.internal.query.ResultSetAware;
 import me.zort.sqllib.mapping.annotation.Append;
 import me.zort.sqllib.mapping.exception.SQLMappingException;
+import me.zort.sqllib.pool.PooledSQLDatabaseConnection;
 import me.zort.sqllib.util.ParameterPair;
 import org.jetbrains.annotations.Nullable;
 
@@ -76,10 +77,8 @@ public class DefaultStatementMapping<T> implements StatementMappingStrategy<T> {
         return ((SQLDatabaseConnection) connection).exec(node);
       }
     } finally {
-      if (connection instanceof SQLDatabaseConnection) {
-        ((SQLDatabaseConnection) connection).close();
-      } else {
-        connection.disconnect();
+      if (connection instanceof PooledSQLDatabaseConnection) {
+        ((PooledSQLDatabaseConnection) connection).close();
       }
     }
   }
