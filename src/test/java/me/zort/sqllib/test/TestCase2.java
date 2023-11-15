@@ -165,7 +165,7 @@ public class TestCase2 { // Experimental features
   }
 
   @AllArgsConstructor
-  private static class User {
+  public static class User {
     @PrimaryKey
     private final String nickname;
     private final int points;
