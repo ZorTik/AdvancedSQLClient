@@ -42,8 +42,7 @@ import static me.zort.sqllib.util.ExceptionsUtility.runCatching;
  * @author ZorTik
  */
 @SuppressWarnings("unused")
-public abstract class SQLDatabaseConnection
-        extends MappingProvider implements SQLConnection, Closeable {
+public abstract class SQLDatabaseConnection extends MappingProvider implements SQLConnection, Closeable {
 
   private final SQLConnectionFactory connectionFactory;
   private final transient List<SQLDatabaseConnectionImpl.CodeObserver> codeHandlers;

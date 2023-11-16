@@ -1,7 +1,0 @@
-rootProject.name = 'asql-debezium'
-include ":api"
-include ":core"
-include ":shared"
-project(":api").projectDir = file("../asql-api")
-project(":core").projectDir = file("../asql-core")
-project(":shared").projectDir = file("../asql-shared")
