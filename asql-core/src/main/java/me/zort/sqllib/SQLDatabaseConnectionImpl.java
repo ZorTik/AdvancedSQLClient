@@ -18,7 +18,6 @@ import me.zort.sqllib.api.model.TableSchema;
 import me.zort.sqllib.api.model.TableSchemaBuilder;
 import me.zort.sqllib.api.options.NamingStrategy;
 import me.zort.sqllib.internal.Defaults;
-import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.internal.factory.SQLConnectionFactory;
 import me.zort.sqllib.internal.fieldResolver.ConstructorParameterResolver;
 import me.zort.sqllib.internal.fieldResolver.LinkedOneFieldResolver;
@@ -29,19 +28,13 @@ import me.zort.sqllib.model.builder.DatabaseSchemaBuilder;
 import me.zort.sqllib.model.builder.EntitySchemaBuilder;
 import me.zort.sqllib.pool.PooledSQLDatabaseConnection;
 import me.zort.sqllib.transaction.Transaction;
-import me.zort.sqllib.util.Validator;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.sql.*;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 /**
@@ -72,6 +65,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
 
   @Getter
   private final ISQLDatabaseOptions options;
+  @Getter
   private transient ObjectMapper objectMapper;
   private transient CacheManager cacheManager;
   @Setter
@@ -130,6 +124,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
    *
    * @param objectMapper Object mapper to use.
    */
+  @Override
   public void setObjectMapper(final @NotNull ObjectMapper objectMapper) {
     this.objectMapper = Objects.requireNonNull(objectMapper, "Object mapper cannot be null!");
   }
@@ -254,7 +249,7 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
     QueryRowsResult<T> result = new QueryRowsResult<>(resultRows.isSuccessful());
 
     for (Row row : resultRows) {
-      Optional.ofNullable(objectMapper.assignValues(row, typeClass))
+      Optional.ofNullable(objectMapper.deserializeValues(row, typeClass))
               .ifPresent(result::add);
     }
     return result;
@@ -358,48 +353,6 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
       query.errorSignal(e);
       return new QueryResultImpl(false, e.getMessage());
     }
-  }
-
-  @SuppressWarnings("unchecked")
-  @Nullable
-  protected final DefsVals buildDefsVals(Object obj) {
-    Objects.requireNonNull(obj);
-
-    Class<?> aClass = obj.getClass();
-
-    Map<String, Object> fields = new HashMap<>();
-    for (Field field : aClass.getDeclaredFields()) {
-
-      if (Modifier.isTransient(field.getModifiers())) {
-        // Transient fields are ignored.
-        continue;
-      }
-
-      try {
-        field.setAccessible(true);
-        Object o = field.get(obj);
-        if (field.isAnnotationPresent(JsonField.class)) {
-          o = options.getGson().toJson(o);
-        } else if (Validator.validateAutoIncrement(field) && field.get(obj) == null) {
-          // If field is PrimaryKey and autoIncrement true and is null,
-          // We will skip this to use auto increment strategy on SQL server.
-          continue;
-        }
-        fields.put(options.getNamingStrategy().fieldNameToColumn(field.getName()), o);
-      } catch (IllegalAccessException e) {
-        e.printStackTrace();
-        return null;
-      }
-    }
-    // I make entry array for indexing safety.
-    Map.Entry<String, Object>[] entryArray = fields.entrySet().toArray(new Map.Entry[0]);
-    String[] defs = new String[entryArray.length];
-    AtomicReference<Object>[] vals = new AtomicReference[entryArray.length];
-    for (int i = 0; i < entryArray.length; i++) {
-      defs[i] = entryArray[i].getKey();
-      vals[i] = new AtomicReference<>(entryArray[i].getValue());
-    }
-    return new DefsVals(defs, vals);
   }
 
   @ApiStatus.Experimental

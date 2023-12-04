@@ -1,15 +1,14 @@
 package me.zort.sqllib;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import me.zort.sqllib.api.DefsVals;
+import me.zort.sqllib.api.ObjectMapper;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.SQLConnection;
 import me.zort.sqllib.api.cache.CacheManager;
 import me.zort.sqllib.api.data.QueryResult;
 import me.zort.sqllib.api.data.QueryRowsResult;
 import me.zort.sqllib.api.data.Row;
-import me.zort.sqllib.api.mapping.StatementMappingFactory;
-import me.zort.sqllib.api.mapping.StatementMappingOptions;
 import me.zort.sqllib.api.model.SchemaSynchronizer;
 import me.zort.sqllib.api.model.TableSchema;
 import me.zort.sqllib.api.model.TableSchemaBuilder;
@@ -70,6 +69,15 @@ public abstract class SQLDatabaseConnection extends MappingProvider implements S
    */
   @ApiStatus.Experimental
   public abstract void setSchemaSynchronizer(SchemaSynchronizer<SQLDatabaseConnection> synchronizer);
+
+  /**
+   * Sets the object mapper to use.
+   * Object mapper maps queries to objects, as specified in {@link SQLDatabaseConnection#query(Query, Class)}.
+   *
+   * @param objectMapper Object mapper to use.
+   */
+  public abstract void setObjectMapper(final @NotNull ObjectMapper objectMapper);
+  public abstract ObjectMapper getObjectMapper();
 
   public abstract boolean buildEntitySchema(String tableName, Class<?> entityClass);
 
@@ -167,8 +175,6 @@ public abstract class SQLDatabaseConnection extends MappingProvider implements S
 
   public abstract boolean isTransactionActive();
 
-  protected abstract DefsVals buildDefsVals(Object obj);
-
   public abstract boolean isLogSqlErrors();
 
   public abstract boolean isDebug();
@@ -220,12 +226,14 @@ public abstract class SQLDatabaseConnection extends MappingProvider implements S
   }
 
   public UpsertQuery save(final @NotNull String table, final @NotNull Object obj) {
-    if (buildDefsVals(obj) == null) throw new IllegalArgumentException("Cannot create save query! (defsVals == null)");
+    if (getObjectMapper().serializeValues(obj) == null) {
+      throw new IllegalArgumentException("Cannot create save query! (defsVals == null)");
+    }
     return save(obj).table(table);
   }
 
   public UpsertQuery save(final @NotNull Object obj) {
-    DefsVals defsVals = buildDefsVals(obj);
+    DefsVals defsVals = getObjectMapper().serializeValues(obj);
     if (defsVals == null) return null;
     String[] defs = defsVals.getDefs();
     AtomicReference<Object>[] vals = defsVals.getVals();
@@ -242,7 +250,7 @@ public abstract class SQLDatabaseConnection extends MappingProvider implements S
   }
 
   public QueryResult insert(final @NotNull String table, final @NotNull Object obj) {
-    DefsVals defsVals = buildDefsVals(obj);
+    DefsVals defsVals = getObjectMapper().serializeValues(obj);
     if (defsVals == null) return new QueryResultImpl(false);
 
     InsertQuery query = insert().into(table, defsVals.getDefs());
@@ -341,13 +349,6 @@ public abstract class SQLDatabaseConnection extends MappingProvider implements S
 
   public interface CodeObserver {
     void onNotified(int code);
-  }
-
-  @AllArgsConstructor
-  @Getter
-  protected static class DefsVals {
-    private final String[] defs;
-    private final AtomicReference<Object>[] vals;
   }
 
   public static final class Code {

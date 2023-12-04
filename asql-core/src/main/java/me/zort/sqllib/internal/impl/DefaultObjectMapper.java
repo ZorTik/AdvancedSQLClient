@@ -4,15 +4,23 @@ import com.google.gson.Gson;
 import lombok.AccessLevel;
 import lombok.Getter;
 import me.zort.sqllib.SQLDatabaseConnectionImpl;
+import me.zort.sqllib.api.DefsVals;
+import me.zort.sqllib.api.ISQLDatabaseOptions;
 import me.zort.sqllib.api.ObjectMapper;
 import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.internal.annotation.JsonField;
+import me.zort.sqllib.util.Validator;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.*;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class DefaultObjectMapper implements ObjectMapper {
 
@@ -20,10 +28,12 @@ public class DefaultObjectMapper implements ObjectMapper {
   // in mapped object as backup.
   @Getter(AccessLevel.PROTECTED)
   private final List<ObjectMapper.FieldValueResolver> backupValueResolvers;
+  private final Map<Class<?>, ObjectMapper.TypeAdapter<?>> typeAdapters;
   private final SQLDatabaseConnectionImpl connectionWrapper;
 
   public DefaultObjectMapper(SQLDatabaseConnectionImpl connectionWrapper) {
     this.backupValueResolvers = new CopyOnWriteArrayList<>();
+    this.typeAdapters = new ConcurrentHashMap<>();
     this.connectionWrapper = connectionWrapper;
   }
 
@@ -32,8 +42,13 @@ public class DefaultObjectMapper implements ObjectMapper {
     this.backupValueResolvers.add(resolver);
   }
 
+  @Override
+  public void registerAdapter(@NotNull Class<?> typeClass, @NotNull TypeAdapter<?> adapter) {
+    this.typeAdapters.put(typeClass, adapter);
+  }
+
   @Nullable
-  public <T> T assignValues(Row row, Class<T> typeClass) {
+  public <T> T deserializeValues(Row row, Class<T> typeClass) {
     T instance = null;
     try {
       try {
@@ -113,6 +128,11 @@ public class DefaultObjectMapper implements ObjectMapper {
         debug(String.format("Cannot find column for class %s target %s (%s)", declaringClass.getName(), name, converted));
         return null;
       }
+    } else {
+      TypeAdapter<?> typeAdapter = typeAdapters.get(type.getClass());
+      if (typeAdapter != null) {
+        return typeAdapter.deserialize(element, row, obj);
+      }
     }
     if (element.isAnnotationPresent(JsonField.class) && obj instanceof String) {
       String jsonString = (String) obj;
@@ -121,6 +141,51 @@ public class DefaultObjectMapper implements ObjectMapper {
     } else {
       return obj;
     }
+  }
+
+  @Override
+  public DefsVals serializeValues(Object obj) {
+    Objects.requireNonNull(obj);
+
+    Class<?> aClass = obj.getClass();
+
+    Map<String, Object> fields = new HashMap<>();
+    for (Field field : aClass.getDeclaredFields()) {
+
+      if (Modifier.isTransient(field.getModifiers())) {
+        // Transient fields are ignored.
+        continue;
+      }
+
+      ISQLDatabaseOptions options = connectionWrapper.getOptions();
+
+      try {
+        field.setAccessible(true);
+        Object o = field.get(obj);
+        if (typeAdapters.containsKey(field.getType())) {
+          o = typeAdapters.get(field.getType()).serialize(field, o);
+        } else if (field.isAnnotationPresent(JsonField.class)) {
+          o = options.getGson().toJson(o);
+        } else if (Validator.validateAutoIncrement(field) && field.get(obj) == null) {
+          // If field is PrimaryKey and autoIncrement true and is null,
+          // We will skip this to use auto increment strategy on SQL server.
+          continue;
+        }
+        fields.put(options.getNamingStrategy().fieldNameToColumn(field.getName()), o);
+      } catch (IllegalAccessException e) {
+        e.printStackTrace();
+        return null;
+      }
+    }
+    // I make entry array for indexing safety.
+    Map.Entry<String, Object>[] entryArray = fields.entrySet().toArray(new Map.Entry[0]);
+    String[] defs = new String[entryArray.length];
+    AtomicReference<Object>[] vals = new AtomicReference[entryArray.length];
+    for (int i = 0; i < entryArray.length; i++) {
+      defs[i] = entryArray[i].getKey();
+      vals[i] = new AtomicReference<>(entryArray[i].getValue());
+    }
+    return new DefsVals(defs, vals);
   }
 
   private void debug(String message) {
