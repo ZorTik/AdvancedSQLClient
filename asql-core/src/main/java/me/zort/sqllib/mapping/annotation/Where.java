@@ -42,7 +42,7 @@ public @interface Where {
           case BT:
           case LT:
             try {
-              int number = Integer.parseInt(value);
+              long number = Long.parseLong(value);
               if (condition.type().equals(Condition.Type.BT)) {
                 where.bt(condition.column(), number);
               } else {

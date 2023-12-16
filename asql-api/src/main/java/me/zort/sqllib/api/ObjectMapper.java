@@ -24,7 +24,7 @@ public interface ObjectMapper {
                        Type type);
   }
 
-  interface TypeAdapter<T> {
+  interface TypeAdapter<T> { // TODO: Tests
     /**
      * Deserializes value from database to Java value.
      * This value is commonly set to field value in corresponding
