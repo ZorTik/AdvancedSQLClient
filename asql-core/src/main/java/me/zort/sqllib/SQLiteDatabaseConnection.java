@@ -1,5 +1,6 @@
 package me.zort.sqllib;
 
+import me.zort.sqllib.api.DefsVals;
 import me.zort.sqllib.api.ISQLDatabaseOptions;
 import me.zort.sqllib.api.Query;
 import me.zort.sqllib.api.data.QueryResult;
@@ -65,7 +66,7 @@ public class SQLiteDatabaseConnection extends SQLDatabaseConnectionImpl {
   @NotNull
   @Override
   public final UpsertQuery save(@NotNull String table, @NotNull Object obj) {
-    DefsVals defsVals = buildDefsVals(obj);
+    DefsVals defsVals = getObjectMapper().serializeValues(obj);
     if (defsVals == null) throw new IllegalArgumentException("Cannot create save query! (defsVals == null)");
     String[] defs = defsVals.getDefs();
     AtomicReference<Object>[] vals = defsVals.getVals();
