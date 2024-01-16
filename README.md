@@ -33,7 +33,7 @@ public interface UserRepository {
   User findUser(@Placeholder("Name") String name);
 }
 
-UserRepository repository = connection.createGate(UserRepository.class);
+UserRepository repository = connection.createProxy(UserRepository.class);
 repository.save(new User("User1"));
 repository.findUser("User1");
 
