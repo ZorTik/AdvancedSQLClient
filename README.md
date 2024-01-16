@@ -34,8 +34,8 @@ public interface UserRepository {
 }
 
 UserRepository repository = connection.createProxy(UserRepository.class);
-repository.save(new User("User1"));
-repository.findUser("User1");
+repository.save(new User("User"));
+repository.findUser("User");
 
 // TIP: We support query builders too! Check wiki section.
 ```
