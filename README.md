@@ -33,15 +33,14 @@ public interface UserRepository {
   User findUser(@Placeholder("Name") String name);
 }
 
-UserRepository repository = connection.createGate(UserRepository.class);
-if (repository.save(new User("User1")).isSuccessful()) {
-  User user = repository.findUser("User1");
-}
+UserRepository repository = connection.createProxy(UserRepository.class);
+repository.save(new User("User"));
+repository.findUser("User");
 
 // TIP: We support query builders too! Check wiki section.
 ```
 ```java
-QueryResult result = connection.insert()
+connection.insert()
         .into("users", "firstname", "lastname")
         .values("John", "Doe")
         .execute();
