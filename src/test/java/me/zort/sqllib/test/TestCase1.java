@@ -5,6 +5,8 @@ import lombok.extern.log4j.Log4j2;
 import me.zort.sqllib.SQLConnectionBuilder;
 import me.zort.sqllib.internal.annotation.NullableField;
 import me.zort.sqllib.internal.annotation.PrimaryKey;
+import me.zort.sqllib.internal.query.QueryDetails;
+import me.zort.sqllib.internal.query.QueryNode;
 import me.zort.sqllib.pool.SQLConnectionPool;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.SQLDatabaseOptions;
@@ -14,6 +16,7 @@ import me.zort.sqllib.api.data.Row;
 import me.zort.sqllib.api.provider.Select;
 import me.zort.sqllib.internal.impl.DefaultSQLEndpoint;
 import me.zort.sqllib.transaction.TransactionFlow;
+import me.zort.sqllib.util.Pair;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.*;
@@ -196,7 +199,16 @@ public class TestCase1 { // Basic operations
   }
 
   @Test
-  public void test7_Close() {
+  public void test7_RawNode() {
+    String raw = "SELECT * FROM users WHERE nickname = ?";
+    QueryNode<?> query = QueryNode.fromRawQuery(raw, "User1");
+    Pair<String, Object[]> preparedQuery = query.toPreparedQuery();
+    assertEquals(raw, preparedQuery.getFirst());
+    assertArrayEquals(new Object[]{"User1"}, preparedQuery.getSecond());
+  }
+
+  @Test
+  public void test8_Close() {
     System.out.println("Closing connection...");
     connection.disconnect();
     System.out.println("Connection closed");

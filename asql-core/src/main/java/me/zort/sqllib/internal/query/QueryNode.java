@@ -49,6 +49,39 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
   }
 
   /**
+   * Creates a new QueryNode from a query string in PreparedStatement format and
+   * parameters to replace question marks in the query. This is useful if there is no
+   * other way to create a query than using raw SQL details.
+   * <p></p>
+   * Example:
+   * <pre>
+   * Query query = QueryNode.fromRawQuery("SELECT * FROM table WHERE id = ?", 1);
+   * </pre>
+   *
+   * @param query
+   * @param params
+   * @return
+   */
+  public static QueryNode<?> fromRawQuery(String query, Object... params) {
+    return new QueryNode<>(null, Collections.emptyList(), QueryPriority.GENERAL) {
+      @Override
+      public QueryDetails buildQueryDetails() {
+        Map<String, Object> values = new HashMap<>();
+        String preparedStr;
+        int index = 0;
+        while (true) {
+          preparedStr = query.replaceFirst("\\?", String.format("<val_%d>", index));
+          if (preparedStr.equals(query)) {
+            break;
+          }
+          values.put("val_" + index, params[index]);
+        }
+        return new QueryDetails(preparedStr, values);
+      }
+    };
+  }
+
+  /**
    * Builds the query string with placeholders containing values
    * for passing into PreparedStatement.
    * <p>
