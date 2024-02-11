@@ -67,11 +67,12 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
       @Override
       public QueryDetails buildQueryDetails() {
         Map<String, Object> values = new HashMap<>();
-        String preparedStr;
+        String preparedStr = query;
         int index = 0;
         while (true) {
-          preparedStr = query.replaceFirst("\\?", String.format("<val_%d>", index));
-          if (preparedStr.equals(query)) {
+          final String before = preparedStr;
+          preparedStr = before.replaceFirst("\\?", String.format("<val_%d>", index));
+          if (preparedStr.equals(before)) {
             break;
           }
           values.put("val_" + index, params[index]);
