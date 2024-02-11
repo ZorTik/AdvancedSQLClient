@@ -65,7 +65,7 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
    */
   @Beta
   public static QueryNode<?> fromRawQuery(String query, Object... params) {
-    return new QueryNode<>(null, Collections.emptyList(), QueryPriority.GENERAL) {
+    return new QueryNode<QueryNode<?>>(null, Collections.emptyList(), QueryPriority.GENERAL) {
       @Override
       public QueryDetails buildQueryDetails() {
         Map<String, Object> values = new HashMap<>();
