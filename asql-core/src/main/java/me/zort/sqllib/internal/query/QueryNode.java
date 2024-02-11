@@ -1,5 +1,6 @@
 package me.zort.sqllib.internal.query;
 
+import com.google.common.annotations.Beta;
 import lombok.Getter;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.SQLDatabaseConnectionImpl;
@@ -46,6 +47,41 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
     this.children = initial;
     this.priority = priority;
     this.details = new ConcurrentHashMap<>();
+  }
+
+  /**
+   * Creates a new QueryNode from a query string in PreparedStatement format and
+   * parameters to replace question marks in the query. This is useful if there is no
+   * other way to create a query than using raw SQL details.
+   * <p></p>
+   * Example:
+   * <pre>
+   * Query query = QueryNode.fromRawQuery("SELECT * FROM table WHERE id = ?", 1);
+   * </pre>
+   *
+   * @param query
+   * @param params
+   * @return
+   */
+  @Beta
+  public static QueryNode<?> fromRawQuery(String query, Object... params) {
+    return new QueryNode<>(null, Collections.emptyList(), QueryPriority.GENERAL) {
+      @Override
+      public QueryDetails buildQueryDetails() {
+        Map<String, Object> values = new HashMap<>();
+        String preparedStr = query;
+        int index = 0;
+        while (true) {
+          final String before = preparedStr;
+          preparedStr = before.replaceFirst("\\?", String.format("<val_%d>", index));
+          if (preparedStr.equals(before)) {
+            break;
+          }
+          values.put("val_" + index, params[index]);
+        }
+        return new QueryDetails(preparedStr, values);
+      }
+    };
   }
 
   /**

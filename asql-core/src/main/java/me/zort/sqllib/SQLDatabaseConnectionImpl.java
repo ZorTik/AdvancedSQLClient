@@ -1,5 +1,6 @@
 package me.zort.sqllib;
 
+import com.google.common.annotations.Beta;
 import com.google.gson.Gson;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +33,8 @@ import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.sql.rowset.CachedRowSet;
+import javax.sql.rowset.RowSetProvider;
 import java.sql.*;
 import java.util.Objects;
 import java.util.Optional;
@@ -274,11 +277,14 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
   @NotNull
   QueryRowsResult<Row> query(final @NotNull Query query, boolean isRetry) {
     Objects.requireNonNull(query);
-    if (!handleAutoReconnect())
+    if (!handleAutoReconnect()) {
       return new QueryRowsResult<>(false, "Cannot connect to database!");
+    }
 
     QueryResult cachedResult = cacheManager.get(query, false);
-    if (cachedResult instanceof QueryRowsResult) return (QueryRowsResult<Row>) cachedResult;
+    if (cachedResult instanceof QueryRowsResult) {
+      return (QueryRowsResult<Row>) cachedResult;
+    }
 
     try (PreparedStatement stmt = buildStatement(query);
          ResultSet resultSet = stmt.executeQuery()) {
@@ -307,6 +313,31 @@ public class SQLDatabaseConnectionImpl extends PooledSQLDatabaseConnection {
       notifyHandlers(Code.QUERY_FATAL);
       query.errorSignal(e);
       return new QueryRowsResult<>(false, e.getMessage());
+    }
+  }
+
+  /**
+   * Executes given query and returns raw ResultSet.
+   * Please note that this function is not recommended to be frequently used and is provided
+   * as is as feature.
+   *
+   * @param query Query to use for building query string.
+   * @return ResultSet object or null if there was an error in connection.
+   * @throws SQLException If there was an error while executing query.
+   */
+  @Beta
+  @Nullable
+  public ResultSet queryRaw(Query query) throws SQLException {
+    Objects.requireNonNull(query);
+    if (!handleAutoReconnect()) {
+      return null;
+    }
+    try (PreparedStatement stmt = buildStatement(query);
+         ResultSet resultSet = stmt.executeQuery()) {
+      // Create in-memory cached result set
+      CachedRowSet cachedResultSet = RowSetProvider.newFactory().createCachedRowSet();
+      cachedResultSet.populate(resultSet);
+      return cachedResultSet;
     }
   }
 

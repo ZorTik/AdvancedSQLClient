@@ -1,5 +1,6 @@
 package me.zort.sqllib;
 
+import com.google.common.annotations.Beta;
 import lombok.Getter;
 import me.zort.sqllib.api.DefsVals;
 import me.zort.sqllib.api.ObjectMapper;
@@ -25,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -140,6 +142,10 @@ public abstract class SQLDatabaseConnection extends MappingProvider implements S
   public abstract QueryRowsResult<Row> query(Query query);
 
   public abstract QueryRowsResult<Row> query(String query);
+
+  @Beta
+  @Nullable
+  public abstract ResultSet queryRaw(Query query) throws SQLException;
 
   /**
    * Executes given query and returns execution result.
