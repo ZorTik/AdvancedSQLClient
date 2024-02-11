@@ -3,6 +3,7 @@ package me.zort.sqllib.test;
 import lombok.AllArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import me.zort.sqllib.SQLConnectionBuilder;
+import me.zort.sqllib.api.Query;
 import me.zort.sqllib.internal.annotation.NullableField;
 import me.zort.sqllib.internal.annotation.PrimaryKey;
 import me.zort.sqllib.internal.query.QueryDetails;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Optional;
 
@@ -200,7 +202,7 @@ public class TestCase1 { // Basic operations
 
   @Test
   public void test7_RawNode() {
-    String raw = "SELECT * FROM users WHERE nickname = ?";
+    String raw = "SELECT * FROM " + table +  " WHERE nickname = ?";
     QueryNode<?> query = QueryNode.fromRawQuery(raw, "User1");
     Pair<String, Object[]> preparedQuery = query.toPreparedQuery();
     assertEquals(raw, preparedQuery.getFirst());
@@ -208,7 +210,20 @@ public class TestCase1 { // Basic operations
   }
 
   @Test
-  public void test8_Close() {
+  public void test8_RawQuery() {
+    Query query = QueryNode.fromRawQuery("SELECT * FROM " + table + " WHERE nickname = ?", "User1");
+      try {
+          ResultSet result = connection.queryRaw(query);
+          assertNotNull(result);
+          assertTrue(result.next());
+            assertEquals("User1", result.getString("nickname"));
+      } catch (SQLException e) {
+          fail(e);
+      }
+  }
+
+  @Test
+  public void test9_Close() {
     System.out.println("Closing connection...");
     connection.disconnect();
     System.out.println("Connection closed");

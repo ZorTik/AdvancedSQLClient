@@ -1,5 +1,6 @@
 package me.zort.sqllib.internal.query;
 
+import com.google.common.annotations.Beta;
 import lombok.Getter;
 import me.zort.sqllib.SQLDatabaseConnection;
 import me.zort.sqllib.SQLDatabaseConnectionImpl;
@@ -62,6 +63,7 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
    * @param params
    * @return
    */
+  @Beta
   public static QueryNode<?> fromRawQuery(String query, Object... params) {
     return new QueryNode<>(null, Collections.emptyList(), QueryPriority.GENERAL) {
       @Override
