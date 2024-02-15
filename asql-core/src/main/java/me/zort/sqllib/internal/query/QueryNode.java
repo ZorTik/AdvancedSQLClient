@@ -78,6 +78,7 @@ public abstract class QueryNode<P extends QueryNode<?>> implements Query, Statem
             break;
           }
           values.put("val_" + index, params[index]);
+          index++;
         }
         return new QueryDetails(preparedStr, values);
       }
