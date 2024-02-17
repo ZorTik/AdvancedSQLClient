@@ -227,8 +227,8 @@ public class TestCase1 { // Basic operations
     assertTrue(connection.buildEntitySchema("multiple_pk", MultiplePKModel.class));
   }
 
-  @Test
-  public void test10_Close() {
+  @AfterAll
+  public void close() {
     System.out.println("Closing connection...");
     connection.disconnect();
     System.out.println("Connection closed");
