@@ -223,7 +223,12 @@ public class TestCase1 { // Basic operations
   }
 
   @Test
-  public void test9_Close() {
+  public void test9_MultiplePk() {
+    assertTrue(connection.buildEntitySchema("multiple_pk", MultiplePKModel.class));
+  }
+
+  @AfterAll
+  public void close() {
     System.out.println("Closing connection...");
     connection.disconnect();
     System.out.println("Connection closed");
@@ -262,6 +267,15 @@ public class TestCase1 { // Basic operations
       result = 31 * result + points;
       return result;
     }
+  }
+
+  @AllArgsConstructor
+  private static class MultiplePKModel {
+    @PrimaryKey
+    private final String nickname;
+    @PrimaryKey
+    private final String email;
+    private final int points;
   }
 
 }

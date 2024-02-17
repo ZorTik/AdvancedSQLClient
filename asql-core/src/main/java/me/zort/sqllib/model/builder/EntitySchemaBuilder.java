@@ -16,6 +16,8 @@ import me.zort.sqllib.util.Validator;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -51,7 +53,10 @@ public final class EntitySchemaBuilder implements TableSchemaBuilder {
 
     debug("Building defs from type class: " + typeClass.getName());
 
+    boolean multiplePK = getPKCount() > 1;
+
     ColumnDefinition[] defs = new ColumnDefinition[0];
+    List<String> pks = new ArrayList<>();
     for (Field field : typeClass.getDeclaredFields()) {
       debug("Building def for field: " + field.getName() + " (" + field.getType().getName() + ")");
       if (Modifier.isTransient(field.getModifiers())) {
@@ -60,7 +65,7 @@ public final class EntitySchemaBuilder implements TableSchemaBuilder {
       }
 
       String colName = namingStrategy.fieldNameToColumn(field.getName());
-      String colType = recognizeFieldTypeToDbType(field);
+      String colType = recognizeFieldTypeToDbType(field, multiplePK);
 
       if (colType != null && !colType.contains("NOT NULL") && field.isAnnotationPresent(NullableField.class)) {
         if (!field.getAnnotation(NullableField.class).nullable()) {
@@ -75,9 +80,17 @@ public final class EntitySchemaBuilder implements TableSchemaBuilder {
         colType += " DEFAULT " + defaultValue;
       }
 
+      if (field.isAnnotationPresent(PrimaryKey.class)) {
+        pks.add(colName);
+      }
+
       defs = Arrays.add(defs, new ColumnDefinition(colName, colType));
 
       debug("Added def: " + colName + " " + colType);
+    }
+
+    if (multiplePK) {
+        defs = Arrays.add(defs, new ColumnDefinition("PRIMARY KEY", String.format("(%s)", String.join(", ", pks))));
     }
 
     debug("Built defs: " + java.util.Arrays.toString(defs));
@@ -85,7 +98,17 @@ public final class EntitySchemaBuilder implements TableSchemaBuilder {
     return new TableSchema(tableName, defs);
   }
 
-  private String recognizeFieldTypeToDbType(Field field) {
+  private int getPKCount() {
+    int count = 0;
+    for (Field field : typeClass.getDeclaredFields()) {
+      if (field.isAnnotationPresent(PrimaryKey.class)) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  private String recognizeFieldTypeToDbType(Field field, boolean multiplePK) {
     Class<?> fieldType = Primitives.wrap(field.getType());
     boolean isSupported = isSupported(fieldType);
 
@@ -111,8 +134,9 @@ public final class EntitySchemaBuilder implements TableSchemaBuilder {
       dbType = "FLOAT";
     }
 
-    if (field.isAnnotationPresent(PrimaryKey.class))
+    if (field.isAnnotationPresent(PrimaryKey.class) && !multiplePK) {
       dbType += " PRIMARY KEY";
+    }
 
     if (Validator.validateAutoIncrement(field))
       dbType += " " + (isSQLite() ? "AUTOINCREMENT" : "AUTO_INCREMENT");
