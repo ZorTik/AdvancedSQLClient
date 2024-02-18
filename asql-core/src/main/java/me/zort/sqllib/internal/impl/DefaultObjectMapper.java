@@ -8,6 +8,7 @@ import me.zort.sqllib.api.DefsVals;
 import me.zort.sqllib.api.ISQLDatabaseOptions;
 import me.zort.sqllib.api.ObjectMapper;
 import me.zort.sqllib.api.data.Row;
+import me.zort.sqllib.api.options.NamingStrategy;
 import me.zort.sqllib.internal.annotation.JsonField;
 import me.zort.sqllib.util.Validator;
 import org.jetbrains.annotations.NotNull;
@@ -29,12 +30,21 @@ public class DefaultObjectMapper implements ObjectMapper {
   @Getter(AccessLevel.PROTECTED)
   private final List<ObjectMapper.FieldValueResolver> backupValueResolvers;
   private final Map<Class<?>, ObjectMapper.TypeAdapter<?>> typeAdapters;
-  private final SQLDatabaseConnectionImpl connectionWrapper;
+
+  private final Gson gson;
+  private final NamingStrategy ns;
+  private SQLDatabaseConnectionImpl connectionWrapper = null;
 
   public DefaultObjectMapper(SQLDatabaseConnectionImpl connectionWrapper) {
+    this(connectionWrapper.getOptions().getGson(), connectionWrapper.getOptions().getNamingStrategy());
+    this.connectionWrapper = connectionWrapper;
+  }
+
+  public DefaultObjectMapper(Gson gson, NamingStrategy namingStrategy) {
     this.backupValueResolvers = new CopyOnWriteArrayList<>();
     this.typeAdapters = new ConcurrentHashMap<>();
-    this.connectionWrapper = connectionWrapper;
+    this.gson = gson;
+    this.ns = namingStrategy;
   }
 
   @Override
@@ -115,13 +125,14 @@ public class DefaultObjectMapper implements ObjectMapper {
     Object obj = row.get(name);
     if (obj == null) {
       String converted;
-      if ((obj = row.get(converted = connectionWrapper.getOptions().getNamingStrategy().fieldNameToColumn(name))) == null) {
-
-        // Now backup resolvers come.
-        for (ObjectMapper.FieldValueResolver resolver : backupValueResolvers) {
-          Object backupValue = resolver.obtainValue(connectionWrapper, element, row, name, converted, type);
-          if (backupValue != null) {
-            return backupValue;
+      if ((obj = row.get(converted = ns.fieldNameToColumn(name))) == null) {
+        if (connectionWrapper != null) { // Only if this class is used with connection, use resolvers
+          // Now backup resolvers come.
+          for (ObjectMapper.FieldValueResolver resolver : backupValueResolvers) {
+            Object backupValue = resolver.obtainValue(connectionWrapper, element, row, name, converted, type);
+            if (backupValue != null) {
+              return backupValue;
+            }
           }
         }
 
@@ -136,7 +147,6 @@ public class DefaultObjectMapper implements ObjectMapper {
     }
     if (element.isAnnotationPresent(JsonField.class) && obj instanceof String) {
       String jsonString = (String) obj;
-      Gson gson = connectionWrapper.getOptions().getGson();
       return gson.fromJson(jsonString, type);
     } else {
       return obj;
@@ -157,21 +167,19 @@ public class DefaultObjectMapper implements ObjectMapper {
         continue;
       }
 
-      ISQLDatabaseOptions options = connectionWrapper.getOptions();
-
       try {
         field.setAccessible(true);
         Object o = field.get(obj);
         if (typeAdapters.containsKey(field.getType())) {
           o = typeAdapters.get(field.getType()).serialize(field, o);
         } else if (field.isAnnotationPresent(JsonField.class)) {
-          o = options.getGson().toJson(o);
+          o = gson.toJson(o);
         } else if (Validator.validateAutoIncrement(field) && field.get(obj) == null) {
           // If field is PrimaryKey and autoIncrement true and is null,
           // We will skip this to use auto increment strategy on SQL server.
           continue;
         }
-        fields.put(options.getNamingStrategy().fieldNameToColumn(field.getName()), o);
+        fields.put(ns.fieldNameToColumn(field.getName()), o);
       } catch (IllegalAccessException e) {
         e.printStackTrace();
         return null;
@@ -189,7 +197,9 @@ public class DefaultObjectMapper implements ObjectMapper {
   }
 
   private void debug(String message) {
-    connectionWrapper.debug(message);
+    if (connectionWrapper != null) {
+      connectionWrapper.debug(message);
+    }
   }
 
 }
