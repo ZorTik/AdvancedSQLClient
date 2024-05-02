@@ -27,15 +27,10 @@ You can add AdvancedSQLClient to your build path using Maven or Gradle. You can 
 public interface UserRepository {
   @Save
   QueryResult save(User user);
-  
-  @Select
-  @Where(@Where.Condition(column = "name", value = "{Name}"))
-  User findUser(@Placeholder("Name") String name);
 }
 
 UserRepository repository = connection.createProxy(UserRepository.class);
 repository.save(new User("User"));
-repository.findUser("User");
 
 // TIP: We support query builders too! Check wiki section.
 ```
